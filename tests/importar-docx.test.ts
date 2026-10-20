@@ -313,3 +313,77 @@ describe('resumen para la pantalla de confirmacion', () => {
     })
   })
 })
+
+describe('EL CASO REAL: un manuscrito entero en UN archivo', () => {
+  /**
+   * Es como escriben los autores: todo el libro en un solo documento de Word.
+   * Con un archivo unico, acertar donde empieza cada capitulo ES el juego
+   * entero, asi que estos tests documentan lo que la deteccion CONSIGUE y lo
+   * que NO, para que el hueco este medido y no sea una sorpresa.
+   *
+   * Cuando la deteccion mejore, estos tests fallaran. Eso es lo que se busca:
+   * son el registro del limite actual, no una aspiracion.
+   */
+
+  it('con estilos de Word, los detecta todos y parte bien la etiqueta', async () => {
+    const p = await importar('manuscrito-completo')
+    expect(p.cortes).toHaveLength(3)
+    expect(p.cortes.map((c) => c.etiqueta)).toEqual(['Capítulo 1', 'Capítulo 2', ''])
+  })
+
+  it('LIMITE: mammoth descarta los saltos de pagina, que no dejan ni rastro', async () => {
+    // Es la forma mas comun de separar capitulos en un documento unico, y es
+    // invisible para nosotros. Recuperarlo exige leer word/document.xml a mano
+    // buscando <w:br w:type="page"/>; fflate ya es dependencia, asi que se
+    // puede. Anotado en el plan como lo primero que resolver en H5.
+    const p = await importar('manuscrito-realista')
+    const texto = p.bloques.map(textoDe).join('|')
+    expect(texto).not.toContain('\f')
+    // Los 10 parrafos estan, pero nada marca donde estaban los 4 saltos.
+    expect(p.bloques).toHaveLength(10)
+  })
+
+  it('LIMITE: detecta 3 de los 5 capitulos, y solo por el patron del titulo', async () => {
+    const p = await importar('manuscrito-realista')
+    expect(p.cortes.map((c) => c.titulo)).toEqual([
+      'CAPÍTULO UNO',
+      'CAPÍTULO DOS',
+      'Capítulo III',
+    ])
+    // Se le escapan «4» (solo el numero) y «La luz que no tocaba» (un titulo
+    // sin la palabra «capitulo»). Sin el salto de pagina no hay forma de
+    // saberlo por el texto, asi que el autor tendra que marcarlos con
+    // «Cortar aqui»: por eso esa accion no puede estar escondida.
+    expect(p.cortes).toHaveLength(3)
+  })
+
+  it('LIMITE: sin separador, la etiqueta se queda vacia y el titulo se la come', async () => {
+    const p = await importar('manuscrito-realista')
+    // Lo correcto seria etiqueta «CAPITULO UNO» y titulo vacio. RE_TITULO casa,
+    // pero `partirCabecera` solo separa cuando hay un «:», un «.» o un guion
+    // detras del numero, y aqui no hay nada detras.
+    expect(p.cortes[0]).toEqual({
+      indice: 0,
+      etiqueta: '',
+      titulo: 'CAPÍTULO UNO',
+      motivo: 'lineaCapitulo',
+    })
+  })
+
+  it('aun asi, el autor puede arreglarlo todo con cortes propios', async () => {
+    // Lo que salva el caso real no es la deteccion, es que aplicarCortes acepte
+    // lo que el autor decida. Con los 5 cortes puestos a mano, sale bien.
+    const p = await importar('manuscrito-realista')
+    const aMano: CorteSugerido[] = [
+      { indice: 0, etiqueta: 'Capítulo 1', titulo: '', motivo: 'lineaCapitulo' },
+      { indice: 2, etiqueta: 'Capítulo 2', titulo: '', motivo: 'lineaCapitulo' },
+      { indice: 4, etiqueta: 'Capítulo 3', titulo: '', motivo: 'lineaCapitulo' },
+      { indice: 6, etiqueta: 'Capítulo 4', titulo: '', motivo: 'lineaCapitulo' },
+      { indice: 8, etiqueta: 'Capítulo 5', titulo: 'La luz que no tocaba', motivo: 'lineaCapitulo' },
+    ]
+    const r = aplicarCortes(p.bloques, aMano, nuevoId)
+    expect(r.capitulos).toHaveLength(5)
+    expect(r.huerfanos).toEqual([])
+    expect(r.capitulos.every((c) => c.bloques.length === 1)).toBe(true)
+  })
+})

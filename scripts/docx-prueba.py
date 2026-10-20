@@ -95,6 +95,15 @@ def imagen_parrafo(rid, nombre="Imagen 1"):
     )
 
 
+def salto_de_pagina():
+    """Como separa capitulos la mayoria de los escritores en un documento unico.
+
+    OJO: mammoth lo DESCARTA por completo; no queda ni rastro en su HTML. Es el
+    hueco mas importante del importador y esta anotado en el plan.
+    """
+    return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
+
+
 def tabla():
     celda = '<w:tc><w:p><w:r><w:t>celda</w:t></w:r></w:p></w:tc>'
     return f"<w:tbl><w:tr>{celda}{celda}</w:tr></w:tbl>"
@@ -204,6 +213,31 @@ DOCUMENTOS = {
             parrafo([run("a & b < c > d")]),
             parrafo([run("C:\\Users\\ana")]),
             parrafo([run("[ilustraci\u00f3n: falsa | no soy una marca]")]),
+        ],
+        False,
+    ),
+    # EL CASO REAL: un manuscrito entero en un archivo, separado como lo
+    # separa un escritor de verdad. Documenta los limites de la deteccion.
+    "manuscrito-realista.docx": (
+        [
+            # Separado por SALTO DE PAGINA, con el titulo en mayusculas y sin estilo
+            parrafo([run("CAP\u00cdTULO UNO")]),
+            parrafo([run("Texto del primero.")]),
+            salto_de_pagina(),
+            parrafo([run("CAP\u00cdTULO DOS")]),
+            parrafo([run("Texto del segundo.")]),
+            salto_de_pagina(),
+            # Con numero romano
+            parrafo([run("Cap\u00edtulo III")]),
+            parrafo([run("Texto del tercero.")]),
+            salto_de_pagina(),
+            # Solo el numero, sin la palabra
+            parrafo([run("4")]),
+            parrafo([run("Texto del cuarto.")]),
+            salto_de_pagina(),
+            # Un titulo sin la palabra «capitulo»
+            parrafo([run("La luz que no tocaba")]),
+            parrafo([run("Texto del quinto.")]),
         ],
         False,
     ),
