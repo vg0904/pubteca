@@ -60,6 +60,44 @@ export interface CasoUuid {
   urn: string
 }
 
+export interface CasoXhtml {
+  titulo: string
+  cuerpo: string
+  idioma: string
+  clase_body: string
+  salida: string
+}
+
+export interface CasoPaginaImagen {
+  href: string
+  alt: string
+  clase: string
+  salida: string
+}
+
+export interface CaraExportada {
+  familia: string
+  style: string
+  weight: string
+  href: string
+  id: string
+  media: string
+}
+
+export interface CasoFuentes {
+  nombre: string
+  archivos: string[]
+  salida: CaraExportada[]
+  avisos: string[]
+}
+
+export interface CasoCssLibro {
+  nombre: string
+  familias: string[]
+  preferida: string
+  salida: string
+}
+
 export interface Oraculo {
   _fuente: string
   _sha256_fuente: string
@@ -80,6 +118,10 @@ export interface Oraculo {
   capitulos: CasoCapitulo[]
   configs: CasoConfig[]
   uuid5: CasoUuid[]
+  xhtml: CasoXhtml[]
+  pagina_imagen: CasoPaginaImagen[]
+  fuentes: CasoFuentes[]
+  css_libro: CasoCssLibro[]
   CSS: string
   CONFIG_DEFAULT: Record<string, string>
 }

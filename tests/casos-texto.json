@@ -2192,6 +2192,306 @@
    "urn": "urn:uuid:3e995930-c899-5250-a2b6-cd9dca74f608"
   }
  ],
+ "xhtml": [
+  {
+   "titulo": "Capítulo 1",
+   "cuerpo": "<p>uno</p>",
+   "idioma": "es",
+   "clase_body": "",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\" xml:lang=\"es\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Capítulo 1</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body>\n<p>uno</p>\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "Portada",
+   "cuerpo": "<div class=\"portada\"><img src=\"../x.png\" alt=\"y\"/></div>",
+   "idioma": "es",
+   "clase_body": "pagina-imagen",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\" xml:lang=\"es\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Portada</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body class=\"pagina-imagen\">\n<div class=\"portada\"><img src=\"../x.png\" alt=\"y\"/></div>\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "Título & <raro>",
+   "cuerpo": "<p>a</p>",
+   "idioma": "es",
+   "clase_body": "",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\" xml:lang=\"es\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Título &amp; &lt;raro&gt;</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body>\n<p>a</p>\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "Con \"comillas\" y 'apostrofe'",
+   "cuerpo": "<p>a</p>",
+   "idioma": "en",
+   "clase_body": "",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"en\" xml:lang=\"en\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Con &quot;comillas&quot; y &#x27;apostrofe&#x27;</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body>\n<p>a</p>\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "",
+   "cuerpo": "",
+   "idioma": "es",
+   "clase_body": "",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\" xml:lang=\"es\">\n<head>\n<meta charset=\"utf-8\"/>\n<title></title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body>\n\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "Multi",
+   "cuerpo": "<p>a</p>\n<p>b</p>",
+   "idioma": "es",
+   "clase_body": "una dos",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\" xml:lang=\"es\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>Multi</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body class=\"una dos\">\n<p>a</p>\n<p>b</p>\n</body>\n</html>\n"
+  },
+  {
+   "titulo": "T",
+   "cuerpo": "<p>a</p>",
+   "idioma": "es\"&<x",
+   "clase_body": "",
+   "salida": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE html>\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:epub=\"http://www.idpf.org/2007/ops\" lang=\"es\"&<x\" xml:lang=\"es\"&<x\">\n<head>\n<meta charset=\"utf-8\"/>\n<title>T</title>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"../estilos/estilo.css\"/>\n</head>\n<body>\n<p>a</p>\n</body>\n</html>\n"
+  }
+ ],
+ "pagina_imagen": [
+  {
+   "href": "imagenes/cap01-01.png",
+   "alt": "La cabaña de noche",
+   "clase": "ilustracion",
+   "salida": "<div class=\"ilustracion\"><img src=\"../imagenes/cap01-01.png\" alt=\"La cabaña de noche\"/></div>"
+  },
+  {
+   "href": "imagenes/portada.jpg",
+   "alt": "Portada de El faro",
+   "clase": "portada",
+   "salida": "<div class=\"portada\"><img src=\"../imagenes/portada.jpg\" alt=\"Portada de El faro\"/></div>"
+  },
+  {
+   "href": "imagenes/x.png",
+   "alt": "alt con \"comillas\" & <raro>",
+   "clase": "ilustracion",
+   "salida": "<div class=\"ilustracion\"><img src=\"../imagenes/x.png\" alt=\"alt con &quot;comillas&quot; &amp; &lt;raro&gt;\"/></div>"
+  },
+  {
+   "href": "imagenes/x.png",
+   "alt": "",
+   "clase": "ilustracion",
+   "salida": "<div class=\"ilustracion\"><img src=\"../imagenes/x.png\" alt=\"\"/></div>"
+  }
+ ],
+ "fuentes": [
+  {
+   "nombre": "libre_baskerville",
+   "archivos": [
+    "LibreBaskerville-Regular.ttf",
+    "LibreBaskerville-Italic.ttf",
+    "LibreBaskerville-Bold.ttf",
+    "OFL.txt"
+   ],
+   "salida": [
+    {
+     "familia": "Libre Baskerville",
+     "style": "normal",
+     "weight": "bold",
+     "href": "fuentes/librebaskerville-bold.ttf",
+     "id": "fuente-librebaskerville-bold",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Libre Baskerville",
+     "style": "italic",
+     "weight": "normal",
+     "href": "fuentes/librebaskerville-italic.ttf",
+     "id": "fuente-librebaskerville-italic",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Libre Baskerville",
+     "style": "normal",
+     "weight": "normal",
+     "href": "fuentes/librebaskerville-regular.ttf",
+     "id": "fuente-librebaskerville-regular",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": []
+  },
+  {
+   "nombre": "las_cuatro",
+   "archivos": [
+    "Fam-Regular.ttf",
+    "Fam-Italic.ttf",
+    "Fam-Bold.ttf",
+    "Fam-BoldItalic.otf"
+   ],
+   "salida": [
+    {
+     "familia": "Fam",
+     "style": "normal",
+     "weight": "bold",
+     "href": "fuentes/fam-bold.ttf",
+     "id": "fuente-fam-bold",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Fam",
+     "style": "italic",
+     "weight": "bold",
+     "href": "fuentes/fam-bolditalic.otf",
+     "id": "fuente-fam-bolditalic",
+     "media": "font/otf"
+    },
+    {
+     "familia": "Fam",
+     "style": "italic",
+     "weight": "normal",
+     "href": "fuentes/fam-italic.ttf",
+     "id": "fuente-fam-italic",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Fam",
+     "style": "normal",
+     "weight": "normal",
+     "href": "fuentes/fam-regular.ttf",
+     "id": "fuente-fam-regular",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": []
+  },
+  {
+   "nombre": "nombre_mal",
+   "archivos": [
+    "SinEstilo.ttf",
+    "Fam-Negrita.ttf",
+    "Fam-Regular.ttf"
+   ],
+   "salida": [
+    {
+     "familia": "Fam",
+     "style": "normal",
+     "weight": "normal",
+     "href": "fuentes/fam-regular.ttf",
+     "id": "fuente-fam-regular",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": [
+    "fuentes/Fam-Negrita.ttf: el nombre debe terminar en -Regular, -Italic, -Bold o -BoldItalic; la ignoré.",
+    "fuentes/SinEstilo.ttf: el nombre debe terminar en -Regular, -Italic, -Bold o -BoldItalic; la ignoré."
+   ]
+  },
+  {
+   "nombre": "camel_y_guiones",
+   "archivos": [
+    "MiFuenteBonita-Regular.ttf",
+    "Dos-Palabras-Bold.ttf"
+   ],
+   "salida": [
+    {
+     "familia": "Dos-Palabras",
+     "style": "normal",
+     "weight": "bold",
+     "href": "fuentes/dos-palabras-bold.ttf",
+     "id": "fuente-dos-palabras-bold",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Mi Fuente Bonita",
+     "style": "normal",
+     "weight": "normal",
+     "href": "fuentes/mifuentebonita-regular.ttf",
+     "id": "fuente-mifuentebonita-regular",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": []
+  },
+  {
+   "nombre": "subrayado",
+   "archivos": [
+    "Fam-bold_italic.ttf",
+    "Fam-BOLD.ttf"
+   ],
+   "salida": [
+    {
+     "familia": "Fam",
+     "style": "normal",
+     "weight": "bold",
+     "href": "fuentes/fam-bold.ttf",
+     "id": "fuente-fam-bold",
+     "media": "font/ttf"
+    },
+    {
+     "familia": "Fam",
+     "style": "italic",
+     "weight": "bold",
+     "href": "fuentes/fam-bold_italic.ttf",
+     "id": "fuente-fam-bold_italic",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": []
+  },
+  {
+   "nombre": "vacia",
+   "archivos": [],
+   "salida": [],
+   "avisos": []
+  },
+  {
+   "nombre": "acentos",
+   "archivos": [
+    "FuenteÑ-Regular.ttf"
+   ],
+   "salida": [
+    {
+     "familia": "FuenteÑ",
+     "style": "normal",
+     "weight": "normal",
+     "href": "fuentes/fuenten-regular.ttf",
+     "id": "fuente-fuenten-regular",
+     "media": "font/ttf"
+    }
+   ],
+   "avisos": []
+  }
+ ],
+ "css_libro": [
+  {
+   "nombre": "sin_fuentes_sin_preferida",
+   "familias": [],
+   "preferida": "",
+   "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
+  },
+  {
+   "nombre": "solo_preferida",
+   "familias": [],
+   "preferida": "Baskerville",
+   "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: \"Baskerville\", serif; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
+  },
+  {
+   "nombre": "solo_incluidas",
+   "familias": [
+    "Fam",
+    "Fam",
+    "Fam",
+    "Fam"
+   ],
+   "preferida": "",
+   "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bold.ttf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: italic;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bolditalic.otf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: italic;\n  font-weight: normal;\n  src: url(\"../fuentes/fam-italic.ttf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: normal;\n  src: url(\"../fuentes/fam-regular.ttf\");\n}\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: \"Fam\", serif; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
+  },
+  {
+   "nombre": "preferida_e_incluidas",
+   "familias": [
+    "Fam",
+    "Fam",
+    "Fam",
+    "Fam"
+   ],
+   "preferida": "Baskerville",
+   "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bold.ttf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: italic;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bolditalic.otf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: italic;\n  font-weight: normal;\n  src: url(\"../fuentes/fam-italic.ttf\");\n}\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: normal;\n  src: url(\"../fuentes/fam-regular.ttf\");\n}\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: \"Baskerville\", \"Fam\", serif; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
+  },
+  {
+   "nombre": "una_sola",
+   "familias": [
+    "Fam"
+   ],
+   "preferida": "Baskerville",
+   "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bold.ttf\");\n}\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: \"Baskerville\", \"Fam\", serif; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
+  }
+ ],
  "CSS": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n/*FUENTES*/\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: __FAMILIA__; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n",
  "CONFIG_DEFAULT": {
   "titulo": "Sin título",

@@ -317,6 +317,82 @@ def exportar(mod):
         for t, a in semillas
     ]
 
+    # --- plantillas XHTML ---
+    casos["xhtml"] = []
+    for titulo, cuerpo, idioma, clase in [
+        ("Cap\u00edtulo 1", "<p>uno</p>", "es", ""),
+        ("Portada", '<div class="portada"><img src="../x.png" alt="y"/></div>', "es", "pagina-imagen"),
+        ("T\u00edtulo & <raro>", "<p>a</p>", "es", ""),
+        ("Con \"comillas\" y 'apostrofe'", "<p>a</p>", "en", ""),
+        ("", "", "es", ""),
+        ("Multi", "<p>a</p>\n<p>b</p>", "es", "una dos"),
+        # DISCRIMINANTE: el Python NO escapa el idioma en xhtml() aunque si lo
+        # escape en el OPF y el NCX. Sin un idioma que necesite escaparse, esa
+        # asimetria no queda protegida por ningun test.
+        ("T", "<p>a</p>", 'es"&<x', ""),
+    ]:
+        casos["xhtml"].append({
+            "titulo": titulo, "cuerpo": cuerpo, "idioma": idioma, "clase_body": clase,
+            "salida": mod.xhtml(titulo, cuerpo, idioma, clase),
+        })
+
+    casos["pagina_imagen"] = []
+    for href, alt, clase in [
+        ("imagenes/cap01-01.png", "La caba\u00f1a de noche", "ilustracion"),
+        ("imagenes/portada.jpg", "Portada de El faro", "portada"),
+        ("imagenes/x.png", 'alt con "comillas" & <raro>', "ilustracion"),
+        ("imagenes/x.png", "", "ilustracion"),
+    ]:
+        casos["pagina_imagen"].append({
+            "href": href, "alt": alt, "clase": clase,
+            "salida": mod.pagina_imagen({"href": href}, alt, clase),
+        })
+
+    # --- fuentes: buscar_fuentes() sobre nombres sinteticos ---
+    casos["fuentes"] = []
+    with tempfile.TemporaryDirectory() as tf:
+        pruebas = {
+            "libre_baskerville": ["LibreBaskerville-Regular.ttf", "LibreBaskerville-Italic.ttf",
+                                  "LibreBaskerville-Bold.ttf", "OFL.txt"],
+            "las_cuatro": ["Fam-Regular.ttf", "Fam-Italic.ttf", "Fam-Bold.ttf", "Fam-BoldItalic.otf"],
+            "nombre_mal": ["SinEstilo.ttf", "Fam-Negrita.ttf", "Fam-Regular.ttf"],
+            "camel_y_guiones": ["MiFuenteBonita-Regular.ttf", "Dos-Palabras-Bold.ttf"],
+            "subrayado": ["Fam-bold_italic.ttf", "Fam-BOLD.ttf"],
+            "vacia": [],
+            "acentos": ["Fuente\u00d1-Regular.ttf"],
+        }
+        for nombre, archivos in pruebas.items():
+            d = Path(tf) / nombre
+            (d / "fuentes").mkdir(parents=True)
+            for a in archivos:
+                (d / "fuentes" / a).write_bytes(b"\0\1\0\0")
+            del mod.AVISOS[:]
+            fuentes = mod.buscar_fuentes(d)
+            casos["fuentes"].append({
+                "nombre": nombre, "archivos": archivos,
+                "salida": [{k: v for k, v in f.items() if k != "origen"} for f in fuentes],
+                "avisos": list(mod.AVISOS),
+            })
+            del mod.AVISOS[:]
+
+        # --- css_libro() con distintas configuraciones de fuente ---
+        casos["css_libro"] = []
+        d = Path(tf) / "las_cuatro"
+        cuatro = mod.buscar_fuentes(d)
+        for nombre, fuentes, preferida in [
+            ("sin_fuentes_sin_preferida", [], ""),
+            ("solo_preferida", [], "Baskerville"),
+            ("solo_incluidas", cuatro, ""),
+            ("preferida_e_incluidas", cuatro, "Baskerville"),
+            ("una_sola", cuatro[:1], "Baskerville"),
+        ]:
+            casos["css_libro"].append({
+                "nombre": nombre,
+                "familias": [f["familia"] for f in fuentes],
+                "preferida": preferida,
+                "salida": mod.css_libro(fuentes, preferida),
+            })
+
     casos["CSS"] = mod.CSS
     casos["CONFIG_DEFAULT"] = mod.CONFIG_DEFAULT
     casos["VERSION"] = mod.VERSION
