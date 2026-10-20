@@ -1,0 +1,2210 @@
+{
+ "_aviso": "Generado por scripts/exportar-casos-texto.py. No editar a mano.",
+ "_fuente": "generar_epub.py",
+ "_sha256_fuente": "7a3ef56c97380519",
+ "_version_generador": "1.0",
+ "esc": [
+  [
+   "",
+   ""
+  ],
+  [
+   "sin nada",
+   "sin nada"
+  ],
+  [
+   "a&b<c>\"d'e",
+   "a&amp;b&lt;c&gt;&quot;d&#x27;e"
+  ],
+  [
+   "&amp;",
+   "&amp;amp;"
+  ],
+  [
+   "<script>",
+   "&lt;script&gt;"
+  ],
+  [
+   "D'Artagnan",
+   "D&#x27;Artagnan"
+  ],
+  [
+   "l'ete",
+   "l&#x27;ete"
+  ],
+  [
+   "«comillas»",
+   "«comillas»"
+  ],
+  [
+   "a & b",
+   "a &amp; b"
+  ],
+  [
+   ">>>",
+   "&gt;&gt;&gt;"
+  ],
+  [
+   "dijo \"hola\"",
+   "dijo &quot;hola&quot;"
+  ],
+  [
+   "100% & 50<",
+   "100% &amp; 50&lt;"
+  ],
+  [
+   "Ñandu",
+   "Ñandu"
+  ]
+ ],
+ "esc_inline": [
+  [
+   "",
+   ""
+  ],
+  [
+   "sin nada",
+   "sin nada"
+  ],
+  [
+   "a&b<c>\"d'e",
+   "a&amp;b&lt;c&gt;\"d'e"
+  ],
+  [
+   "&amp;",
+   "&amp;amp;"
+  ],
+  [
+   "<script>",
+   "&lt;script&gt;"
+  ],
+  [
+   "D'Artagnan",
+   "D'Artagnan"
+  ],
+  [
+   "l'ete",
+   "l'ete"
+  ],
+  [
+   "«comillas»",
+   "«comillas»"
+  ],
+  [
+   "a & b",
+   "a &amp; b"
+  ],
+  [
+   ">>>",
+   "&gt;&gt;&gt;"
+  ],
+  [
+   "dijo \"hola\"",
+   "dijo \"hola\""
+  ],
+  [
+   "100% & 50<",
+   "100% &amp; 50&lt;"
+  ],
+  [
+   "Ñandu",
+   "Ñandu"
+  ]
+ ],
+ "sin_acentos": [
+  [
+   "",
+   ""
+  ],
+  [
+   "Nandu",
+   "Nandu"
+  ],
+  [
+   "Ñandú Año",
+   "Nandu Ano"
+  ],
+  [
+   "El Bosque: Capítulo 1",
+   "El Bosque: Capitulo 1"
+  ],
+  [
+   "日本語",
+   "日本語"
+  ],
+  [
+   "ø",
+   "ø"
+  ],
+  [
+   "ß",
+   "ß"
+  ],
+  [
+   "café",
+   "cafe"
+  ],
+  [
+   "ÁÉÍÓÚ",
+   "AEIOU"
+  ],
+  [
+   "l’été",
+   "l’ete"
+  ],
+  [
+   "Straße",
+   "Straße"
+  ],
+  [
+   "İstanbul",
+   "Istanbul"
+  ],
+  [
+   "العربية",
+   "العربية"
+  ],
+  [
+   "مَرْحَبًا",
+   "مرحبا"
+  ],
+  [
+   "אָב",
+   "אב"
+  ],
+  [
+   "कुल",
+   "कल"
+  ],
+  [
+   "a⃝",
+   "a⃝"
+  ],
+  [
+   "e᪰",
+   "e"
+  ],
+  [
+   "กั",
+   "ก"
+  ]
+ ],
+ "nombre_seguro": [
+  [
+   "",
+   "archivo"
+  ],
+  [
+   "   ",
+   "archivo"
+  ],
+  [
+   "---",
+   "archivo"
+  ],
+  [
+   "cap01",
+   "cap01"
+  ],
+  [
+   "Capítulo 3",
+   "capitulo-3"
+  ],
+  [
+   "mi ilustración 1",
+   "mi-ilustracion-1"
+  ],
+  [
+   "日本語",
+   "archivo"
+  ],
+  [
+   "a--b",
+   "a-b"
+  ],
+  [
+   "a___b",
+   "a___b"
+  ],
+  [
+   "A.B.C",
+   "a.b.c"
+  ],
+  [
+   "-borde-",
+   "borde"
+  ],
+  [
+   "__",
+   "__"
+  ],
+  [
+   "ya-ok",
+   "ya-ok"
+  ],
+  [
+   "Ñandú Año",
+   "nandu-ano"
+  ],
+  [
+   "foto (1).png",
+   "foto-1-.png"
+  ],
+  [
+   "100%",
+   "100"
+  ],
+  [
+   "a/b\\c",
+   "a-b-c"
+  ],
+  [
+   "—guion",
+   "guion"
+  ],
+  [
+   "a⃝b",
+   "a-b"
+  ],
+  [
+   "e᪰f",
+   "ef"
+  ],
+  [
+   "caṕ0́1",
+   "cap01"
+  ]
+ ],
+ "desescapar": [
+  [
+   "",
+   ""
+  ],
+  [
+   "sin escapes",
+   "sin escapes"
+  ],
+  [
+   "\\*no cursiva\\*",
+   "*no cursiva*"
+  ],
+  [
+   "\\[ilustración: x\\]",
+   "[ilustración: x]"
+  ],
+  [
+   "\\\\",
+   "\\"
+  ],
+  [
+   "\\>",
+   ">"
+  ],
+  [
+   "\\#",
+   "#"
+  ],
+  [
+   "\\_",
+   "_"
+  ],
+  [
+   "a\\|b",
+   "a|b"
+  ],
+  [
+   "\\~",
+   "~"
+  ],
+  [
+   "\\-",
+   "-"
+  ],
+  [
+   "\\.",
+   "."
+  ],
+  [
+   "\\!",
+   "!"
+  ],
+  [
+   "\\(\\)",
+   "()"
+  ],
+  [
+   "\\q",
+   "\\q"
+  ]
+ ],
+ "en_linea": [
+  [
+   "",
+   ""
+  ],
+  [
+   "texto llano",
+   "texto llano"
+  ],
+  [
+   "*cursiva*",
+   "<em>cursiva</em>"
+  ],
+  [
+   "**negrita**",
+   "<strong>negrita</strong>"
+  ],
+  [
+   "***ambas***",
+   "<strong><em>ambas</em></strong>"
+  ],
+  [
+   "_cursiva_",
+   "<em>cursiva</em>"
+  ],
+  [
+   "__negrita__",
+   "<strong>negrita</strong>"
+  ],
+  [
+   "a *b* c *d* e",
+   "a <em>b</em> c <em>d</em> e"
+  ],
+  [
+   "**a** y **b**",
+   "<strong>a</strong> y <strong>b</strong>"
+  ],
+  [
+   "*no cierra",
+   "*no cierra"
+  ],
+  [
+   "** espacio **",
+   "<em>* espacio *</em>"
+  ],
+  [
+   "*a*b*c*",
+   "<em>a</em>b<em>c</em>"
+  ],
+  [
+   "a&b<c>\"d'e",
+   "a&amp;b&lt;c&gt;\"d'e"
+  ],
+  [
+   "\\*no cursiva\\*",
+   "*no cursiva*"
+  ],
+  [
+   "\\[ilustración: x\\]",
+   "[ilustración: x]"
+  ],
+  [
+   "\\\\",
+   "\\"
+  ],
+  [
+   "\\>",
+   "\\&gt;"
+  ],
+  [
+   "camiñó_x_fin",
+   "camiñó_x_fin"
+  ],
+  [
+   "niño_x_fin",
+   "niño_x_fin"
+  ],
+  [
+   "dijo _hola_ y",
+   "dijo <em>hola</em> y"
+  ],
+  [
+   "café_x_",
+   "café_x_"
+  ],
+  [
+   "ñ_x_",
+   "ñ_x_"
+  ],
+  [
+   "á_x_.",
+   "á_x_."
+  ],
+  [
+   "café__x__",
+   "café__x__"
+  ],
+  [
+   "ñ__x__",
+   "ñ__x__"
+  ],
+  [
+   "_x_ñ",
+   "_x_ñ"
+  ],
+  [
+   "_x_café",
+   "_x_café"
+  ],
+  [
+   "__x__ñ",
+   "__x__ñ"
+  ],
+  [
+   "A_x_",
+   "A_x_"
+  ],
+  [
+   "a__x__",
+   "a__x__"
+  ],
+  [
+   "日_x_",
+   "日_x_"
+  ],
+  [
+   "_x_日",
+   "_x_日"
+  ],
+  [
+   "5_x_",
+   "5_x_"
+  ],
+  [
+   "_x_5",
+   "_x_5"
+  ],
+  [
+   "a_b_c",
+   "a_b_c"
+  ],
+  [
+   "café_x_fin",
+   "café_x_fin"
+  ],
+  [
+   "fin_de_linea_",
+   "fin_de_linea_"
+  ],
+  [
+   "_inicio",
+   "_inicio"
+  ],
+  [
+   "snake_case_aqui",
+   "snake_case_aqui"
+  ],
+  [
+   "niño__x__fin",
+   "niño__x__fin"
+  ],
+  [
+   "ABC__x__DEF",
+   "ABC__x__DEF"
+  ],
+  [
+   "*a$1b*",
+   "<em>a$1b</em>"
+  ],
+  [
+   "**$&**",
+   "<strong>$&amp;</strong>"
+  ],
+  [
+   "\\*$`\\*",
+   "*$`*"
+  ],
+  [
+   "<em>ya tag</em>",
+   "&lt;em&gt;ya tag&lt;/em&gt;"
+  ],
+  [
+   "5 * 3 * 2",
+   "5 * 3 * 2"
+  ],
+  [
+   "***a** b*",
+   "<strong><em>a</strong> b</em>"
+  ],
+  [
+   "*a **b** c*",
+   "<em>a <strong>b</strong> c</em>"
+  ]
+ ],
+ "texto_plano": [
+  [
+   "",
+   ""
+  ],
+  [
+   "Capítulo 1: *El faro*",
+   "Capítulo 1: El faro"
+  ],
+  [
+   "**Prólogo**",
+   "Prólogo"
+  ],
+  [
+   "***T***",
+   "T"
+  ],
+  [
+   "_a_ y __b__",
+   "a y b"
+  ],
+  [
+   "sin marcas",
+   "sin marcas"
+  ],
+  [
+   "\\*literal\\*",
+   "literal"
+  ],
+  [
+   "a *b* c",
+   "a b c"
+  ]
+ ],
+ "limpiar_titulo": [
+  [
+   "",
+   ""
+  ],
+  [
+   "Capítulo 1",
+   "Capítulo 1"
+  ],
+  [
+   "# Capítulo 1",
+   "Capítulo 1"
+  ],
+  [
+   "## Capítulo 1",
+   "Capítulo 1"
+  ],
+  [
+   "**Capítulo 1: Inicio**",
+   "Capítulo 1: Inicio"
+  ],
+  [
+   "# **Capítulo 1: Inicio**",
+   "Capítulo 1: Inicio"
+  ],
+  [
+   "***T***",
+   "T"
+  ],
+  [
+   "*a* y *b*",
+   "a* y *b"
+  ],
+  [
+   "_a_",
+   "a"
+  ],
+  [
+   "__a__",
+   "a"
+  ],
+  [
+   "#   espacios  ",
+   "espacios"
+  ],
+  [
+   "*a**b*",
+   "a**b"
+  ]
+ ],
+ "si": [
+  [
+   "si",
+   true
+  ],
+  [
+   "sí",
+   true
+  ],
+  [
+   "SI",
+   true
+  ],
+  [
+   "s",
+   true
+  ],
+  [
+   "yes",
+   true
+  ],
+  [
+   "true",
+   true
+  ],
+  [
+   "1",
+   true
+  ],
+  [
+   "no",
+   false
+  ],
+  [
+   "",
+   false
+  ],
+  [
+   "0",
+   false
+  ],
+  [
+   "false",
+   false
+  ],
+  [
+   "nope",
+   false
+  ]
+ ],
+ "orden_natural": [
+  {
+   "entrada": [
+    "01.md",
+    "cap01.md",
+    "cap1.md",
+    "cap02.md",
+    "cap10.md",
+    "capa.md"
+   ],
+   "salida": [
+    "01.md",
+    "cap01.md",
+    "cap1.md",
+    "cap02.md",
+    "cap10.md",
+    "capa.md"
+   ],
+   "claves": [
+    [
+     "",
+     "1",
+     ".md"
+    ],
+    [
+     "cap",
+     "1",
+     ".md"
+    ],
+    [
+     "cap",
+     "1",
+     ".md"
+    ],
+    [
+     "cap",
+     "2",
+     ".md"
+    ],
+    [
+     "cap",
+     "10",
+     ".md"
+    ],
+    [
+     "capa.md"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "cap10.md",
+    "cap9.md",
+    "cap1.md",
+    "cap100.md"
+   ],
+   "salida": [
+    "cap1.md",
+    "cap9.md",
+    "cap10.md",
+    "cap100.md"
+   ],
+   "claves": [
+    [
+     "cap",
+     "10",
+     ".md"
+    ],
+    [
+     "cap",
+     "9",
+     ".md"
+    ],
+    [
+     "cap",
+     "1",
+     ".md"
+    ],
+    [
+     "cap",
+     "100",
+     ".md"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "color-2.png",
+    "color-10.png",
+    "color-1.png"
+   ],
+   "salida": [
+    "color-1.png",
+    "color-2.png",
+    "color-10.png"
+   ],
+   "claves": [
+    [
+     "color-",
+     "2",
+     ".png"
+    ],
+    [
+     "color-",
+     "10",
+     ".png"
+    ],
+    [
+     "color-",
+     "1",
+     ".png"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "cap01-01.png",
+    "cap01-1.png",
+    "cap1-01.png"
+   ],
+   "salida": [
+    "cap01-01.png",
+    "cap01-1.png",
+    "cap1-01.png"
+   ],
+   "claves": [
+    [
+     "cap",
+     "1",
+     "-",
+     "1",
+     ".png"
+    ],
+    [
+     "cap",
+     "1",
+     "-",
+     "1",
+     ".png"
+    ],
+    [
+     "cap",
+     "1",
+     "-",
+     "1",
+     ".png"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "B.md",
+    "a.md",
+    "C.md",
+    "b.md"
+   ],
+   "salida": [
+    "a.md",
+    "B.md",
+    "b.md",
+    "C.md"
+   ],
+   "claves": [
+    [
+     "b.md"
+    ],
+    [
+     "a.md"
+    ],
+    [
+     "c.md"
+    ],
+    [
+     "b.md"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "cap٣.md",
+    "cap3.md",
+    "cap1.md"
+   ],
+   "salida": [
+    "cap1.md",
+    "cap٣.md",
+    "cap3.md"
+   ],
+   "claves": [
+    [
+     "cap",
+     "3",
+     ".md"
+    ],
+    [
+     "cap",
+     "3",
+     ".md"
+    ],
+    [
+     "cap",
+     "1",
+     ".md"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "cap01.jpg",
+    "cap01.png",
+    "cap01.jpeg"
+   ],
+   "salida": [
+    "cap01.jpeg",
+    "cap01.jpg",
+    "cap01.png"
+   ],
+   "claves": [
+    [
+     "cap",
+     "1",
+     ".jpg"
+    ],
+    [
+     "cap",
+     "1",
+     ".png"
+    ],
+    [
+     "cap",
+     "1",
+     ".jpeg"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "😀x.md",
+    "x.md"
+   ],
+   "salida": [
+    "x.md",
+    "😀x.md"
+   ],
+   "claves": [
+    [
+     "😀x.md"
+    ],
+    [
+     "x.md"
+    ]
+   ]
+  },
+  {
+   "entrada": [
+    "😀.md",
+    "ﾠ.md",
+    "z.md"
+   ],
+   "salida": [
+    "z.md",
+    "ﾠ.md",
+    "😀.md"
+   ],
+   "claves": [
+    [
+     "😀.md"
+    ],
+    [
+     "ﾠ.md"
+    ],
+    [
+     "z.md"
+    ]
+   ]
+  }
+ ],
+ "RE_TITULO": [
+  {
+   "entrada": "Capítulo 3: El bosque",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capítulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Capitulo 3: El bosque",
+   "casa": true,
+   "grupo1": "Capitulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capitulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Capítulo 3. El bosque",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capítulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Capítulo 3 - El bosque",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capítulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Capítulo 3 – El bosque",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capítulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Capítulo 3 — El bosque",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": "El bosque",
+   "num_final": "Capítulo 3",
+   "titulo_final": "El bosque"
+  },
+  {
+   "entrada": "Cap. 3: El bosque",
+   "casa": true,
+   "grupo1": "Cap. 3",
+   "grupo2": "El bosque",
+   "num_final": "Cap. 3",
+   "titulo_final": "3: El bosque"
+  },
+  {
+   "entrada": "Capítulo 3",
+   "casa": true,
+   "grupo1": "Capítulo 3",
+   "grupo2": null
+  },
+  {
+   "entrada": "Prólogo",
+   "casa": true,
+   "grupo1": "Prólogo",
+   "grupo2": null
+  },
+  {
+   "entrada": "Prologo",
+   "casa": true,
+   "grupo1": "Prologo",
+   "grupo2": null
+  },
+  {
+   "entrada": "Epílogo",
+   "casa": true,
+   "grupo1": "Epílogo",
+   "grupo2": null
+  },
+  {
+   "entrada": "Interludio",
+   "casa": true,
+   "grupo1": "Interludio",
+   "grupo2": null
+  },
+  {
+   "entrada": "PRÓLOGO: antes",
+   "casa": true,
+   "grupo1": "PRÓLOGO",
+   "grupo2": "antes",
+   "num_final": "PRÓLOGO",
+   "titulo_final": "antes"
+  },
+  {
+   "entrada": "Capítulo XIV: Nombres",
+   "casa": true,
+   "grupo1": "Capítulo XIV",
+   "grupo2": "Nombres",
+   "num_final": "Capítulo XIV",
+   "titulo_final": "Nombres"
+  },
+  {
+   "entrada": "Capítulo tres: Letras",
+   "casa": true,
+   "grupo1": "Capítulo tres",
+   "grupo2": "Letras",
+   "num_final": "Capítulo tres",
+   "titulo_final": "Letras"
+  },
+  {
+   "entrada": "El faro",
+   "casa": false
+  },
+  {
+   "entrada": "Capítulo: sin numero",
+   "casa": false
+  },
+  {
+   "entrada": "Interludio - uno",
+   "casa": true,
+   "grupo1": "Interludio",
+   "grupo2": "uno",
+   "num_final": "Interludio",
+   "titulo_final": "uno"
+  }
+ ],
+ "RE_ESCENA": [
+  [
+   "* * *",
+   true
+  ],
+  [
+   "***",
+   true
+  ],
+  [
+   "---",
+   true
+  ],
+  [
+   "___",
+   true
+  ],
+  [
+   "⁂",
+   true
+  ],
+  [
+   "- - -",
+   true
+  ],
+  [
+   "*  *  *",
+   true
+  ],
+  [
+   "**",
+   false
+  ],
+  [
+   "--",
+   false
+  ],
+  [
+   "* * * *",
+   true
+  ],
+  [
+   "texto",
+   false
+  ],
+  [
+   "⁂⁂",
+   true
+  ],
+  [
+   "~",
+   true
+  ],
+  [
+   "◆",
+   true
+  ]
+ ],
+ "RE_ILUS": [
+  {
+   "entrada": "[ilustración: cap03-01 | La protagonista frente a la cabaña]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": "La protagonista frente a la cabaña"
+  },
+  {
+   "entrada": "[ilustracion: cap03-01 | sin acento]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": "sin acento"
+  },
+  {
+   "entrada": "[ilustración: cap03-01]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": ""
+  },
+  {
+   "entrada": "[ilustración: cap03-01 |]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": ""
+  },
+  {
+   "entrada": "[ ilustración : cap03-01 | con espacios ]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": "con espacios"
+  },
+  {
+   "entrada": "[ILUSTRACIÓN: CAP03-01 | mayusculas]",
+   "casa": true,
+   "nombre": "CAP03-01",
+   "alt": "mayusculas"
+  },
+  {
+   "entrada": "[ilustración: cap03-01.png | con extension]",
+   "casa": true,
+   "nombre": "cap03-01.png",
+   "alt": "con extension"
+  },
+  {
+   "entrada": "[ilustración: cap03-01 | con | barra]",
+   "casa": true,
+   "nombre": "cap03-01",
+   "alt": "con | barra"
+  },
+  {
+   "entrada": "texto [ilustración: x | y] en medio",
+   "casa": false,
+   "nombre": null,
+   "alt": null
+  },
+  {
+   "entrada": "[ilustración:]",
+   "casa": false,
+   "nombre": null,
+   "alt": null
+  }
+ ],
+ "capitulos": [
+  {
+   "nombre": "basico",
+   "entrada": "Capítulo 1: El faro\nPrimer parrafo.\nSegundo parrafo.\n",
+   "lineas_de": [
+    "Capítulo 1: El faro",
+    "Primer parrafo.",
+    "Segundo parrafo.",
+    ""
+   ],
+   "titulo": "Capítulo 1: El faro",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Primer parrafo."
+    ],
+    [
+     "p",
+     "Segundo parrafo."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Primer parrafo.</p>",
+      "<p>Segundo parrafo.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "con_escena",
+   "entrada": "Capítulo 2: Noche\nAntes del corte.\n* * *\nDespues del corte.\nOtro parrafo.\n",
+   "lineas_de": [
+    "Capítulo 2: Noche",
+    "Antes del corte.",
+    "* * *",
+    "Despues del corte.",
+    "Otro parrafo.",
+    ""
+   ],
+   "titulo": "Capítulo 2: Noche",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Antes del corte."
+    ],
+    [
+     "escena"
+    ],
+    [
+     "p",
+     "Despues del corte."
+    ],
+    [
+     "p",
+     "Otro parrafo."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Antes del corte.</p>",
+      "<p class=\"escena\">* * *</p>",
+      "<p class=\"primero\">Despues del corte.</p>",
+      "<p>Otro parrafo.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "con_ilustracion",
+   "entrada": "Capítulo 3: Bosque\nTexto antes.\n[ilustración: cap03-01 | la cabaña]\nTexto despues.\n",
+   "lineas_de": [
+    "Capítulo 3: Bosque",
+    "Texto antes.",
+    "[ilustración: cap03-01 | la cabaña]",
+    "Texto despues.",
+    ""
+   ],
+   "titulo": "Capítulo 3: Bosque",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Texto antes."
+    ],
+    [
+     "ilus",
+     "cap03-01",
+     "la cabaña"
+    ],
+    [
+     "p",
+     "Texto despues."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto antes.</p>"
+     ]
+    ],
+    [
+     "ilus",
+     "cap03-01",
+     "la cabaña"
+    ],
+    [
+     "texto",
+     [
+      "<p>Texto despues.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "ilus_antes_del_titulo",
+   "entrada": "[ilustración: cap04-00 | lamina de apertura]\nCapítulo 4: Apertura\nTexto.\n",
+   "lineas_de": [
+    "[ilustración: cap04-00 | lamina de apertura]",
+    "Capítulo 4: Apertura",
+    "Texto.",
+    ""
+   ],
+   "titulo": "Capítulo 4: Apertura",
+   "antes": [
+    [
+     "ilus",
+     "cap04-00",
+     "lamina de apertura"
+    ]
+   ],
+   "bloques": [
+    [
+     "p",
+     "Texto."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "con_versos",
+   "entrada": "Capítulo 5: Canto\nHabla.\n> primer verso\n> segundo verso\n>\n> otra estrofa\nVuelve la prosa.\n",
+   "lineas_de": [
+    "Capítulo 5: Canto",
+    "Habla.",
+    "> primer verso",
+    "> segundo verso",
+    ">",
+    "> otra estrofa",
+    "Vuelve la prosa.",
+    ""
+   ],
+   "titulo": "Capítulo 5: Canto",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Habla."
+    ],
+    [
+     "verso",
+     "primer verso"
+    ],
+    [
+     "verso",
+     "segundo verso"
+    ],
+    [
+     "estrofa"
+    ],
+    [
+     "verso",
+     "otra estrofa"
+    ],
+    [
+     "p",
+     "Vuelve la prosa."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Habla.</p>",
+      "<div class=\"versos\">\n<p>primer verso</p>\n<p>segundo verso</p>\n<p class=\"estrofa\">otra estrofa</p>\n</div>",
+      "<p class=\"primero\">Vuelve la prosa.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "con_subtitulo",
+   "entrada": "Capítulo 6: Partes\n# Una parte\nTexto de la parte.\n",
+   "lineas_de": [
+    "Capítulo 6: Partes",
+    "# Una parte",
+    "Texto de la parte.",
+    ""
+   ],
+   "titulo": "Capítulo 6: Partes",
+   "antes": [],
+   "bloques": [
+    [
+     "sub",
+     "Una parte"
+    ],
+    [
+     "p",
+     "Texto de la parte."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<h2 class=\"subtitulo\">Una parte</h2>",
+      "<p class=\"primero\">Texto de la parte.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "mezcla",
+   "entrada": "Capítulo 7: Todo\nUno.\n* * *\nDos.\n[ilustración: cap07-01 | algo]\nTres.\n# Sub\nCuatro.\n> verso\nCinco.\n[ilustración: cap07-02 | otra]\nSeis.\n",
+   "lineas_de": [
+    "Capítulo 7: Todo",
+    "Uno.",
+    "* * *",
+    "Dos.",
+    "[ilustración: cap07-01 | algo]",
+    "Tres.",
+    "# Sub",
+    "Cuatro.",
+    "> verso",
+    "Cinco.",
+    "[ilustración: cap07-02 | otra]",
+    "Seis.",
+    ""
+   ],
+   "titulo": "Capítulo 7: Todo",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Uno."
+    ],
+    [
+     "escena"
+    ],
+    [
+     "p",
+     "Dos."
+    ],
+    [
+     "ilus",
+     "cap07-01",
+     "algo"
+    ],
+    [
+     "p",
+     "Tres."
+    ],
+    [
+     "sub",
+     "Sub"
+    ],
+    [
+     "p",
+     "Cuatro."
+    ],
+    [
+     "verso",
+     "verso"
+    ],
+    [
+     "p",
+     "Cinco."
+    ],
+    [
+     "ilus",
+     "cap07-02",
+     "otra"
+    ],
+    [
+     "p",
+     "Seis."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Uno.</p>",
+      "<p class=\"escena\">* * *</p>",
+      "<p class=\"primero\">Dos.</p>"
+     ]
+    ],
+    [
+     "ilus",
+     "cap07-01",
+     "algo"
+    ],
+    [
+     "texto",
+     [
+      "<p>Tres.</p>",
+      "<h2 class=\"subtitulo\">Sub</h2>",
+      "<p class=\"primero\">Cuatro.</p>",
+      "<div class=\"versos\">\n<p>verso</p>\n</div>",
+      "<p class=\"primero\">Cinco.</p>"
+     ]
+    ],
+    [
+     "ilus",
+     "cap07-02",
+     "otra"
+    ],
+    [
+     "texto",
+     [
+      "<p>Seis.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "lineas_vacias",
+   "entrada": "Capítulo 8: Huecos\n\n\nUno.\n\n\n\nDos.\n\n",
+   "lineas_de": [
+    "Capítulo 8: Huecos",
+    "",
+    "",
+    "Uno.",
+    "",
+    "",
+    "",
+    "Dos.",
+    "",
+    ""
+   ],
+   "titulo": "Capítulo 8: Huecos",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Uno."
+    ],
+    [
+     "p",
+     "Dos."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Uno.</p>",
+      "<p>Dos.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "crlf_y_formfeed",
+   "entrada": "Capítulo 9: Saltos\r\nUno.\r\n\fDos.\r\n",
+   "lineas_de": [
+    "Capítulo 9: Saltos",
+    "Uno.",
+    "",
+    "Dos.",
+    ""
+   ],
+   "titulo": "Capítulo 9: Saltos",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Uno."
+    ],
+    [
+     "p",
+     "Dos."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Uno.</p>",
+      "<p>Dos.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "ancho_cero",
+   "entrada": "Capítulo 10: Invisible\nUno​dos.\n",
+   "lineas_de": [
+    "Capítulo 10: Invisible",
+    "Unodos.",
+    ""
+   ],
+   "titulo": "Capítulo 10: Invisible",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Unodos."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Unodos.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "espacios_markdown",
+   "entrada": "Capítulo 11: Dos espacios\nUno.  \nDos.  \n",
+   "lineas_de": [
+    "Capítulo 11: Dos espacios",
+    "Uno.",
+    "Dos.",
+    ""
+   ],
+   "titulo": "Capítulo 11: Dos espacios",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Uno."
+    ],
+    [
+     "p",
+     "Dos."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Uno.</p>",
+      "<p>Dos.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "solo_titulo",
+   "entrada": "Capítulo 12: Vacio\n",
+   "lineas_de": [
+    "Capítulo 12: Vacio",
+    ""
+   ],
+   "titulo": "Capítulo 12: Vacio",
+   "antes": [],
+   "bloques": [],
+   "tramos": []
+  },
+  {
+   "nombre": "sin_titulo_reconocible",
+   "entrada": "El faro\nTexto.\n",
+   "lineas_de": [
+    "El faro",
+    "Texto.",
+    ""
+   ],
+   "titulo": "El faro",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Texto."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "titulo_con_markdown",
+   "entrada": "**Capítulo 13: *Negrita***\nTexto.\n",
+   "lineas_de": [
+    "**Capítulo 13: *Negrita***",
+    "Texto.",
+    ""
+   ],
+   "titulo": "Capítulo 13: *Negrita*",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Texto."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto.</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "escapes",
+   "entrada": "Capítulo 14: Escapes\nTexto con \\*asteriscos\\* y \\[corchetes\\].\n\\> no es verso.\n",
+   "lineas_de": [
+    "Capítulo 14: Escapes",
+    "Texto con \\*asteriscos\\* y \\[corchetes\\].",
+    "\\> no es verso.",
+    ""
+   ],
+   "titulo": "Capítulo 14: Escapes",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Texto con *asteriscos* y [corchetes]."
+    ],
+    [
+     "verso",
+     "\\&gt; no es verso."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto con *asteriscos* y [corchetes].</p>",
+      "<div class=\"versos\">\n<p>\\&gt; no es verso.</p>\n</div>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "versos_pegados",
+   "entrada": "Capítulo 15: Versos\n> a\n> b\n> c\n",
+   "lineas_de": [
+    "Capítulo 15: Versos",
+    "> a",
+    "> b",
+    "> c",
+    ""
+   ],
+   "titulo": "Capítulo 15: Versos",
+   "antes": [],
+   "bloques": [
+    [
+     "verso",
+     "a"
+    ],
+    [
+     "verso",
+     "b"
+    ],
+    [
+     "verso",
+     "c"
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<div class=\"versos\">\n<p>a</p>\n<p>b</p>\n<p>c</p>\n</div>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "escapar_verso",
+   "entrada": "T\n\\> cita\n",
+   "lineas_de": [
+    "T",
+    "\\> cita",
+    ""
+   ],
+   "titulo": "T",
+   "antes": [],
+   "bloques": [
+    [
+     "verso",
+     "\\&gt; cita"
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<div class=\"versos\">\n<p>\\&gt; cita</p>\n</div>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "escapar_ilus",
+   "entrada": "T\n\\[ilustración: x | y\\]\n",
+   "lineas_de": [
+    "T",
+    "\\[ilustración: x | y\\]",
+    ""
+   ],
+   "titulo": "T",
+   "antes": [],
+   "bloques": [
+    [
+     "ilus",
+     "x",
+     "y"
+    ]
+   ],
+   "tramos": [
+    [
+     "ilus",
+     "x",
+     "y"
+    ]
+   ]
+  },
+  {
+   "nombre": "escapar_sub",
+   "entrada": "T\n\\# no subtitulo\n",
+   "lineas_de": [
+    "T",
+    "\\# no subtitulo",
+    ""
+   ],
+   "titulo": "T",
+   "antes": [],
+   "bloques": [
+    [
+     "sub",
+     "# no subtitulo"
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<h2 class=\"subtitulo\"># no subtitulo</h2>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "escapar_escena",
+   "entrada": "T\n\\* \\* \\*\n",
+   "lineas_de": [
+    "T",
+    "\\* \\* \\*",
+    ""
+   ],
+   "titulo": "T",
+   "antes": [],
+   "bloques": [
+    [
+     "escena"
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"escena\">* * *</p>"
+     ]
+    ]
+   ]
+  },
+  {
+   "nombre": "ilus_consecutivas",
+   "entrada": "Capítulo 16: Galeria\nTexto.\n[ilustración: a | 1]\n[ilustración: b | 2]\nFin.\n",
+   "lineas_de": [
+    "Capítulo 16: Galeria",
+    "Texto.",
+    "[ilustración: a | 1]",
+    "[ilustración: b | 2]",
+    "Fin.",
+    ""
+   ],
+   "titulo": "Capítulo 16: Galeria",
+   "antes": [],
+   "bloques": [
+    [
+     "p",
+     "Texto."
+    ],
+    [
+     "ilus",
+     "a",
+     "1"
+    ],
+    [
+     "ilus",
+     "b",
+     "2"
+    ],
+    [
+     "p",
+     "Fin."
+    ]
+   ],
+   "tramos": [
+    [
+     "texto",
+     [
+      "<p class=\"primero\">Texto.</p>"
+     ]
+    ],
+    [
+     "ilus",
+     "a",
+     "1"
+    ],
+    [
+     "ilus",
+     "b",
+     "2"
+    ],
+    [
+     "texto",
+     [
+      "<p>Fin.</p>"
+     ]
+    ]
+   ]
+  }
+ ],
+ "configs": [
+  {
+   "nombre": "completo",
+   "entrada": "titulo: El faro\nsubtitulo: una novela\nautor: Ana Ruiz\nsello: Ediciones Prueba\nidioma: es\ndescripcion: Sinopsis.\nisbn: 978-84-00-00000-0\nfecha_publicacion: 2026-12-01\nderechos: © {año} {autor}. Todos los derechos reservados.\nincluir_contraportada: si\nseparador_de_escena: * * *\nfuente: Baskerville\n",
+   "salida": {
+    "titulo": "El faro",
+    "subtitulo": "una novela",
+    "autor": "Ana Ruiz",
+    "sello": "Ediciones Prueba",
+    "idioma": "es",
+    "descripcion": "Sinopsis.",
+    "isbn": "978-84-00-00000-0",
+    "fecha_publicacion": "2026-12-01",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "minimo",
+   "entrada": "titulo: Solo titulo\n",
+   "salida": {
+    "titulo": "Solo titulo",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "vacio",
+   "entrada": "",
+   "salida": {
+    "titulo": "Sin título",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "con_comentarios",
+   "entrada": "# comentario\ntitulo: Con comentarios\n# otro\nautor: Nadie\n",
+   "salida": {
+    "titulo": "Con comentarios",
+    "subtitulo": "",
+    "autor": "Nadie",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "sin_dos_puntos",
+   "entrada": "titulo: Bien\nesta linea no tiene separador\nautor: Ana\n",
+   "salida": {
+    "titulo": "Bien",
+    "subtitulo": "",
+    "autor": "Ana",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": [
+    "libro.txt, línea 2: no tiene «clave: valor», la ignoré → esta linea no tiene separador"
+   ]
+  },
+  {
+   "nombre": "clave_con_acentos",
+   "entrada": "título: Acentuado\nfecha publicacion: 2026\n",
+   "salida": {
+    "titulo": "Acentuado",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "2026",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "valor_con_dos_puntos",
+   "entrada": "titulo: Dos: puntos\ndescripcion: a: b: c\n",
+   "salida": {
+    "titulo": "Dos: puntos",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "a: b: c",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "espacios",
+   "entrada": "  titulo  :   Espaciado   \n",
+   "salida": {
+    "titulo": "Espaciado",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "duplicada",
+   "entrada": "titulo: primero\ntitulo: segundo\n",
+   "salida": {
+    "titulo": "segundo",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "bom",
+   "entrada": "﻿titulo: Con BOM\n",
+   "salida": {
+    "titulo": "Con BOM",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": []
+  },
+  {
+   "nombre": "sin_archivo",
+   "entrada": null,
+   "salida": {
+    "titulo": "Sin título",
+    "subtitulo": "",
+    "autor": "",
+    "sello": "",
+    "idioma": "es",
+    "descripcion": "",
+    "isbn": "",
+    "fecha_publicacion": "",
+    "derechos": "© {año} {autor}. Todos los derechos reservados.",
+    "incluir_contraportada": "si",
+    "separador_de_escena": "* * *",
+    "fuente": "Baskerville"
+   },
+   "avisos": [
+    "No encontré libro.txt; usé datos genéricos (título «Sin título», sin autor)."
+   ]
+  }
+ ],
+ "uuid5": [
+  {
+   "titulo": "El faro",
+   "autor": "Ana Ruiz",
+   "nombre": "generador-epub:El faro|Ana Ruiz",
+   "uuid": "1443c43c-2cc1-5484-a84b-211084f43321",
+   "urn": "urn:uuid:1443c43c-2cc1-5484-a84b-211084f43321"
+  },
+  {
+   "titulo": "",
+   "autor": "",
+   "nombre": "generador-epub:|",
+   "uuid": "dba1feed-3964-52dc-b21d-9dd28eb65201",
+   "urn": "urn:uuid:dba1feed-3964-52dc-b21d-9dd28eb65201"
+  },
+  {
+   "titulo": "Mi libro",
+   "autor": "",
+   "nombre": "generador-epub:Mi libro|",
+   "uuid": "06e64cee-0e30-543e-98b3-5fe3edd11794",
+   "urn": "urn:uuid:06e64cee-0e30-543e-98b3-5fe3edd11794"
+  },
+  {
+   "titulo": "Ñandú",
+   "autor": "José Pérez",
+   "nombre": "generador-epub:Ñandú|José Pérez",
+   "uuid": "78b64250-8770-5143-a7fd-965805659ee1",
+   "urn": "urn:uuid:78b64250-8770-5143-a7fd-965805659ee1"
+  },
+  {
+   "titulo": "A|B",
+   "autor": "C|D",
+   "nombre": "generador-epub:A|B|C|D",
+   "uuid": "3e995930-c899-5250-a2b6-cd9dca74f608",
+   "urn": "urn:uuid:3e995930-c899-5250-a2b6-cd9dca74f608"
+  }
+ ],
+ "CSS": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n/*FUENTES*/\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: __FAMILIA__; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n",
+ "CONFIG_DEFAULT": {
+  "titulo": "Sin título",
+  "subtitulo": "",
+  "autor": "",
+  "sello": "",
+  "idioma": "es",
+  "descripcion": "",
+  "isbn": "",
+  "fecha_publicacion": "",
+  "derechos": "© {año} {autor}. Todos los derechos reservados.",
+  "incluir_contraportada": "si",
+  "separador_de_escena": "* * *",
+  "fuente": "Baskerville"
+ }
+}

@@ -43,6 +43,32 @@ const PROHIBIDO: { patron: RegExp; porque: string }[] = [
   { patron: /Date\.now\(\)|new Date\(\s*\)/, porque: 'el reloj se inyecta, o los golden tests no son reproducibles' },
 ]
 
+// U+2028 y U+2029 son terminadores de linea REALES en JavaScript. Si uno se
+// cuela en el fuente (es facil al generar codigo, porque son invisibles),
+// parte una expresion regular o una cadena por la mitad y el error que da el
+// compilador no apunta a la causa. Paso por esto escribiendo config.ts.
+describe('el fuente no contiene separadores de linea invisibles', () => {
+  const TODOS = [
+    ...archivosTs(join(import.meta.dirname, '..', 'src')),
+    ...archivosTs(join(import.meta.dirname)),
+  ]
+  const INVISIBLES: [number, string][] = [
+    [0x2028, 'LINE SEPARATOR'],
+    [0x2029, 'PARAGRAPH SEPARATOR'],
+    [0x0085, 'NEL'],
+    [0x000b, 'tabulacion vertical'],
+  ]
+
+  for (const [punto, nombre] of INVISIBLES) {
+    it(`ningun archivo contiene U+${punto.toString(16).toUpperCase().padStart(4, '0')} (${nombre})`, () => {
+      const culpables = TODOS.filter((f) =>
+        readFileSync(f, 'utf8').includes(String.fromCodePoint(punto)),
+      )
+      expect(culpables).toEqual([])
+    })
+  }
+})
+
 describe('frontera entre core y app', () => {
   const archivos = archivosTs(RAIZ)
 

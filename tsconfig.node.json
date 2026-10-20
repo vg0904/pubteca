@@ -3,8 +3,12 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023"],
-    "types": ["node", "vitest/globals"],
+    "types": ["node"],
     "skipLibCheck": true,
+
+    /* Correccion: esto es un port, los tipos sostienen la paridad */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
 
     /* Bundler mode */
     "module": "nodenext",
@@ -19,5 +23,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "tests", "scripts"]
+  "include": ["vite.config.ts"]
 }
