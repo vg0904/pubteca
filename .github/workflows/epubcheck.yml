@@ -1,0 +1,106 @@
+name: EPUBCheck
+
+# EPUBCheck necesita Java, que no esta instalado en la maquina de desarrollo.
+# Por eso la validacion vive aqui: el informe de este workflow es la unica
+# forma de ver que dice EPUBCheck de verdad.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 5.3.0 es la version con la que el brief verifico 0 errores y
+        # 0 advertencias. 5.4.0 es la de produccion y valida contra EPUB 3.4.
+        # Nunca "latest": una release nueva puede anadir mensajes y poner el CI
+        # en rojo sin que haya cambiado una linea del codigo.
+        epubcheck: ['5.3.0', '5.4.0']
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: Generar los libros de prueba
+        # El core es TypeScript puro y sincrono, asi que corre en Node sin
+        # navegador. Esa frontera es lo que hace posible este paso.
+        run: npm run golden
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Cachear EPUBCheck
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: epubcheck-${{ matrix.epubcheck }}
+          key: epubcheck-${{ matrix.epubcheck }}
+
+      - name: Descargar EPUBCheck ${{ matrix.epubcheck }}
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          V="${{ matrix.epubcheck }}"
+          curl -sSL -o epubcheck.zip \
+            "https://github.com/w3c/epubcheck/releases/download/v${V}/epubcheck-${V}.zip"
+          # Se imprime el sha256 para poder fijarlo en el repositorio: estamos
+          # metiendo un binario de 33 MB en el pipeline.
+          echo "sha256 del zip descargado: $(sha256sum epubcheck.zip | cut -d' ' -f1)"
+          unzip -q epubcheck.zip
+          rm epubcheck.zip
+
+      - name: Validar
+        run: |
+          V="${{ matrix.epubcheck }}"
+          JAR="epubcheck-${V}/epubcheck.jar"
+          java -jar "$JAR" --version || true
+          mkdir -p informes
+          fallos=0
+          for f in tmp/epubs/*.epub; do
+            nombre="$(basename "$f" .epub)"
+            echo "::group::$nombre"
+            # --failonwarnings convierte el objetivo «0 advertencias» en una
+            # garantia mecanica en vez de una aspiracion.
+            #
+            # NO se pasa -u / --usage: los mensajes de severidad USAGE incluyen
+            # OBS_001 («OPF 2 NCX navigation is outdated»), y el toc.ncx y el
+            # <guide> se generan A PROPOSITO por compatibilidad con lectores
+            # viejos. Con -u el CI se pondria rojo por una decision deliberada.
+            if java -jar "$JAR" "$f" --failonwarnings --json "informes/${nombre}.json"; then
+              echo "OK $nombre"
+            else
+              echo "FALLA $nombre"
+              fallos=$((fallos + 1))
+            fi
+            echo "::endgroup::"
+          done
+          # Se acumulan los fallos en vez de abortar en el primero, para ver de
+          # golpe todos los casos rotos y no solo uno.
+          if [ "$fallos" -ne 0 ]; then
+            echo "::error::$fallos EPUB no pasan EPUBCheck ${V}"
+            exit 1
+          fi
+          echo "Todos los EPUB pasan EPUBCheck ${V} sin errores ni advertencias"
+
+      - name: Subir los informes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-epubcheck-${{ matrix.epubcheck }}
+          path: informes/
+          if-no-files-found: warn
