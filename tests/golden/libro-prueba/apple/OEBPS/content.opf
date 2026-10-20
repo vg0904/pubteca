@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid" xml:lang="es">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">urn:uuid:513c394a-9b14-5221-9710-c373e5ce4dce</dc:identifier>
+    <dc:title id="titulo">El faro de Ibar</dc:title>
+    <meta refines="#titulo" property="title-type">main</meta>
+    <dc:title id="subtitulo">una novela de prueba</dc:title>
+    <meta refines="#subtitulo" property="title-type">subtitle</meta>
+    <dc:creator id="autor">Ana Ruiz Mendoza</dc:creator>
+    <meta refines="#autor" property="role" scheme="marc:relators">aut</meta>
+    <meta refines="#autor" property="file-as">Mendoza, Ana Ruiz</meta>
+    <dc:language>es</dc:language>
+    <dc:publisher>Ediciones Pubteca</dc:publisher>
+    <dc:description>Marta llega a un faro que no deberia estar encendido. Novela corta de prueba, escrita para validar el generador.</dc:description>
+    <dc:date>2026-03-15</dc:date>
+    <meta property="dcterms:modified">2026-10-20T19:09:41Z</meta>
+    <meta name="cover" content="img-portada"/>
+    <meta property="schema:accessMode">textual</meta>
+    <meta property="schema:accessMode">visual</meta>
+    <meta property="schema:accessModeSufficient">textual,visual</meta>
+    <meta property="schema:accessModeSufficient">textual</meta>
+    <meta property="schema:accessibilityFeature">alternativeText</meta>
+    <meta property="schema:accessibilityFeature">tableOfContents</meta>
+    <meta property="schema:accessibilityFeature">readingOrder</meta>
+    <meta property="schema:accessibilityFeature">structuralNavigation</meta>
+    <meta property="schema:accessibilityHazard">none</meta>
+    <meta property="schema:accessibilitySummary">Novela con navegación por capítulos. Las ilustraciones incluyen descripción alternativa.</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="texto/nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="css" href="estilos/estilo.css" media-type="text/css"/>
+    <item id="p-portada" href="texto/portada.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-lamina-01" href="texto/lamina-01.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-lamina-02" href="texto/lamina-02.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-portadilla" href="texto/portadilla.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-derechos" href="texto/derechos.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-extra-dedicatoria" href="texto/extra-dedicatoria.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-extra-inicio-nota" href="texto/extra-inicio-nota.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap01" href="texto/cap01.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap01-ilus01" href="texto/cap01-ilus01.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap01-2" href="texto/cap01-2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap02-ilus01" href="texto/cap02-ilus01.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap02" href="texto/cap02.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap02-ilus02" href="texto/cap02-ilus02.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap02-2" href="texto/cap02-2.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap04" href="texto/cap04.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-cap05-epilogo" href="texto/cap05-epilogo.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-extra-agradecimientos" href="texto/extra-agradecimientos.xhtml" media-type="application/xhtml+xml"/>
+    <item id="p-contraportada" href="texto/contraportada.xhtml" media-type="application/xhtml+xml"/>
+    <item id="img-portada" href="imagenes/portada.png" media-type="image/png" properties="cover-image"/>
+    <item id="img-color-01" href="imagenes/color-01.png" media-type="image/png"/>
+    <item id="img-color-02" href="imagenes/color-02.png" media-type="image/png"/>
+    <item id="img-logo" href="imagenes/logo.png" media-type="image/png"/>
+    <item id="img-logo-blanco" href="imagenes/logo-blanco.png" media-type="image/png"/>
+    <item id="img-cap01-01" href="imagenes/cap01-01.png" media-type="image/png"/>
+    <item id="img-cap02-00" href="imagenes/cap02-00.png" media-type="image/png"/>
+    <item id="img-cap02-01" href="imagenes/cap02-01.png" media-type="image/png"/>
+    <item id="img-contraportada" href="imagenes/contraportada.png" media-type="image/png"/>
+    <item id="fuente-librebaskerville-bold" href="fuentes/librebaskerville-bold.ttf" media-type="font/ttf"/>
+    <item id="fuente-librebaskerville-italic" href="fuentes/librebaskerville-italic.ttf" media-type="font/ttf"/>
+    <item id="fuente-librebaskerville-regular" href="fuentes/librebaskerville-regular.ttf" media-type="font/ttf"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="p-portada"/>
+    <itemref idref="p-lamina-01"/>
+    <itemref idref="p-lamina-02"/>
+    <itemref idref="p-portadilla"/>
+    <itemref idref="p-derechos"/>
+    <itemref idref="p-extra-dedicatoria"/>
+    <itemref idref="p-extra-inicio-nota"/>
+    <itemref idref="nav"/>
+    <itemref idref="p-cap01"/>
+    <itemref idref="p-cap01-ilus01"/>
+    <itemref idref="p-cap01-2"/>
+    <itemref idref="p-cap02-ilus01"/>
+    <itemref idref="p-cap02"/>
+    <itemref idref="p-cap02-ilus02"/>
+    <itemref idref="p-cap02-2"/>
+    <itemref idref="p-cap04"/>
+    <itemref idref="p-cap05-epilogo"/>
+    <itemref idref="p-extra-agradecimientos"/>
+    <itemref idref="p-contraportada"/>
+  </spine>
+  <guide>
+    <reference type="cover" title="Portada" href="texto/portada.xhtml"/>
+    <reference type="toc" title="Índice" href="texto/nav.xhtml"/>
+    <reference type="text" title="Comienzo" href="texto/cap01.xhtml"/>
+  </guide>
+</package>

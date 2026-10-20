@@ -1,0 +1,548 @@
+{
+ "_aviso": "Generado por scripts/extraer-golden.py. No editar a mano.",
+ "_libro": "libro-prueba",
+ "tiendas": {
+  "kindle": {
+   "epub": "el_faro_de_ibar_Kindle.epub",
+   "bytes": 16079,
+   "dcterms_modified": "2026-10-20T19:09:41Z",
+   "entradas": [
+    {
+     "ruta": "mimetype",
+     "metodo": "STORE",
+     "extra": 0,
+     "tamano": 20,
+     "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b",
+     "texto": true
+    },
+    {
+     "ruta": "META-INF/container.xml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 252,
+     "sha256": "014cc1b89e997f98f48ec584da90b79eb9f5031cefa37df76074f37bb37a532a",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/content.opf",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 5089,
+     "sha256": "beee921382d25887b68c9b6f2ea38c7faf3f22f3c1c941a51201e5e4e54d2cea",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/toc.ncx",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1329,
+     "sha256": "11c471d7ded42cc80d933d867968658d6d7c5d1c2c034a5c189fa6830ccb3052",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/nav.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1013,
+     "sha256": "0b396db9c23c31aa94a4c2c504518e6572426a1a7886852cbb38e9fa6d985ac1",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/estilos/estilo.css",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 3786,
+     "sha256": "a3bbf646feece7baba190a6e5b86fd66ea90e1407d38f09f1d5e105f55a425a5",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/lamina-01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 445,
+     "sha256": "d186f1b53595ef7fc3cb20e16bbf61b2985631e0c27e4b1efec6416e918b5ec1",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/lamina-02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 445,
+     "sha256": "04af8ae4b468b123a2c928e36dbdd78a6da103ec765a1ff641803475becd8e05",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/portadilla.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 584,
+     "sha256": "c21d09325a57512f9f0475f778388a6bdb83ea24785c2f579d384d51f04a1327",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/derechos.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 564,
+     "sha256": "cf9b7f11b83d1706bfe7845c6272961b8f68e8af984dc349b01d3ed4a2612a59",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-dedicatoria.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 443,
+     "sha256": "aca0c0e5532a712bc5b6578d19d680b0c7b293347e7bf7c0043d54b78bebee8e",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-inicio-nota.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 859,
+     "sha256": "31a2171fcbc8bc27f09c46aa8a3b8775faf98a434596951616865c378e5ef54d",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1341,
+     "sha256": "eba76addd67ec226157b25124afb582b617cd80cb22480a8924329cd88d536c0",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01-ilus01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 528,
+     "sha256": "efff199e8b3fc13d6f8dea37b873b69d7d1813a2453e159390deb0727104b660",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01-2.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 607,
+     "sha256": "eb226f69adc2b732f5cf8e05e2dbe958bdc4e8a8e30b9048367408aac00c541a",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-ilus01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 498,
+     "sha256": "23af1b934942885ff2232b1ff66c8e60deee333991bcb9674ea6dd11f3311ceb",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1584,
+     "sha256": "0ebdc6c7b16c6ce0c575c55723cf690319fadf4ac97efef7d45d16c2b0ead381",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-ilus02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 494,
+     "sha256": "f2278d67cc2a11f7e54fc1a50887deb94d512821b2fba530f72271f7fc0a6fe8",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-2.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 408,
+     "sha256": "5a8ed7939628dc312928b58b9fa69d11e0b06989aa46f57223027251885a9daf",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap04.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 912,
+     "sha256": "475ef41c713fc3d0f9e6deafd52f5d090b237b1f61d5c7de3a5e40c865978256",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap05-epilogo.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 772,
+     "sha256": "b43656b2b366a3016470c5034cb8e19af6b743d0aeff8fa452d1f0c54ebaf0d7",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-agradecimientos.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 689,
+     "sha256": "10a2579684835e760897ba6607b99c46dc3c69045e807cd357e47f482b9b99db",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/contraportada.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 461,
+     "sha256": "69326d374385f40ffd1443d541c8644346cb5fb81f73a1b7ccdba8d930ee231d",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/imagenes/color-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/color-02.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap01-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap02-00.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap02-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 20309,
+     "sha256": "418a671d9e086ba6d59a6e4fc3c37c986272e741521bfb99ae22f6ecac9d3863",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/contraportada.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 17820,
+     "sha256": "4fa4534aac1e19d15f511a087dc0e35c05bb7bf9108642a7e95636aa8d962014",
+     "texto": false
+    }
+   ]
+  },
+  "apple": {
+   "epub": "el_faro_de_ibar_AppleBooks.epub",
+   "bytes": 185375,
+   "dcterms_modified": "2026-10-20T19:09:41Z",
+   "entradas": [
+    {
+     "ruta": "mimetype",
+     "metodo": "STORE",
+     "extra": 0,
+     "tamano": 20,
+     "sha256": "e468e350d1143eb648f60c7b0bd6031101ec0544a361ca74ecef256ac901f48b",
+     "texto": true
+    },
+    {
+     "ruta": "META-INF/container.xml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 252,
+     "sha256": "014cc1b89e997f98f48ec584da90b79eb9f5031cefa37df76074f37bb37a532a",
+     "texto": true
+    },
+    {
+     "ruta": "META-INF/com.apple.ibooks.display-options.xml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 161,
+     "sha256": "364a17d7a4967325d2956f09c0626d564c1884c9dfa02116dc115d6a49538f56",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/content.opf",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 5935,
+     "sha256": "2760c687c1822075847a4495b1f0206fff26ced4aa95a9766b3fbe5e07fcbb28",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/toc.ncx",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1329,
+     "sha256": "11c471d7ded42cc80d933d867968658d6d7c5d1c2c034a5c189fa6830ccb3052",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/nav.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1076,
+     "sha256": "8098f58e79fb78e5df2aba033ce44000d8f89dcbbaa4c03a1e7a884069abadcf",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/estilos/estilo.css",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 4290,
+     "sha256": "1ffdc9d32c18e4fd8ba47c7b106a2b2e98199e211f77a0e9a963b8b17c3b34f3",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/portada.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 439,
+     "sha256": "2e809067b8f7aae607457d819f8d64e8bd99f7cdf5107920dff68827d049ab3a",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/lamina-01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 445,
+     "sha256": "d186f1b53595ef7fc3cb20e16bbf61b2985631e0c27e4b1efec6416e918b5ec1",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/lamina-02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 445,
+     "sha256": "04af8ae4b468b123a2c928e36dbdd78a6da103ec765a1ff641803475becd8e05",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/portadilla.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 744,
+     "sha256": "3eed76e6ac405b853c7776d8b6a64aa11d57741b851194acf4bee9e0ce1ccd24",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/derechos.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 564,
+     "sha256": "cf9b7f11b83d1706bfe7845c6272961b8f68e8af984dc349b01d3ed4a2612a59",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-dedicatoria.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 443,
+     "sha256": "aca0c0e5532a712bc5b6578d19d680b0c7b293347e7bf7c0043d54b78bebee8e",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-inicio-nota.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 859,
+     "sha256": "31a2171fcbc8bc27f09c46aa8a3b8775faf98a434596951616865c378e5ef54d",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1341,
+     "sha256": "eba76addd67ec226157b25124afb582b617cd80cb22480a8924329cd88d536c0",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01-ilus01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 528,
+     "sha256": "efff199e8b3fc13d6f8dea37b873b69d7d1813a2453e159390deb0727104b660",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap01-2.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 607,
+     "sha256": "eb226f69adc2b732f5cf8e05e2dbe958bdc4e8a8e30b9048367408aac00c541a",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-ilus01.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 498,
+     "sha256": "23af1b934942885ff2232b1ff66c8e60deee333991bcb9674ea6dd11f3311ceb",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 1584,
+     "sha256": "0ebdc6c7b16c6ce0c575c55723cf690319fadf4ac97efef7d45d16c2b0ead381",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-ilus02.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 494,
+     "sha256": "f2278d67cc2a11f7e54fc1a50887deb94d512821b2fba530f72271f7fc0a6fe8",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap02-2.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 408,
+     "sha256": "5a8ed7939628dc312928b58b9fa69d11e0b06989aa46f57223027251885a9daf",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap04.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 912,
+     "sha256": "475ef41c713fc3d0f9e6deafd52f5d090b237b1f61d5c7de3a5e40c865978256",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/cap05-epilogo.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 772,
+     "sha256": "b43656b2b366a3016470c5034cb8e19af6b743d0aeff8fa452d1f0c54ebaf0d7",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/extra-agradecimientos.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 689,
+     "sha256": "10a2579684835e760897ba6607b99c46dc3c69045e807cd357e47f482b9b99db",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/texto/contraportada.xhtml",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 461,
+     "sha256": "69326d374385f40ffd1443d541c8644346cb5fb81f73a1b7ccdba8d930ee231d",
+     "texto": true
+    },
+    {
+     "ruta": "OEBPS/imagenes/portada.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 17820,
+     "sha256": "4fa4534aac1e19d15f511a087dc0e35c05bb7bf9108642a7e95636aa8d962014",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/color-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/color-02.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/logo.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 5644,
+     "sha256": "d47d054048e870398eac6129521a093faf70f0a3f77ba52fc70618a24f888ef9",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/logo-blanco.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 4581,
+     "sha256": "19b032a63e8ded3881d0b869d67796b5247827cc1fff3e8694ee58afb7a0fef2",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap01-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap02-00.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 16720,
+     "sha256": "52dddd97ab9fdc55f7d531918ba3e265ac320e39b41808af000e18008cc84cf8",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/cap02-01.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 20309,
+     "sha256": "418a671d9e086ba6d59a6e4fc3c37c986272e741521bfb99ae22f6ecac9d3863",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/imagenes/contraportada.png",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 17820,
+     "sha256": "4fa4534aac1e19d15f511a087dc0e35c05bb7bf9108642a7e95636aa8d962014",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/fuentes/librebaskerville-bold.ttf",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 111576,
+     "sha256": "aeaf5ded57a6b1f1cbcc7421d4cd8ffdf5cfecfb5abef114eb32ac88e6b4f6d1",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/fuentes/librebaskerville-italic.ttf",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 121232,
+     "sha256": "66bdc28f5d330bd5d012cc67aaa426ec8b800225bf72fd7ab9ca3b29fdea193c",
+     "texto": false
+    },
+    {
+     "ruta": "OEBPS/fuentes/librebaskerville-regular.ttf",
+     "metodo": "DEFLATE",
+     "extra": 0,
+     "tamano": 111572,
+     "sha256": "28401bfea911aecc1187d49361226fe10a0a5cb05fd10d193756472aab0c7424",
+     "texto": false
+    }
+   ]
+  }
+ }
+}

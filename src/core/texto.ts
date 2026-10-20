@@ -110,7 +110,7 @@ function valorDigito(punto: number): number {
 }
 
 /** Valor de un tramo entero de digitos Unicode, como el `int()` de Python. */
-function valorDigitos(s: string): number {
+export function valorDigitos(s: string): number {
   let n = 0
   for (const c of s) n = n * 10 + valorDigito(c.codePointAt(0) as number)
   return n

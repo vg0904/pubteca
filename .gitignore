@@ -30,3 +30,6 @@ tmp/
 # NUNCA subir un libro real: los fixtures son libros inventados.
 # Si alguna vez se copia aqui una carpeta de libro de verdad, que no entre.
 libro-real/
+
+# La salida del libro de prueba se regenera; el golden es tests/golden/
+tests/fixtures/libro-prueba/salida/

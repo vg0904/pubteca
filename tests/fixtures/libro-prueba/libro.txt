@@ -1,0 +1,20 @@
+# Libro de prueba INVENTADO. Ni una linea sale de un libro real.
+# Existe para que los golden tests comparen la salida del port con la del
+# Python de referencia. Ver tests/README.md.
+
+titulo: El faro de Ibar
+subtitulo: una novela de prueba
+autor: Ana Ruiz Mendoza
+sello: Ediciones Pubteca
+idioma: es
+
+descripcion: Marta llega a un faro que no deberia estar encendido. Novela corta de prueba, escrita para validar el generador.
+
+isbn:
+fecha_publicacion: 2026-03-15
+
+derechos: © {año} {autor}. Todos los derechos reservados.
+
+incluir_contraportada: si
+separador_de_escena: * * *
+fuente: Baskerville

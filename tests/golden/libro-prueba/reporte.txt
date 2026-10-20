@@ -1,0 +1,25 @@
+Generador de EPUB 1.0 · 2026-10-20 13:09
+Libro: El faro de Ibar — Ana Ruiz Mendoza
+Fuente en Apple Books: Baskerville → Libre Baskerville (incluida) · En Kindle: la que elija el lector
+
+Capítulos:
+  · cap01.md     Capítulo 1: La luz que no tocaba  (9 párrafos, 1 ilustración)
+  · cap02.md     Capítulo 2: Lo que decía el cuaderno  (8 párrafos, 2 ilustraciones)
+  · cap04.md     Capítulo 4: El turno  (5 párrafos)
+  · cap05-epilogo.md Epílogo  (2 párrafos)
+Láminas a color al inicio: 2
+
+Archivos generados (en salida/):
+  · el_faro_de_ibar_Kindle.epub               0.02 MB  → tarifa de entrega estimada ≈ $0.00 USD por venta (70 %, EE. UU.)
+  · el_faro_de_ibar_AppleBooks.epub           0.19 MB
+
+Avisos:
+  ! ilustraciones/cap02-01.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.
+  ! ilustraciones/cap09-99.png: no está marcada en ningún capítulo, así que no entró al libro.
+
+Notas:
+  · portada/logo-blanco.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro.
+  · Faltan capítulos en la numeración: cap03.
+
+Resultado: listo, con algunos avisos que revisar.
+Para revisarlo como en un Kindle, abre el EPUB de Kindle en Kindle Previewer 3.
