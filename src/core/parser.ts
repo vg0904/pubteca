@@ -48,9 +48,22 @@ export const RE_SEPARADOR_TITULO = /\s*[:.\-–—]\s*/u
  *
  * `conTitulo=false` para dedicatoria y epigrafe, que no llevan titulo.
  *
- * Detalle del Python que hay que conservar: la deteccion de `>` y de `#` se
- * hace sobre la linea DESESCAPADA, pero el contenido se toma de la linea
- * ORIGINAL. Por eso `\> cita` no es un verso pero conserva su barra.
+ * DIVERGENCIA, y es la que hace posible que la interfaz grafica no pierda nada:
+ * el Python clasifica la linea sobre su version DESESCAPADA, asi que escapar un
+ * marcador de BLOQUE no lo desactiva. `\> cita` acaba siendo un verso con una
+ * barra invertida impresa, `\# algo` un subtitulo con una almohadilla
+ * impresa, y `\[ilustracion: x | y\]` inserta la ilustracion. El escritor
+ * sigue la documentacion, escapa, y acaba con basura en su libro. Verificado
+ * contra el script de referencia.
+ *
+ * Aqui se clasifica sobre la linea ORIGINAL, asi que el escape si desactiva el
+ * marcador. Los grupos capturados de la marca de ilustracion si se desescapan,
+ * para que el nombre y la descripcion salgan limpios como en el Python.
+ *
+ * Esto importa para la app: su modelo de bloques se serializa al dialecto de
+ * Markdown para alimentar al motor y para el .zip del proyecto, y un parrafo
+ * que empiece por `>`, `#` o `* * *` tiene que poder escaparse o se convertiria
+ * en otro tipo de bloque al volver a leerlo.
  *
  * La primera linea no vacia se consume SIEMPRE como titulo cuando no es una
  * marca de ilustracion, aunque no parezca una cabecera de capitulo.
@@ -62,23 +75,24 @@ export function parsear(texto: string, conTitulo = true): Parseado {
 
   for (const linea of lineasDe(texto)) {
     if (!linea) continue
-    const llano = desescapar(linea)
-    const m = RE_ILUS.exec(llano)
+    const m = RE_ILUS.exec(linea)
+    const nombre = m ? desescapar(m[1] as string) : ''
+    const alt = m ? desescapar(m[2] ?? '').trim() : ''
 
     if (conTitulo && titulo === null) {
-      if (m) antes.push({ nombre: m[1] as string, alt: (m[2] ?? '').trim() })
+      if (m) antes.push({ nombre, alt })
       else titulo = limpiarTitulo(linea)
       continue
     }
 
     if (m) {
-      bloques.push({ tipo: 'ilus', nombre: m[1] as string, alt: (m[2] ?? '').trim() })
-    } else if (RE_ESCENA.exec(llano)) {
+      bloques.push({ tipo: 'ilus', nombre, alt })
+    } else if (RE_ESCENA.exec(linea)) {
       bloques.push({ tipo: 'escena' })
-    } else if (llano.startsWith('>')) {
+    } else if (linea.startsWith('>')) {
       const contenido = linea.replace(/^>\s?/u, '').trim()
       bloques.push(contenido ? { tipo: 'verso', html: enLinea(contenido) } : { tipo: 'estrofa' })
-    } else if (llano.startsWith('#')) {
+    } else if (linea.startsWith('#')) {
       bloques.push({ tipo: 'sub', html: enLinea(linea.replace(/^#+/u, '').trim()) })
     } else {
       bloques.push({ tipo: 'p', html: enLinea(linea) })

@@ -10,6 +10,7 @@ import {
 import { secuencia, type Tramo } from '../src/core/secuencia'
 import { partirUnaVez, textoPlano } from '../src/core/texto'
 import { etiqueta, oraculo, type Tupla } from './oraculo'
+import { CAPITULOS } from './divergencias'
 
 /** Convierte un bloque al formato de tupla que exporta el Python. */
 function bloqueATupla(b: Bloque): Tupla {
@@ -43,25 +44,39 @@ const p = (html: string): Bloque => ({ tipo: 'p', html })
 
 describe(`parsear + secuencia (${oraculo.capitulos.length} capitulos del Python)`, () => {
   for (const caso of oraculo.capitulos) {
-    describe(caso.nombre, () => {
+    const d = CAPITULOS.get(caso.nombre)
+
+    describe(d ? `${caso.nombre} (divergencia a proposito)` : caso.nombre, () => {
       const r = parsear(caso.entrada)
 
       it('mismo titulo', () => {
-        expect(r.titulo).toBe(caso.titulo)
+        expect(r.titulo).toBe(d ? d.titulo : caso.titulo)
       })
 
       it('mismas ilustraciones antes del titulo', () => {
         const antes = r.antes.map((a): Tupla => ['ilus', a.nombre, a.alt])
-        expect(antes).toEqual(caso.antes)
+        expect(antes).toEqual(d ? [] : caso.antes)
       })
 
       it('mismos bloques', () => {
-        expect(r.bloques.map(bloqueATupla)).toEqual(caso.bloques)
+        expect(r.bloques.map(bloqueATupla)).toEqual(d ? d.bloques : caso.bloques)
       })
 
       it('mismos tramos', () => {
-        expect(secuencia(r.bloques, '* * *').map(tramoATupla)).toEqual(caso.tramos)
+        expect(secuencia(r.bloques, '* * *').map(tramoATupla)).toEqual(d ? d.tramos : caso.tramos)
       })
+
+      if (d) {
+        it('el Python hacia otra cosa, y el registro lo dice', () => {
+          // Si el oraculo dejara de diferir, la divergencia estaria obsoleta.
+          const distinto =
+            JSON.stringify(caso.bloques) !== JSON.stringify(d.bloques) ||
+            JSON.stringify(caso.tramos) !== JSON.stringify(d.tramos) ||
+            caso.titulo !== d.titulo
+          expect(distinto).toBe(true)
+          expect(d.motivo.length).toBeGreaterThan(40)
+        })
+      }
     })
   }
 })
@@ -209,28 +224,52 @@ describe('parsear sin titulo (dedicatoria y epigrafe)', () => {
 // Se replica para no romper la paridad; la correccion esta anotada en el plan.
 // ---------------------------------------------------------------------------
 
-describe('escapar un marcador de bloque NO lo desactiva (bug replicado)', () => {
-  it('«\\> cita» si es un verso, y encima deja la barra a la vista', () => {
+describe('DIVERGENCIA: escapar un marcador de bloque SI lo desactiva', () => {
+  // El Python clasificaba la linea sobre su version DESESCAPADA, asi que el
+  // escape no servia de nada y encima dejaba basura impresa en el libro. Aqui
+  // se clasifica sobre la linea ORIGINAL. Ver tests/divergencias.ts.
+  //
+  // Esto es lo que permite que la interfaz grafica no pierda nada: su modelo de
+  // bloques se serializa a este dialecto para alimentar al motor y para el .zip
+  // del proyecto, y un parrafo que empiece por «>», «#» o «* * *» tiene que
+  // poder escaparse o se convertiria en otro tipo de bloque al releerlo.
+
+  it('«\\> cita» es un parrafo, y sin barra visible', () => {
     const r = parsear('T\n\\> cita')
-    expect(r.bloques[0]).toEqual({ tipo: 'verso', html: '\\&gt; cita' })
+    expect(r.bloques[0]).toEqual({ tipo: 'p', html: '&gt; cita' })
   })
 
-  it('una marca de ilustracion con corchetes escapados si se reconoce', () => {
+  it('una marca de ilustracion escapada sale como texto literal', () => {
     const r = parsear('T\n\\[ilustración: x | y\\]')
-    expect(r.bloques[0]).toEqual({ tipo: 'ilus', nombre: 'x', alt: 'y' })
+    expect(r.bloques[0]).toEqual({ tipo: 'p', html: '[ilustración: x | y]' })
   })
 
-  it('«\\# algo» si es un subtitulo, y deja la almohadilla a la vista', () => {
+  it('«\\# algo» es un parrafo que empieza por almohadilla', () => {
     const r = parsear('T\n\\# no subtitulo')
-    expect(r.bloques[0]).toEqual({ tipo: 'sub', html: '# no subtitulo' })
+    expect(r.bloques[0]).toEqual({ tipo: 'p', html: '# no subtitulo' })
   })
 
-  it('«\\* \\* \\*» si es un cambio de escena', () => {
-    expect(parsear('T\n\\* \\* \\*').bloques[0]).toEqual({ tipo: 'escena' })
+  it('«\\* \\* \\*» es un parrafo, no un cambio de escena', () => {
+    expect(parsear('T\n\\* \\* \\*').bloques[0]).toEqual({ tipo: 'p', html: '* * *' })
   })
 
-  it('en cambio, dentro de un parrafo el escape SI funciona', () => {
-    // Las marcas de LINEA (enfasis) se escapan bien; son las de BLOQUE las que no.
+  it('sin escapar, los marcadores siguen funcionando exactamente igual', () => {
+    expect(parsear('T\n> cita').bloques[0]).toEqual({ tipo: 'verso', html: 'cita' })
+    expect(parsear('T\n#  sub').bloques[0]).toEqual({ tipo: 'sub', html: 'sub' })
+    expect(parsear('T\n* * *').bloques[0]).toEqual({ tipo: 'escena' })
+    expect(parsear('T\n[ilustración: x | y]').bloques[0]).toEqual({
+      tipo: 'ilus',
+      nombre: 'x',
+      alt: 'y',
+    })
+  })
+
+  it('el nombre y la descripcion de la marca se desescapan, como antes', () => {
+    const r = parsear('T\n[ilustración: cap01-01 | con \\* asterisco \\*]')
+    expect(r.bloques[0]).toEqual({ tipo: 'ilus', nombre: 'cap01-01', alt: 'con * asterisco *' })
+  })
+
+  it('dentro de un parrafo el escape seguia funcionando y sigue igual', () => {
     const r = parsear('T\nTexto con \\*asteriscos\\* y \\[corchetes\\].')
     expect(r.bloques[0]).toEqual({
       tipo: 'p',

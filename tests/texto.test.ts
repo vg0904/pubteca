@@ -15,6 +15,7 @@ import {
   textoPlano,
 } from '../src/core/texto'
 import { etiqueta, oraculo, type Par } from './oraculo'
+import { VALORES } from './divergencias'
 
 /** Recorre los pares entrada->salida del Python y exige igualdad exacta. */
 type ClavePar =
@@ -29,14 +30,29 @@ type ClavePar =
 
 function paridad(nombre: ClavePar, fn: (s: string) => string) {
   const pares: Par[] = oraculo[nombre]
+  const divergentes = VALORES[nombre] ?? new Map()
+
   describe(`${nombre} (${pares.length} casos del Python)`, () => {
     it('hay casos de verdad que comprobar', () => {
       expect(pares.length).toBeGreaterThan(5)
     })
+
     for (const [entrada, esperado] of pares) {
-      it(`${etiqueta(entrada)} -> ${etiqueta(esperado)}`, () => {
-        expect(fn(entrada)).toBe(esperado)
-      })
+      const d = divergentes.get(entrada)
+      if (d) {
+        // Divergencia registrada: se comprueba QUE hacia el Python y QUE
+        // hacemos nosotros, para que el registro no se quede viejo en silencio.
+        it(`${etiqueta(entrada)} -> ${etiqueta(d.nuestro)} (divergencia a proposito)`, () => {
+          expect(esperado).toBe(d.python)
+          expect(fn(entrada)).toBe(d.nuestro)
+          expect(d.nuestro).not.toBe(d.python)
+          expect(d.motivo.length).toBeGreaterThan(40)
+        })
+      } else {
+        it(`${etiqueta(entrada)} -> ${etiqueta(esperado)}`, () => {
+          expect(fn(entrada)).toBe(esperado)
+        })
+      }
     }
   })
 }
@@ -128,8 +144,9 @@ describe('trampas Python -> JavaScript', () => {
     expect(enLinea('**$&**')).toBe('<strong>$&amp;</strong>')
     expect(enLinea('*a$1b*')).toBe('<em>a$1b</em>')
     expect(enLinea('\\*no cursiva\\*')).toBe('*no cursiva*')
-    // y el bug conocido de \> se replica tal cual
-    expect(enLinea('\\>')).toBe('\\&gt;')
+    // Y los escapes se guardan ANTES de escapar el HTML, asi que «\>» no deja
+    // la barra a la vista. Es divergencia a proposito: ver tests/divergencias.ts.
+    expect(enLinea('\\>')).toBe('&gt;')
   })
 })
 

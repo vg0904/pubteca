@@ -203,24 +203,32 @@ const R_CENTINELA = /\u0000([0-9]+)\u0000/g
  * Markdown en linea -> XHTML: *cursiva*, **negrita**, ***ambas***, _cursiva_.
  * `en_linea()` del Python.
  *
- * El orden de los pasos es parte del contrato y no se puede reordenar:
- *   1. escapar HTML (quote=False)
- *   2. guardar los caracteres escapados tras un centinela \0N\0
+ * Los pasos, en este orden:
+ *   1. guardar los caracteres escapados tras un centinela \0N\0
+ *   2. escapar HTML (quote=False)
  *   3. aplicar las cinco regex de enfasis
- *   4. restaurar los centinelas volviendo a escapar el caracter guardado
+ *   4. restaurar los centinelas escapando el caracter guardado
  *
- * Si se escapa DESPUES, se escaparian los `<em>` recien generados.
+ * El HTML se escapa DESPUES de guardar los escapes, pero ANTES del enfasis: si
+ * se escapara al final, se escaparian los `<em>` recien generados.
+ *
+ * DIVERGENCIA: el Python escapa el HTML ANTES de buscar los escapes, asi que
+ * cuando encuentra `\>` el caracter que sigue a la barra ya es `&` (de `&gt;`)
+ * y no esta en la clase de escapables: la barra se queda VISIBLE en el libro.
+ * Verificado contra el script de referencia. Guardar primero lo arregla, y es
+ * el unico caso que cambia, porque `>` es el unico caracter que esta a la vez
+ * en la clase de escapables y en los que se escapan a entidad HTML.
  *
  * TRAMPA: la restauracion usa una FUNCION de reemplazo. Con un string, un `$`
  * del contenido del autor («**$&**») se leeria como referencia de grupo.
  */
 export function enLinea(s: string): string {
-  let r = escInline(s)
   const guardados: string[] = []
-  r = r.replace(RE_ESCAPE, (_m, c: string) => {
+  let r = s.replace(RE_ESCAPE, (_m, c: string) => {
     guardados.push(c)
     return `\u0000${guardados.length - 1}\u0000`
   })
+  r = escInline(r)
   r = r.replace(R_TRIPLE, '<strong><em>$1</em></strong>')
   r = r.replace(R_NEGRITA, '<strong>$1</strong>')
   r = r.replace(R_NEGRITA_, '<strong>$1</strong>')
