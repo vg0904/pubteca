@@ -1,0 +1,224 @@
+/**
+ * Persistencia en el navegador. IndexedDB a traves de idb.
+ *
+ * ESTE ES EL RIESGO MAS SERIO DEL PRODUCTO, no un detalle tecnico. WebKit
+ * expulsa el almacenamiento de un origen tras un periodo prolongado sin
+ * interaccion del usuario, ademas de bajo presion de disco. Un escritor que
+ * deje su novela solo aqui y no abra la app en semanas puede perderla. Por eso:
+ *
+ *   - se pide `navigator.storage.persist()` al crear el proyecto, ANTES de que
+ *     haya algo que perder;
+ *   - la interfaz dice, con texto visible y no en letra pequena, que el .zip
+ *     exportado es la copia de seguridad de verdad;
+ *   - se detecta la navegacion privada en vez de fallar en silencio.
+ *
+ * Las imagenes se guardan como Blob, NO como base64: base64 infla un 33 % y
+ * obliga a serializar cadenas gigantes en cada autoguardado.
+ */
+import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { VERSION_PROYECTO, type Proyecto } from './modelo'
+
+const NOMBRE_BD = 'pubteca'
+/** Version del ESQUEMA de IndexedDB (distinta de la version del proyecto). */
+const VERSION_BD = 1
+
+export interface ImagenGuardada {
+  readonly id: string
+  readonly proyectoId: string
+  readonly nombreOriginal: string
+  readonly tipo: 'png' | 'jpeg'
+  readonly ancho: number
+  readonly alto: number
+  readonly tamano: number
+  readonly datos: Blob
+}
+
+export interface ResumenProyecto {
+  readonly id: string
+  readonly titulo: string
+  readonly modificado: number
+  readonly capitulos: number
+}
+
+interface Esquema extends DBSchema {
+  proyectos: {
+    key: string
+    value: Proyecto & { readonly modificado: number }
+  }
+  imagenes: {
+    key: string
+    value: ImagenGuardada
+    indexes: { porProyecto: string }
+  }
+}
+
+export type Almacen = IDBPDatabase<Esquema>
+
+export class ErrorAlmacen extends Error {
+  readonly causa: 'privado' | 'sinEspacio' | 'versionFutura' | 'desconocido'
+
+  constructor(mensaje: string, causa: ErrorAlmacen['causa']) {
+    super(mensaje)
+    this.name = 'ErrorAlmacen'
+    this.causa = causa
+  }
+}
+
+/**
+ * Abre la base. Si falla, casi siempre es navegacion privada: Safari limita o
+ * deshabilita IndexedDB ahi, y hay que decirlo en vez de dejar que el
+ * autoguardado falle sin que nadie se entere.
+ */
+export async function abrirAlmacen(): Promise<Almacen> {
+  try {
+    return await openDB<Esquema>(NOMBRE_BD, VERSION_BD, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('proyectos')) {
+          db.createObjectStore('proyectos', { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains('imagenes')) {
+          const s = db.createObjectStore('imagenes', { keyPath: 'id' })
+          s.createIndex('porProyecto', 'proyectoId')
+        }
+      },
+    })
+  } catch (e) {
+    throw new ErrorAlmacen(
+      'No pude abrir el almacen del navegador. Si estas en una ventana privada, tu trabajo no se ' +
+        'va a guardar: abre Pubteca en una ventana normal.',
+      'privado',
+    )
+  }
+}
+
+/**
+ * Pide que el navegador NO expulse los datos.
+ *
+ * En Safari no se muestra ningun dialogo: WebKit decide solo segun el historial
+ * de interaccion del usuario con el sitio. Devuelve si quedo concedido.
+ */
+export async function pedirPersistencia(): Promise<boolean> {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.storage?.persist) return false
+    return await navigator.storage.persist()
+  } catch {
+    return false
+  }
+}
+
+export interface Espacio {
+  readonly usado: number
+  readonly disponible: number
+  readonly fraccion: number
+}
+
+/** Cuanto espacio se esta usando. No existe antes de Safari 17. */
+export async function estimarEspacio(): Promise<Espacio | null> {
+  try {
+    if (typeof navigator === 'undefined' || !navigator.storage?.estimate) return null
+    const e = await navigator.storage.estimate()
+    const usado = e.usage ?? 0
+    const disponible = e.quota ?? 0
+    return { usado, disponible, fraccion: disponible > 0 ? usado / disponible : 0 }
+  } catch {
+    return null
+  }
+}
+
+function esFaltaDeEspacio(e: unknown): boolean {
+  return e instanceof Error && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')
+}
+
+/** Guarda el proyecto. El `modificado` lo pone quien llama: el reloj se inyecta. */
+export async function guardarProyecto(
+  db: Almacen,
+  proyecto: Proyecto,
+  modificado: number,
+): Promise<void> {
+  try {
+    await db.put('proyectos', { ...proyecto, modificado })
+  } catch (e) {
+    if (esFaltaDeEspacio(e)) {
+      throw new ErrorAlmacen(
+        'No cabe mas en este navegador. Guarda una copia (.zip) ahora mismo: se hace desde ' +
+          'memoria y no necesita espacio.',
+        'sinEspacio',
+      )
+    }
+    throw e
+  }
+}
+
+/**
+ * Lee un proyecto.
+ *
+ * Si viene de una version MAS NUEVA del formato, se niega a leerlo en vez de
+ * interpretarlo mal: el autor habra usado una version mas reciente de Pubteca
+ * en otro navegador, y leerlo a medias le estropearia el libro.
+ */
+export async function leerProyecto(db: Almacen, id: string): Promise<Proyecto | null> {
+  const p = await db.get('proyectos', id)
+  if (!p) return null
+  if (p.version > VERSION_PROYECTO) {
+    throw new ErrorAlmacen(
+      `Este libro se guardo con una version mas nueva de Pubteca (formato ${p.version}, esta ` +
+        `version entiende hasta ${VERSION_PROYECTO}). Actualiza la pagina antes de abrirlo.`,
+      'versionFutura',
+    )
+  }
+  return p
+}
+
+export async function listarProyectos(db: Almacen): Promise<ResumenProyecto[]> {
+  const todos = await db.getAll('proyectos')
+  return todos
+    .map((p) => ({
+      id: p.id,
+      titulo: p.datos.titulo,
+      modificado: p.modificado,
+      capitulos: p.capitulos.length,
+    }))
+    .sort((a, b) => b.modificado - a.modificado)
+}
+
+/** Borra el proyecto Y sus imagenes: si no, las huerfanas se acumulan. */
+export async function borrarProyecto(db: Almacen, id: string): Promise<void> {
+  const tx = db.transaction(['proyectos', 'imagenes'], 'readwrite')
+  await tx.objectStore('proyectos').delete(id)
+  const indice = tx.objectStore('imagenes').index('porProyecto')
+  for (const imagen of await indice.getAllKeys(id)) {
+    await tx.objectStore('imagenes').delete(imagen)
+  }
+  await tx.done
+}
+
+export async function guardarImagen(db: Almacen, imagen: ImagenGuardada): Promise<void> {
+  try {
+    await db.put('imagenes', imagen)
+  } catch (e) {
+    if (esFaltaDeEspacio(e)) {
+      throw new ErrorAlmacen(
+        `No cabe «${imagen.nombreOriginal}» en este navegador. Guarda una copia (.zip) y revisa ` +
+          'las ilustraciones mas pesadas.',
+        'sinEspacio',
+      )
+    }
+    throw e
+  }
+}
+
+export async function leerImagen(db: Almacen, id: string): Promise<ImagenGuardada | null> {
+  return (await db.get('imagenes', id)) ?? null
+}
+
+export async function imagenesDelProyecto(
+  db: Almacen,
+  proyectoId: string,
+): Promise<ImagenGuardada[]> {
+  return db.getAllFromIndex('imagenes', 'porProyecto', proyectoId)
+}
+
+/** Los bytes de una imagen, listos para el core, que los quiere sincronos. */
+export async function bytesDeImagen(imagen: ImagenGuardada): Promise<Uint8Array> {
+  return new Uint8Array(await imagen.datos.arrayBuffer())
+}

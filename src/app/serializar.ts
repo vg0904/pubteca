@@ -196,8 +196,22 @@ function serializarTramos(tramos: readonly Tramo[]): string {
   return candidatos(tramos, false)[0] as string
 }
 
+/**
+ * Traduce el id interno de una imagen al nombre con el que se escribe en el
+ * .zip (capXX-YY.png, color-NN.png). Por defecto deja el id, que es lo que
+ * usan los tests de ida y vuelta.
+ */
+export type NombreDeImagen = (imagenId: string) => string
+
+const ID_TAL_CUAL: NombreDeImagen = (id) => id
+
 /** Serializa un bloque a sus lineas del dialecto. */
-function lineasDeBloque(b: Bloque, separador: string, avisos: Aviso[]): string[] {
+function lineasDeBloque(
+  b: Bloque,
+  separador: string,
+  avisos: Aviso[],
+  nombreDeImagen: NombreDeImagen,
+): string[] {
   switch (b.tipo) {
     case 'parrafo':
       return [lineaDeTexto(b.tramos, 'Parrafo', avisos)]
@@ -234,7 +248,7 @@ function lineasDeBloque(b: Bloque, separador: string, avisos: Aviso[]): string[]
         })
       }
       const alt = b.alt.replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
-      return [`[ilustración: ${b.imagenId} | ${alt}]`]
+      return [`[ilustración: ${nombreDeImagen(b.imagenId)} | ${alt}]`]
     }
   }
 }
@@ -272,19 +286,23 @@ function lineaDeTitulo(cap: Capitulo, avisos: Aviso[]): string {
 }
 
 /** Un capitulo completo, listo para `capitulos/capNN.md`. */
-export function serializarCapitulo(cap: Capitulo, separador: string): Serializado {
+export function serializarCapitulo(
+  cap: Capitulo,
+  separador: string,
+  nombreDeImagen: NombreDeImagen = ID_TAL_CUAL,
+): Serializado {
   const avisos: Aviso[] = []
   const lineas: string[] = []
 
   // Las ilustraciones de apertura van ANTES de la cabecera.
   for (const a of cap.aperturas) {
-    lineas.push(`[ilustración: ${a.imagenId} | ${a.alt}]`)
+    lineas.push(`[ilustración: ${nombreDeImagen(a.imagenId)} | ${a.alt.replace(/\]/g, '').trim()}]`)
   }
   lineas.push(lineaDeTitulo(cap, avisos))
   lineas.push('')
 
   for (const b of cap.bloques) {
-    lineas.push(...lineasDeBloque(b, separador, avisos))
+    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen))
     lineas.push('')
   }
 
@@ -292,7 +310,11 @@ export function serializarCapitulo(cap: Capitulo, separador: string): Serializad
 }
 
 /** Un extra, listo para `extras/<nombre>.md`. */
-export function serializarExtra(extra: Extra, separador: string): Serializado {
+export function serializarExtra(
+  extra: Extra,
+  separador: string,
+  nombreDeImagen: NombreDeImagen = ID_TAL_CUAL,
+): Serializado {
   const avisos: Aviso[] = []
   const lineas: string[] = []
 
@@ -301,7 +323,7 @@ export function serializarExtra(extra: Extra, separador: string): Serializado {
     lineas.push('')
   }
   for (const b of extra.bloques) {
-    lineas.push(...lineasDeBloque(b, separador, avisos))
+    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen))
     lineas.push('')
   }
 

@@ -15,6 +15,20 @@
 /** Las unicas dos marcas en linea que el EPUB entiende. */
 export type Marca = 'cursiva' | 'negrita'
 
+/**
+ * Orden canonico de las marcas. El orden no significa nada (un texto en
+ * cursiva y negrita es el mismo sea cual sea el orden de la lista), asi que se
+ * canoniza para que dos modelos equivalentes se comparen iguales. Sin esto,
+ * importar lo que se acaba de serializar daba ['negrita','cursiva'] porque el
+ * motor emite `<strong><em>`.
+ */
+const ORDEN_MARCAS: readonly Marca[] = ['cursiva', 'negrita']
+
+function canonizarMarcas(marcas: readonly Marca[]): Marca[] {
+  const presentes = new Set(marcas)
+  return ORDEN_MARCAS.filter((m) => presentes.has(m))
+}
+
 /** Un tramo de texto con sus marcas. El escritor nunca ve un asterisco. */
 export interface Tramo {
   readonly texto: string
@@ -177,7 +191,7 @@ export function normalizarTramos(tramos: readonly Tramo[]): Tramo[] {
     if (mismas && previo) {
       salida[salida.length - 1] = { texto: previo.texto + t.texto, marcas: previo.marcas }
     } else {
-      salida.push({ texto: t.texto, marcas: [...new Set(t.marcas)] })
+      salida.push({ texto: t.texto, marcas: canonizarMarcas(t.marcas) })
     }
   }
   return salida
