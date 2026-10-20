@@ -98,6 +98,27 @@ export interface CasoCssLibro {
   salida: string
 }
 
+export interface CasoFormato {
+  valor: number
+  f0: string
+  f1: string
+  f2: string
+  f3: string
+}
+
+export interface CasoImagen {
+  archivo: string
+  bytes: number
+  tipo: 'png' | 'jpeg' | null
+  ancho: number
+  alto: number
+  alfa: boolean
+  cmyk: boolean
+  p3: boolean
+  media_type: string | null
+  revisiones: Record<string, { avisos: string[]; notas: string[]; errores: string[] } | undefined>
+}
+
 export interface Oraculo {
   _fuente: string
   _sha256_fuente: string
@@ -122,6 +143,8 @@ export interface Oraculo {
   pagina_imagen: CasoPaginaImagen[]
   fuentes: CasoFuentes[]
   css_libro: CasoCssLibro[]
+  formato: CasoFormato[]
+  imagenes: CasoImagen[]
   CSS: string
   CONFIG_DEFAULT: Record<string, string>
 }

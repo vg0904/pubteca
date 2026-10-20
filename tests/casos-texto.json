@@ -2492,6 +2492,4694 @@
    "salida": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n@font-face {\n  font-family: \"Fam\";\n  font-style: normal;\n  font-weight: bold;\n  src: url(\"../fuentes/fam-bold.ttf\");\n}\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: \"Baskerville\", \"Fam\", serif; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n"
   }
  ],
+ "imagenes": [
+  {
+   "archivo": "alfa.png",
+   "bytes": 20309,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": true,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/alfa.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/alfa.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo."
+     ],
+     "notas": [
+      "ilustraciones/alfa.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "buena.png",
+   "bytes": 16720,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/buena.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/buena.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "color-01.png",
+   "bytes": 16720,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/color-01.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/color-01.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "color-02.png",
+   "bytes": 16720,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/color-02.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/color-02.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "dcip3.png",
+   "bytes": 16774,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/dcip3.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/dcip3.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/dcip3.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/dcip3.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "gif-renombrado.png",
+   "bytes": 10,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "grande.png",
+   "bytes": 22197,
+   "tipo": "png",
+   "ancho": 3000,
+   "alto": 2000,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/grande.png: 3000×2000 px = 6.0 millones de píxeles; Apple Books admite hasta 5.6. Redúcela."
+     ],
+     "notas": [
+      "ilustraciones/grande.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/grande.png: 3000×2000 px = 6.0 millones de píxeles; Apple Books admite hasta 5.6. Redúcela."
+     ],
+     "notas": [
+      "ilustraciones/grande.png: mide 2000 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [
+      "ilustraciones/grande.png: 3000×2000 px supera el límite de Apple Books (5.6 millones de píxeles). Redúcelo."
+     ],
+     "notas": [
+      "ilustraciones/grande.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "gris.png",
+   "bytes": 6817,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/gris.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/gris.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "heic-renombrado.png",
+   "bytes": 24,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "horizontal-chica.png",
+   "bytes": 6468,
+   "tipo": "png",
+   "ancho": 1400,
+   "alto": 1000,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/horizontal-chica.png: mide 1400×1000 px (horizontal); lo recomendado es 2400×1600. Se verá borrosa en pantallas grandes."
+     ],
+     "notas": [
+      "ilustraciones/horizontal-chica.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/horizontal-chica.png: el lado corto mide 1000 px; Apple Books pide al menos 1400."
+     ],
+     "notas": [
+      "ilustraciones/horizontal-chica.png: mide 1000 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/horizontal-chica.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "horizontal.png",
+   "bytes": 14783,
+   "tipo": "png",
+   "ancho": 2400,
+   "alto": 1600,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/horizontal.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/horizontal.png: mide 1600 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/horizontal.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "iccp-corrupto-nombre-p3.png",
+   "bytes": 16755,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/iccp-corrupto-nombre-p3.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/iccp-corrupto-nombre-p3.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/iccp-corrupto-nombre-p3.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/iccp-corrupto-nombre-p3.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "iccp-corrupto.png",
+   "bytes": 16748,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/iccp-corrupto.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/iccp-corrupto.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-cmyk.jpg",
+   "bytes": 44,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": true,
+   "p3": false,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/jpeg-cmyk.jpg: está en CMYK (modo de imprenta). Conviértela a sRGB."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/jpeg-cmyk.jpg: está en CMYK (modo de imprenta). Conviértela a sRGB."
+     ],
+     "notas": [
+      "ilustraciones/jpeg-cmyk.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-cmyk.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-con-dht.jpg",
+   "bytes": 74,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-con-dht.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-con-dht.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-p3-utf16.jpg",
+   "bytes": 161,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/jpeg-p3-utf16.jpg: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/jpeg-p3-utf16.jpg: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/jpeg-p3-utf16.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-p3-utf16.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-p3.jpg",
+   "bytes": 151,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/jpeg-p3.jpg: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/jpeg-p3.jpg: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/jpeg-p3.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-p3.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-progresivo.jpg",
+   "bytes": 41,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-progresivo.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-progresivo.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "jpeg-rgb.jpg",
+   "bytes": 41,
+   "tipo": "jpeg",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/jpeg",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-rgb.jpg: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/jpeg-rgb.jpg: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "logo-enorme.png",
+   "bytes": 28202,
+   "tipo": "png",
+   "ancho": 3000,
+   "alto": 2000,
+   "alfa": true,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/logo-enorme.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.",
+      "ilustraciones/logo-enorme.png: 3000×2000 px = 6.0 millones de píxeles; Apple Books admite hasta 5.6. Redúcela."
+     ],
+     "notas": [
+      "ilustraciones/logo-enorme.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/logo-enorme.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.",
+      "ilustraciones/logo-enorme.png: 3000×2000 px = 6.0 millones de píxeles; Apple Books admite hasta 5.6. Redúcela."
+     ],
+     "notas": [
+      "ilustraciones/logo-enorme.png: mide 2000 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [
+      "ilustraciones/logo-enorme.png: 3000×2000 px supera el límite de Apple Books (5.6 millones de píxeles). Redúcelo."
+     ],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "logo-opaco.png",
+   "bytes": 4581,
+   "tipo": "png",
+   "ancho": 1800,
+   "alto": 600,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/logo-opaco.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/logo-opaco.png: el lado corto mide 600 px; Apple Books pide al menos 1400."
+     ],
+     "notas": [
+      "ilustraciones/logo-opaco.png: mide 600 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/logo-opaco.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "logo.png",
+   "bytes": 5644,
+   "tipo": "png",
+   "ancho": 1800,
+   "alto": 600,
+   "alfa": true,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/logo.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo."
+     ],
+     "notas": [
+      "ilustraciones/logo.png: es horizontal; en pantallas verticales se mostrará reducida."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/logo.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.",
+      "ilustraciones/logo.png: el lado corto mide 600 px; Apple Books pide al menos 1400."
+     ],
+     "notas": [
+      "ilustraciones/logo.png: mide 600 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "p3-nombre.png",
+   "bytes": 16775,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/p3-nombre.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/p3-nombre.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/p3-nombre.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/p3-nombre.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "p3-perfil.png",
+   "bytes": 16778,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/p3-perfil.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/p3-perfil.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/p3-perfil.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/p3-perfil.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "p3-utf16.png",
+   "bytes": 16787,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": true,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/p3-utf16.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/p3-utf16.png: usa el perfil Display P3. Conviértela a sRGB para que los colores se vean igual en todos lados."
+     ],
+     "notas": [
+      "ilustraciones/p3-utf16.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/p3-utf16.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "pequena.png",
+   "bytes": 4531,
+   "tipo": "png",
+   "ancho": 800,
+   "alto": 1200,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/pequena.png: mide 800×1200 px; lo recomendado es 1600×2400 (mínimo 1200×1800). Se verá borrosa en pantallas grandes."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/pequena.png: el lado corto mide 800 px; Apple Books pide al menos 1400."
+     ],
+     "notas": [
+      "ilustraciones/pequena.png: mide 1200 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/pequena.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "pesada.png",
+   "bytes": 710302,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/pesada.png: pesa 0.7 MB; considera comprimirla (la tarifa de entrega de Kindle se cobra por MB)."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/pesada.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/pesada.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "peso-empate.png",
+   "bytes": 1250000,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/peso-empate.png: pesa 1.2 MB; considera comprimirla (la tarifa de entrega de Kindle se cobra por MB)."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/peso-empate.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/peso-empate.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "portada-baja.png",
+   "bytes": 15827,
+   "tipo": "png",
+   "ancho": 1500,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/portada-baja.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/portada-baja.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "portada-lado-corto.png",
+   "bytes": 6958,
+   "tipo": "png",
+   "ancho": 1000,
+   "alto": 1600,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/portada-lado-corto.png: mide 1000×1600 px; lo recomendado es 1600×2400 (mínimo 1200×1800). Se verá borrosa en pantallas grandes."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/portada-lado-corto.png: el lado corto mide 1000 px; Apple Books pide al menos 1400."
+     ],
+     "notas": [
+      "ilustraciones/portada-lado-corto.png: mide 1600 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/portada-lado-corto.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "portada.png",
+   "bytes": 17820,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2560,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/portada.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "proporcion.png",
+   "bytes": 11893,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 1700,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/proporcion.png: mide 1600×1700 px; lo recomendado es 1600×2400 (mínimo 1200×1800). Se verá borrosa en pantallas grandes."
+     ],
+     "notas": [
+      "ilustraciones/proporcion.png: proporción 1:1.06 (lo recomendado es 1:1.5); en algunas pantallas quedará con franjas vacías."
+     ],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/proporcion.png: mide 1700 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/proporcion.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "srgb-explicito.png",
+   "bytes": 16782,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/srgb-explicito.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [
+      "ilustraciones/srgb-explicito.png: no tiene fondo transparente; en Apple Books con modo oscuro se verá un recuadro."
+     ],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "texto-renombrado.png",
+   "bytes": 18,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "tiff-renombrado.png",
+   "bytes": 8,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "trns.png",
+   "bytes": 16738,
+   "tipo": "png",
+   "ancho": 1600,
+   "alto": 2400,
+   "alfa": true,
+   "cmyk": false,
+   "p3": false,
+   "media_type": "image/png",
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [
+      "ilustraciones/trns.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo."
+     ],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [
+      "ilustraciones/trns.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo."
+     ],
+     "notas": [
+      "ilustraciones/trns.png: mide 2400 px de alto; KDP recomienda 2500 o más para pantallas de alta resolución."
+     ],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "vacio.png",
+   "bytes": 0,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  },
+  {
+   "archivo": "webp-renombrado.png",
+   "bytes": 16,
+   "tipo": null,
+   "ancho": 0,
+   "alto": 0,
+   "alfa": false,
+   "cmyk": false,
+   "p3": false,
+   "media_type": null,
+   "revisiones": {
+    "ilustracion": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "portada": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    },
+    "logo": {
+     "avisos": [],
+     "notas": [],
+     "errores": []
+    }
+   }
+  }
+ ],
+ "formato": [
+  {
+   "valor": 0.25,
+   "f0": "0",
+   "f1": "0.2",
+   "f2": "0.25",
+   "f3": "0.250"
+  },
+  {
+   "valor": 0.125,
+   "f0": "0",
+   "f1": "0.1",
+   "f2": "0.12",
+   "f3": "0.125"
+  },
+  {
+   "valor": 0.0625,
+   "f0": "0",
+   "f1": "0.1",
+   "f2": "0.06",
+   "f3": "0.062"
+  },
+  {
+   "valor": 0.5,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.50",
+   "f3": "0.500"
+  },
+  {
+   "valor": 0.75,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.75",
+   "f3": "0.750"
+  },
+  {
+   "valor": 0.375,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.38",
+   "f3": "0.375"
+  },
+  {
+   "valor": 0.1875,
+   "f0": "0",
+   "f1": "0.2",
+   "f2": "0.19",
+   "f3": "0.188"
+  },
+  {
+   "valor": 1.0,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.00",
+   "f3": "1.000"
+  },
+  {
+   "valor": 1.25,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.25",
+   "f3": "1.250"
+  },
+  {
+   "valor": 0.625,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.62",
+   "f3": "0.625"
+  },
+  {
+   "valor": 0.3125,
+   "f0": "0",
+   "f1": "0.3",
+   "f2": "0.31",
+   "f3": "0.312"
+  },
+  {
+   "valor": 1.5,
+   "f0": "2",
+   "f1": "1.5",
+   "f2": "1.50",
+   "f3": "1.500"
+  },
+  {
+   "valor": 1.75,
+   "f0": "2",
+   "f1": "1.8",
+   "f2": "1.75",
+   "f3": "1.750"
+  },
+  {
+   "valor": 0.875,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.88",
+   "f3": "0.875"
+  },
+  {
+   "valor": 0.4375,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.44",
+   "f3": "0.438"
+  },
+  {
+   "valor": 2.0,
+   "f0": "2",
+   "f1": "2.0",
+   "f2": "2.00",
+   "f3": "2.000"
+  },
+  {
+   "valor": 2.25,
+   "f0": "2",
+   "f1": "2.2",
+   "f2": "2.25",
+   "f3": "2.250"
+  },
+  {
+   "valor": 1.125,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.12",
+   "f3": "1.125"
+  },
+  {
+   "valor": 0.5625,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.56",
+   "f3": "0.562"
+  },
+  {
+   "valor": 2.5,
+   "f0": "2",
+   "f1": "2.5",
+   "f2": "2.50",
+   "f3": "2.500"
+  },
+  {
+   "valor": 2.75,
+   "f0": "3",
+   "f1": "2.8",
+   "f2": "2.75",
+   "f3": "2.750"
+  },
+  {
+   "valor": 1.375,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.38",
+   "f3": "1.375"
+  },
+  {
+   "valor": 0.6875,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.69",
+   "f3": "0.688"
+  },
+  {
+   "valor": 3.0,
+   "f0": "3",
+   "f1": "3.0",
+   "f2": "3.00",
+   "f3": "3.000"
+  },
+  {
+   "valor": 3.25,
+   "f0": "3",
+   "f1": "3.2",
+   "f2": "3.25",
+   "f3": "3.250"
+  },
+  {
+   "valor": 1.625,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.62",
+   "f3": "1.625"
+  },
+  {
+   "valor": 0.8125,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.81",
+   "f3": "0.812"
+  },
+  {
+   "valor": 3.5,
+   "f0": "4",
+   "f1": "3.5",
+   "f2": "3.50",
+   "f3": "3.500"
+  },
+  {
+   "valor": 3.75,
+   "f0": "4",
+   "f1": "3.8",
+   "f2": "3.75",
+   "f3": "3.750"
+  },
+  {
+   "valor": 1.875,
+   "f0": "2",
+   "f1": "1.9",
+   "f2": "1.88",
+   "f3": "1.875"
+  },
+  {
+   "valor": 0.9375,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.94",
+   "f3": "0.938"
+  },
+  {
+   "valor": 4.0,
+   "f0": "4",
+   "f1": "4.0",
+   "f2": "4.00",
+   "f3": "4.000"
+  },
+  {
+   "valor": 4.25,
+   "f0": "4",
+   "f1": "4.2",
+   "f2": "4.25",
+   "f3": "4.250"
+  },
+  {
+   "valor": 2.125,
+   "f0": "2",
+   "f1": "2.1",
+   "f2": "2.12",
+   "f3": "2.125"
+  },
+  {
+   "valor": 1.0625,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.06",
+   "f3": "1.062"
+  },
+  {
+   "valor": 4.5,
+   "f0": "4",
+   "f1": "4.5",
+   "f2": "4.50",
+   "f3": "4.500"
+  },
+  {
+   "valor": 4.75,
+   "f0": "5",
+   "f1": "4.8",
+   "f2": "4.75",
+   "f3": "4.750"
+  },
+  {
+   "valor": 2.375,
+   "f0": "2",
+   "f1": "2.4",
+   "f2": "2.38",
+   "f3": "2.375"
+  },
+  {
+   "valor": 1.1875,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.19",
+   "f3": "1.188"
+  },
+  {
+   "valor": 5.0,
+   "f0": "5",
+   "f1": "5.0",
+   "f2": "5.00",
+   "f3": "5.000"
+  },
+  {
+   "valor": 5.25,
+   "f0": "5",
+   "f1": "5.2",
+   "f2": "5.25",
+   "f3": "5.250"
+  },
+  {
+   "valor": 2.625,
+   "f0": "3",
+   "f1": "2.6",
+   "f2": "2.62",
+   "f3": "2.625"
+  },
+  {
+   "valor": 1.3125,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.31",
+   "f3": "1.312"
+  },
+  {
+   "valor": 5.5,
+   "f0": "6",
+   "f1": "5.5",
+   "f2": "5.50",
+   "f3": "5.500"
+  },
+  {
+   "valor": 5.75,
+   "f0": "6",
+   "f1": "5.8",
+   "f2": "5.75",
+   "f3": "5.750"
+  },
+  {
+   "valor": 2.875,
+   "f0": "3",
+   "f1": "2.9",
+   "f2": "2.88",
+   "f3": "2.875"
+  },
+  {
+   "valor": 1.4375,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.44",
+   "f3": "1.438"
+  },
+  {
+   "valor": 6.0,
+   "f0": "6",
+   "f1": "6.0",
+   "f2": "6.00",
+   "f3": "6.000"
+  },
+  {
+   "valor": 6.25,
+   "f0": "6",
+   "f1": "6.2",
+   "f2": "6.25",
+   "f3": "6.250"
+  },
+  {
+   "valor": 3.125,
+   "f0": "3",
+   "f1": "3.1",
+   "f2": "3.12",
+   "f3": "3.125"
+  },
+  {
+   "valor": 1.5625,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.56",
+   "f3": "1.562"
+  },
+  {
+   "valor": 6.5,
+   "f0": "6",
+   "f1": "6.5",
+   "f2": "6.50",
+   "f3": "6.500"
+  },
+  {
+   "valor": 6.75,
+   "f0": "7",
+   "f1": "6.8",
+   "f2": "6.75",
+   "f3": "6.750"
+  },
+  {
+   "valor": 3.375,
+   "f0": "3",
+   "f1": "3.4",
+   "f2": "3.38",
+   "f3": "3.375"
+  },
+  {
+   "valor": 1.6875,
+   "f0": "2",
+   "f1": "1.7",
+   "f2": "1.69",
+   "f3": "1.688"
+  },
+  {
+   "valor": 7.0,
+   "f0": "7",
+   "f1": "7.0",
+   "f2": "7.00",
+   "f3": "7.000"
+  },
+  {
+   "valor": 7.25,
+   "f0": "7",
+   "f1": "7.2",
+   "f2": "7.25",
+   "f3": "7.250"
+  },
+  {
+   "valor": 3.625,
+   "f0": "4",
+   "f1": "3.6",
+   "f2": "3.62",
+   "f3": "3.625"
+  },
+  {
+   "valor": 1.8125,
+   "f0": "2",
+   "f1": "1.8",
+   "f2": "1.81",
+   "f3": "1.812"
+  },
+  {
+   "valor": 7.5,
+   "f0": "8",
+   "f1": "7.5",
+   "f2": "7.50",
+   "f3": "7.500"
+  },
+  {
+   "valor": 7.75,
+   "f0": "8",
+   "f1": "7.8",
+   "f2": "7.75",
+   "f3": "7.750"
+  },
+  {
+   "valor": 3.875,
+   "f0": "4",
+   "f1": "3.9",
+   "f2": "3.88",
+   "f3": "3.875"
+  },
+  {
+   "valor": 1.9375,
+   "f0": "2",
+   "f1": "1.9",
+   "f2": "1.94",
+   "f3": "1.938"
+  },
+  {
+   "valor": 8.0,
+   "f0": "8",
+   "f1": "8.0",
+   "f2": "8.00",
+   "f3": "8.000"
+  },
+  {
+   "valor": 8.25,
+   "f0": "8",
+   "f1": "8.2",
+   "f2": "8.25",
+   "f3": "8.250"
+  },
+  {
+   "valor": 4.125,
+   "f0": "4",
+   "f1": "4.1",
+   "f2": "4.12",
+   "f3": "4.125"
+  },
+  {
+   "valor": 2.0625,
+   "f0": "2",
+   "f1": "2.1",
+   "f2": "2.06",
+   "f3": "2.062"
+  },
+  {
+   "valor": 8.5,
+   "f0": "8",
+   "f1": "8.5",
+   "f2": "8.50",
+   "f3": "8.500"
+  },
+  {
+   "valor": 8.75,
+   "f0": "9",
+   "f1": "8.8",
+   "f2": "8.75",
+   "f3": "8.750"
+  },
+  {
+   "valor": 4.375,
+   "f0": "4",
+   "f1": "4.4",
+   "f2": "4.38",
+   "f3": "4.375"
+  },
+  {
+   "valor": 2.1875,
+   "f0": "2",
+   "f1": "2.2",
+   "f2": "2.19",
+   "f3": "2.188"
+  },
+  {
+   "valor": 9.0,
+   "f0": "9",
+   "f1": "9.0",
+   "f2": "9.00",
+   "f3": "9.000"
+  },
+  {
+   "valor": 9.25,
+   "f0": "9",
+   "f1": "9.2",
+   "f2": "9.25",
+   "f3": "9.250"
+  },
+  {
+   "valor": 4.625,
+   "f0": "5",
+   "f1": "4.6",
+   "f2": "4.62",
+   "f3": "4.625"
+  },
+  {
+   "valor": 2.3125,
+   "f0": "2",
+   "f1": "2.3",
+   "f2": "2.31",
+   "f3": "2.312"
+  },
+  {
+   "valor": 9.5,
+   "f0": "10",
+   "f1": "9.5",
+   "f2": "9.50",
+   "f3": "9.500"
+  },
+  {
+   "valor": 9.75,
+   "f0": "10",
+   "f1": "9.8",
+   "f2": "9.75",
+   "f3": "9.750"
+  },
+  {
+   "valor": 4.875,
+   "f0": "5",
+   "f1": "4.9",
+   "f2": "4.88",
+   "f3": "4.875"
+  },
+  {
+   "valor": 2.4375,
+   "f0": "2",
+   "f1": "2.4",
+   "f2": "2.44",
+   "f3": "2.438"
+  },
+  {
+   "valor": 10.0,
+   "f0": "10",
+   "f1": "10.0",
+   "f2": "10.00",
+   "f3": "10.000"
+  },
+  {
+   "valor": 10.25,
+   "f0": "10",
+   "f1": "10.2",
+   "f2": "10.25",
+   "f3": "10.250"
+  },
+  {
+   "valor": 5.125,
+   "f0": "5",
+   "f1": "5.1",
+   "f2": "5.12",
+   "f3": "5.125"
+  },
+  {
+   "valor": 2.5625,
+   "f0": "3",
+   "f1": "2.6",
+   "f2": "2.56",
+   "f3": "2.562"
+  },
+  {
+   "valor": 10.5,
+   "f0": "10",
+   "f1": "10.5",
+   "f2": "10.50",
+   "f3": "10.500"
+  },
+  {
+   "valor": 10.75,
+   "f0": "11",
+   "f1": "10.8",
+   "f2": "10.75",
+   "f3": "10.750"
+  },
+  {
+   "valor": 5.375,
+   "f0": "5",
+   "f1": "5.4",
+   "f2": "5.38",
+   "f3": "5.375"
+  },
+  {
+   "valor": 2.6875,
+   "f0": "3",
+   "f1": "2.7",
+   "f2": "2.69",
+   "f3": "2.688"
+  },
+  {
+   "valor": 11.0,
+   "f0": "11",
+   "f1": "11.0",
+   "f2": "11.00",
+   "f3": "11.000"
+  },
+  {
+   "valor": 11.25,
+   "f0": "11",
+   "f1": "11.2",
+   "f2": "11.25",
+   "f3": "11.250"
+  },
+  {
+   "valor": 5.625,
+   "f0": "6",
+   "f1": "5.6",
+   "f2": "5.62",
+   "f3": "5.625"
+  },
+  {
+   "valor": 2.8125,
+   "f0": "3",
+   "f1": "2.8",
+   "f2": "2.81",
+   "f3": "2.812"
+  },
+  {
+   "valor": 11.5,
+   "f0": "12",
+   "f1": "11.5",
+   "f2": "11.50",
+   "f3": "11.500"
+  },
+  {
+   "valor": 11.75,
+   "f0": "12",
+   "f1": "11.8",
+   "f2": "11.75",
+   "f3": "11.750"
+  },
+  {
+   "valor": 5.875,
+   "f0": "6",
+   "f1": "5.9",
+   "f2": "5.88",
+   "f3": "5.875"
+  },
+  {
+   "valor": 2.9375,
+   "f0": "3",
+   "f1": "2.9",
+   "f2": "2.94",
+   "f3": "2.938"
+  },
+  {
+   "valor": 12.0,
+   "f0": "12",
+   "f1": "12.0",
+   "f2": "12.00",
+   "f3": "12.000"
+  },
+  {
+   "valor": 12.25,
+   "f0": "12",
+   "f1": "12.2",
+   "f2": "12.25",
+   "f3": "12.250"
+  },
+  {
+   "valor": 6.125,
+   "f0": "6",
+   "f1": "6.1",
+   "f2": "6.12",
+   "f3": "6.125"
+  },
+  {
+   "valor": 3.0625,
+   "f0": "3",
+   "f1": "3.1",
+   "f2": "3.06",
+   "f3": "3.062"
+  },
+  {
+   "valor": 12.5,
+   "f0": "12",
+   "f1": "12.5",
+   "f2": "12.50",
+   "f3": "12.500"
+  },
+  {
+   "valor": 12.75,
+   "f0": "13",
+   "f1": "12.8",
+   "f2": "12.75",
+   "f3": "12.750"
+  },
+  {
+   "valor": 6.375,
+   "f0": "6",
+   "f1": "6.4",
+   "f2": "6.38",
+   "f3": "6.375"
+  },
+  {
+   "valor": 3.1875,
+   "f0": "3",
+   "f1": "3.2",
+   "f2": "3.19",
+   "f3": "3.188"
+  },
+  {
+   "valor": 13.0,
+   "f0": "13",
+   "f1": "13.0",
+   "f2": "13.00",
+   "f3": "13.000"
+  },
+  {
+   "valor": 13.25,
+   "f0": "13",
+   "f1": "13.2",
+   "f2": "13.25",
+   "f3": "13.250"
+  },
+  {
+   "valor": 6.625,
+   "f0": "7",
+   "f1": "6.6",
+   "f2": "6.62",
+   "f3": "6.625"
+  },
+  {
+   "valor": 3.3125,
+   "f0": "3",
+   "f1": "3.3",
+   "f2": "3.31",
+   "f3": "3.312"
+  },
+  {
+   "valor": 13.5,
+   "f0": "14",
+   "f1": "13.5",
+   "f2": "13.50",
+   "f3": "13.500"
+  },
+  {
+   "valor": 13.75,
+   "f0": "14",
+   "f1": "13.8",
+   "f2": "13.75",
+   "f3": "13.750"
+  },
+  {
+   "valor": 6.875,
+   "f0": "7",
+   "f1": "6.9",
+   "f2": "6.88",
+   "f3": "6.875"
+  },
+  {
+   "valor": 3.4375,
+   "f0": "3",
+   "f1": "3.4",
+   "f2": "3.44",
+   "f3": "3.438"
+  },
+  {
+   "valor": 14.0,
+   "f0": "14",
+   "f1": "14.0",
+   "f2": "14.00",
+   "f3": "14.000"
+  },
+  {
+   "valor": 14.25,
+   "f0": "14",
+   "f1": "14.2",
+   "f2": "14.25",
+   "f3": "14.250"
+  },
+  {
+   "valor": 7.125,
+   "f0": "7",
+   "f1": "7.1",
+   "f2": "7.12",
+   "f3": "7.125"
+  },
+  {
+   "valor": 3.5625,
+   "f0": "4",
+   "f1": "3.6",
+   "f2": "3.56",
+   "f3": "3.562"
+  },
+  {
+   "valor": 14.5,
+   "f0": "14",
+   "f1": "14.5",
+   "f2": "14.50",
+   "f3": "14.500"
+  },
+  {
+   "valor": 14.75,
+   "f0": "15",
+   "f1": "14.8",
+   "f2": "14.75",
+   "f3": "14.750"
+  },
+  {
+   "valor": 7.375,
+   "f0": "7",
+   "f1": "7.4",
+   "f2": "7.38",
+   "f3": "7.375"
+  },
+  {
+   "valor": 3.6875,
+   "f0": "4",
+   "f1": "3.7",
+   "f2": "3.69",
+   "f3": "3.688"
+  },
+  {
+   "valor": 15.0,
+   "f0": "15",
+   "f1": "15.0",
+   "f2": "15.00",
+   "f3": "15.000"
+  },
+  {
+   "valor": 15.25,
+   "f0": "15",
+   "f1": "15.2",
+   "f2": "15.25",
+   "f3": "15.250"
+  },
+  {
+   "valor": 7.625,
+   "f0": "8",
+   "f1": "7.6",
+   "f2": "7.62",
+   "f3": "7.625"
+  },
+  {
+   "valor": 3.8125,
+   "f0": "4",
+   "f1": "3.8",
+   "f2": "3.81",
+   "f3": "3.812"
+  },
+  {
+   "valor": 15.5,
+   "f0": "16",
+   "f1": "15.5",
+   "f2": "15.50",
+   "f3": "15.500"
+  },
+  {
+   "valor": 15.75,
+   "f0": "16",
+   "f1": "15.8",
+   "f2": "15.75",
+   "f3": "15.750"
+  },
+  {
+   "valor": 7.875,
+   "f0": "8",
+   "f1": "7.9",
+   "f2": "7.88",
+   "f3": "7.875"
+  },
+  {
+   "valor": 3.9375,
+   "f0": "4",
+   "f1": "3.9",
+   "f2": "3.94",
+   "f3": "3.938"
+  },
+  {
+   "valor": 16.0,
+   "f0": "16",
+   "f1": "16.0",
+   "f2": "16.00",
+   "f3": "16.000"
+  },
+  {
+   "valor": 16.25,
+   "f0": "16",
+   "f1": "16.2",
+   "f2": "16.25",
+   "f3": "16.250"
+  },
+  {
+   "valor": 8.125,
+   "f0": "8",
+   "f1": "8.1",
+   "f2": "8.12",
+   "f3": "8.125"
+  },
+  {
+   "valor": 4.0625,
+   "f0": "4",
+   "f1": "4.1",
+   "f2": "4.06",
+   "f3": "4.062"
+  },
+  {
+   "valor": 16.5,
+   "f0": "16",
+   "f1": "16.5",
+   "f2": "16.50",
+   "f3": "16.500"
+  },
+  {
+   "valor": 16.75,
+   "f0": "17",
+   "f1": "16.8",
+   "f2": "16.75",
+   "f3": "16.750"
+  },
+  {
+   "valor": 8.375,
+   "f0": "8",
+   "f1": "8.4",
+   "f2": "8.38",
+   "f3": "8.375"
+  },
+  {
+   "valor": 4.1875,
+   "f0": "4",
+   "f1": "4.2",
+   "f2": "4.19",
+   "f3": "4.188"
+  },
+  {
+   "valor": 17.0,
+   "f0": "17",
+   "f1": "17.0",
+   "f2": "17.00",
+   "f3": "17.000"
+  },
+  {
+   "valor": 17.25,
+   "f0": "17",
+   "f1": "17.2",
+   "f2": "17.25",
+   "f3": "17.250"
+  },
+  {
+   "valor": 8.625,
+   "f0": "9",
+   "f1": "8.6",
+   "f2": "8.62",
+   "f3": "8.625"
+  },
+  {
+   "valor": 4.3125,
+   "f0": "4",
+   "f1": "4.3",
+   "f2": "4.31",
+   "f3": "4.312"
+  },
+  {
+   "valor": 17.5,
+   "f0": "18",
+   "f1": "17.5",
+   "f2": "17.50",
+   "f3": "17.500"
+  },
+  {
+   "valor": 17.75,
+   "f0": "18",
+   "f1": "17.8",
+   "f2": "17.75",
+   "f3": "17.750"
+  },
+  {
+   "valor": 8.875,
+   "f0": "9",
+   "f1": "8.9",
+   "f2": "8.88",
+   "f3": "8.875"
+  },
+  {
+   "valor": 4.4375,
+   "f0": "4",
+   "f1": "4.4",
+   "f2": "4.44",
+   "f3": "4.438"
+  },
+  {
+   "valor": 18.0,
+   "f0": "18",
+   "f1": "18.0",
+   "f2": "18.00",
+   "f3": "18.000"
+  },
+  {
+   "valor": 18.25,
+   "f0": "18",
+   "f1": "18.2",
+   "f2": "18.25",
+   "f3": "18.250"
+  },
+  {
+   "valor": 9.125,
+   "f0": "9",
+   "f1": "9.1",
+   "f2": "9.12",
+   "f3": "9.125"
+  },
+  {
+   "valor": 4.5625,
+   "f0": "5",
+   "f1": "4.6",
+   "f2": "4.56",
+   "f3": "4.562"
+  },
+  {
+   "valor": 18.5,
+   "f0": "18",
+   "f1": "18.5",
+   "f2": "18.50",
+   "f3": "18.500"
+  },
+  {
+   "valor": 18.75,
+   "f0": "19",
+   "f1": "18.8",
+   "f2": "18.75",
+   "f3": "18.750"
+  },
+  {
+   "valor": 9.375,
+   "f0": "9",
+   "f1": "9.4",
+   "f2": "9.38",
+   "f3": "9.375"
+  },
+  {
+   "valor": 4.6875,
+   "f0": "5",
+   "f1": "4.7",
+   "f2": "4.69",
+   "f3": "4.688"
+  },
+  {
+   "valor": 19.0,
+   "f0": "19",
+   "f1": "19.0",
+   "f2": "19.00",
+   "f3": "19.000"
+  },
+  {
+   "valor": 19.25,
+   "f0": "19",
+   "f1": "19.2",
+   "f2": "19.25",
+   "f3": "19.250"
+  },
+  {
+   "valor": 9.625,
+   "f0": "10",
+   "f1": "9.6",
+   "f2": "9.62",
+   "f3": "9.625"
+  },
+  {
+   "valor": 4.8125,
+   "f0": "5",
+   "f1": "4.8",
+   "f2": "4.81",
+   "f3": "4.812"
+  },
+  {
+   "valor": 19.5,
+   "f0": "20",
+   "f1": "19.5",
+   "f2": "19.50",
+   "f3": "19.500"
+  },
+  {
+   "valor": 19.75,
+   "f0": "20",
+   "f1": "19.8",
+   "f2": "19.75",
+   "f3": "19.750"
+  },
+  {
+   "valor": 9.875,
+   "f0": "10",
+   "f1": "9.9",
+   "f2": "9.88",
+   "f3": "9.875"
+  },
+  {
+   "valor": 4.9375,
+   "f0": "5",
+   "f1": "4.9",
+   "f2": "4.94",
+   "f3": "4.938"
+  },
+  {
+   "valor": 20.0,
+   "f0": "20",
+   "f1": "20.0",
+   "f2": "20.00",
+   "f3": "20.000"
+  },
+  {
+   "valor": 20.25,
+   "f0": "20",
+   "f1": "20.2",
+   "f2": "20.25",
+   "f3": "20.250"
+  },
+  {
+   "valor": 10.125,
+   "f0": "10",
+   "f1": "10.1",
+   "f2": "10.12",
+   "f3": "10.125"
+  },
+  {
+   "valor": 5.0625,
+   "f0": "5",
+   "f1": "5.1",
+   "f2": "5.06",
+   "f3": "5.062"
+  },
+  {
+   "valor": 20.5,
+   "f0": "20",
+   "f1": "20.5",
+   "f2": "20.50",
+   "f3": "20.500"
+  },
+  {
+   "valor": 20.75,
+   "f0": "21",
+   "f1": "20.8",
+   "f2": "20.75",
+   "f3": "20.750"
+  },
+  {
+   "valor": 10.375,
+   "f0": "10",
+   "f1": "10.4",
+   "f2": "10.38",
+   "f3": "10.375"
+  },
+  {
+   "valor": 5.1875,
+   "f0": "5",
+   "f1": "5.2",
+   "f2": "5.19",
+   "f3": "5.188"
+  },
+  {
+   "valor": 21.0,
+   "f0": "21",
+   "f1": "21.0",
+   "f2": "21.00",
+   "f3": "21.000"
+  },
+  {
+   "valor": 21.25,
+   "f0": "21",
+   "f1": "21.2",
+   "f2": "21.25",
+   "f3": "21.250"
+  },
+  {
+   "valor": 10.625,
+   "f0": "11",
+   "f1": "10.6",
+   "f2": "10.62",
+   "f3": "10.625"
+  },
+  {
+   "valor": 5.3125,
+   "f0": "5",
+   "f1": "5.3",
+   "f2": "5.31",
+   "f3": "5.312"
+  },
+  {
+   "valor": 21.5,
+   "f0": "22",
+   "f1": "21.5",
+   "f2": "21.50",
+   "f3": "21.500"
+  },
+  {
+   "valor": 21.75,
+   "f0": "22",
+   "f1": "21.8",
+   "f2": "21.75",
+   "f3": "21.750"
+  },
+  {
+   "valor": 10.875,
+   "f0": "11",
+   "f1": "10.9",
+   "f2": "10.88",
+   "f3": "10.875"
+  },
+  {
+   "valor": 5.4375,
+   "f0": "5",
+   "f1": "5.4",
+   "f2": "5.44",
+   "f3": "5.438"
+  },
+  {
+   "valor": 22.0,
+   "f0": "22",
+   "f1": "22.0",
+   "f2": "22.00",
+   "f3": "22.000"
+  },
+  {
+   "valor": 22.25,
+   "f0": "22",
+   "f1": "22.2",
+   "f2": "22.25",
+   "f3": "22.250"
+  },
+  {
+   "valor": 11.125,
+   "f0": "11",
+   "f1": "11.1",
+   "f2": "11.12",
+   "f3": "11.125"
+  },
+  {
+   "valor": 5.5625,
+   "f0": "6",
+   "f1": "5.6",
+   "f2": "5.56",
+   "f3": "5.562"
+  },
+  {
+   "valor": 22.5,
+   "f0": "22",
+   "f1": "22.5",
+   "f2": "22.50",
+   "f3": "22.500"
+  },
+  {
+   "valor": 22.75,
+   "f0": "23",
+   "f1": "22.8",
+   "f2": "22.75",
+   "f3": "22.750"
+  },
+  {
+   "valor": 11.375,
+   "f0": "11",
+   "f1": "11.4",
+   "f2": "11.38",
+   "f3": "11.375"
+  },
+  {
+   "valor": 5.6875,
+   "f0": "6",
+   "f1": "5.7",
+   "f2": "5.69",
+   "f3": "5.688"
+  },
+  {
+   "valor": 23.0,
+   "f0": "23",
+   "f1": "23.0",
+   "f2": "23.00",
+   "f3": "23.000"
+  },
+  {
+   "valor": 23.25,
+   "f0": "23",
+   "f1": "23.2",
+   "f2": "23.25",
+   "f3": "23.250"
+  },
+  {
+   "valor": 11.625,
+   "f0": "12",
+   "f1": "11.6",
+   "f2": "11.62",
+   "f3": "11.625"
+  },
+  {
+   "valor": 5.8125,
+   "f0": "6",
+   "f1": "5.8",
+   "f2": "5.81",
+   "f3": "5.812"
+  },
+  {
+   "valor": 23.5,
+   "f0": "24",
+   "f1": "23.5",
+   "f2": "23.50",
+   "f3": "23.500"
+  },
+  {
+   "valor": 23.75,
+   "f0": "24",
+   "f1": "23.8",
+   "f2": "23.75",
+   "f3": "23.750"
+  },
+  {
+   "valor": 11.875,
+   "f0": "12",
+   "f1": "11.9",
+   "f2": "11.88",
+   "f3": "11.875"
+  },
+  {
+   "valor": 5.9375,
+   "f0": "6",
+   "f1": "5.9",
+   "f2": "5.94",
+   "f3": "5.938"
+  },
+  {
+   "valor": 24.0,
+   "f0": "24",
+   "f1": "24.0",
+   "f2": "24.00",
+   "f3": "24.000"
+  },
+  {
+   "valor": 24.25,
+   "f0": "24",
+   "f1": "24.2",
+   "f2": "24.25",
+   "f3": "24.250"
+  },
+  {
+   "valor": 12.125,
+   "f0": "12",
+   "f1": "12.1",
+   "f2": "12.12",
+   "f3": "12.125"
+  },
+  {
+   "valor": 6.0625,
+   "f0": "6",
+   "f1": "6.1",
+   "f2": "6.06",
+   "f3": "6.062"
+  },
+  {
+   "valor": 24.5,
+   "f0": "24",
+   "f1": "24.5",
+   "f2": "24.50",
+   "f3": "24.500"
+  },
+  {
+   "valor": 24.75,
+   "f0": "25",
+   "f1": "24.8",
+   "f2": "24.75",
+   "f3": "24.750"
+  },
+  {
+   "valor": 12.375,
+   "f0": "12",
+   "f1": "12.4",
+   "f2": "12.38",
+   "f3": "12.375"
+  },
+  {
+   "valor": 6.1875,
+   "f0": "6",
+   "f1": "6.2",
+   "f2": "6.19",
+   "f3": "6.188"
+  },
+  {
+   "valor": 25.0,
+   "f0": "25",
+   "f1": "25.0",
+   "f2": "25.00",
+   "f3": "25.000"
+  },
+  {
+   "valor": 25.25,
+   "f0": "25",
+   "f1": "25.2",
+   "f2": "25.25",
+   "f3": "25.250"
+  },
+  {
+   "valor": 12.625,
+   "f0": "13",
+   "f1": "12.6",
+   "f2": "12.62",
+   "f3": "12.625"
+  },
+  {
+   "valor": 6.3125,
+   "f0": "6",
+   "f1": "6.3",
+   "f2": "6.31",
+   "f3": "6.312"
+  },
+  {
+   "valor": 25.5,
+   "f0": "26",
+   "f1": "25.5",
+   "f2": "25.50",
+   "f3": "25.500"
+  },
+  {
+   "valor": 25.75,
+   "f0": "26",
+   "f1": "25.8",
+   "f2": "25.75",
+   "f3": "25.750"
+  },
+  {
+   "valor": 12.875,
+   "f0": "13",
+   "f1": "12.9",
+   "f2": "12.88",
+   "f3": "12.875"
+  },
+  {
+   "valor": 6.4375,
+   "f0": "6",
+   "f1": "6.4",
+   "f2": "6.44",
+   "f3": "6.438"
+  },
+  {
+   "valor": 26.0,
+   "f0": "26",
+   "f1": "26.0",
+   "f2": "26.00",
+   "f3": "26.000"
+  },
+  {
+   "valor": 26.25,
+   "f0": "26",
+   "f1": "26.2",
+   "f2": "26.25",
+   "f3": "26.250"
+  },
+  {
+   "valor": 13.125,
+   "f0": "13",
+   "f1": "13.1",
+   "f2": "13.12",
+   "f3": "13.125"
+  },
+  {
+   "valor": 6.5625,
+   "f0": "7",
+   "f1": "6.6",
+   "f2": "6.56",
+   "f3": "6.562"
+  },
+  {
+   "valor": 26.5,
+   "f0": "26",
+   "f1": "26.5",
+   "f2": "26.50",
+   "f3": "26.500"
+  },
+  {
+   "valor": 26.75,
+   "f0": "27",
+   "f1": "26.8",
+   "f2": "26.75",
+   "f3": "26.750"
+  },
+  {
+   "valor": 13.375,
+   "f0": "13",
+   "f1": "13.4",
+   "f2": "13.38",
+   "f3": "13.375"
+  },
+  {
+   "valor": 6.6875,
+   "f0": "7",
+   "f1": "6.7",
+   "f2": "6.69",
+   "f3": "6.688"
+  },
+  {
+   "valor": 27.0,
+   "f0": "27",
+   "f1": "27.0",
+   "f2": "27.00",
+   "f3": "27.000"
+  },
+  {
+   "valor": 27.25,
+   "f0": "27",
+   "f1": "27.2",
+   "f2": "27.25",
+   "f3": "27.250"
+  },
+  {
+   "valor": 13.625,
+   "f0": "14",
+   "f1": "13.6",
+   "f2": "13.62",
+   "f3": "13.625"
+  },
+  {
+   "valor": 6.8125,
+   "f0": "7",
+   "f1": "6.8",
+   "f2": "6.81",
+   "f3": "6.812"
+  },
+  {
+   "valor": 27.5,
+   "f0": "28",
+   "f1": "27.5",
+   "f2": "27.50",
+   "f3": "27.500"
+  },
+  {
+   "valor": 27.75,
+   "f0": "28",
+   "f1": "27.8",
+   "f2": "27.75",
+   "f3": "27.750"
+  },
+  {
+   "valor": 13.875,
+   "f0": "14",
+   "f1": "13.9",
+   "f2": "13.88",
+   "f3": "13.875"
+  },
+  {
+   "valor": 6.9375,
+   "f0": "7",
+   "f1": "6.9",
+   "f2": "6.94",
+   "f3": "6.938"
+  },
+  {
+   "valor": 28.0,
+   "f0": "28",
+   "f1": "28.0",
+   "f2": "28.00",
+   "f3": "28.000"
+  },
+  {
+   "valor": 28.25,
+   "f0": "28",
+   "f1": "28.2",
+   "f2": "28.25",
+   "f3": "28.250"
+  },
+  {
+   "valor": 14.125,
+   "f0": "14",
+   "f1": "14.1",
+   "f2": "14.12",
+   "f3": "14.125"
+  },
+  {
+   "valor": 7.0625,
+   "f0": "7",
+   "f1": "7.1",
+   "f2": "7.06",
+   "f3": "7.062"
+  },
+  {
+   "valor": 28.5,
+   "f0": "28",
+   "f1": "28.5",
+   "f2": "28.50",
+   "f3": "28.500"
+  },
+  {
+   "valor": 28.75,
+   "f0": "29",
+   "f1": "28.8",
+   "f2": "28.75",
+   "f3": "28.750"
+  },
+  {
+   "valor": 14.375,
+   "f0": "14",
+   "f1": "14.4",
+   "f2": "14.38",
+   "f3": "14.375"
+  },
+  {
+   "valor": 7.1875,
+   "f0": "7",
+   "f1": "7.2",
+   "f2": "7.19",
+   "f3": "7.188"
+  },
+  {
+   "valor": 29.0,
+   "f0": "29",
+   "f1": "29.0",
+   "f2": "29.00",
+   "f3": "29.000"
+  },
+  {
+   "valor": 29.25,
+   "f0": "29",
+   "f1": "29.2",
+   "f2": "29.25",
+   "f3": "29.250"
+  },
+  {
+   "valor": 14.625,
+   "f0": "15",
+   "f1": "14.6",
+   "f2": "14.62",
+   "f3": "14.625"
+  },
+  {
+   "valor": 7.3125,
+   "f0": "7",
+   "f1": "7.3",
+   "f2": "7.31",
+   "f3": "7.312"
+  },
+  {
+   "valor": 29.5,
+   "f0": "30",
+   "f1": "29.5",
+   "f2": "29.50",
+   "f3": "29.500"
+  },
+  {
+   "valor": 29.75,
+   "f0": "30",
+   "f1": "29.8",
+   "f2": "29.75",
+   "f3": "29.750"
+  },
+  {
+   "valor": 14.875,
+   "f0": "15",
+   "f1": "14.9",
+   "f2": "14.88",
+   "f3": "14.875"
+  },
+  {
+   "valor": 7.4375,
+   "f0": "7",
+   "f1": "7.4",
+   "f2": "7.44",
+   "f3": "7.438"
+  },
+  {
+   "valor": 30.0,
+   "f0": "30",
+   "f1": "30.0",
+   "f2": "30.00",
+   "f3": "30.000"
+  },
+  {
+   "valor": 30.25,
+   "f0": "30",
+   "f1": "30.2",
+   "f2": "30.25",
+   "f3": "30.250"
+  },
+  {
+   "valor": 15.125,
+   "f0": "15",
+   "f1": "15.1",
+   "f2": "15.12",
+   "f3": "15.125"
+  },
+  {
+   "valor": 7.5625,
+   "f0": "8",
+   "f1": "7.6",
+   "f2": "7.56",
+   "f3": "7.562"
+  },
+  {
+   "valor": 30.5,
+   "f0": "30",
+   "f1": "30.5",
+   "f2": "30.50",
+   "f3": "30.500"
+  },
+  {
+   "valor": 30.75,
+   "f0": "31",
+   "f1": "30.8",
+   "f2": "30.75",
+   "f3": "30.750"
+  },
+  {
+   "valor": 15.375,
+   "f0": "15",
+   "f1": "15.4",
+   "f2": "15.38",
+   "f3": "15.375"
+  },
+  {
+   "valor": 7.6875,
+   "f0": "8",
+   "f1": "7.7",
+   "f2": "7.69",
+   "f3": "7.688"
+  },
+  {
+   "valor": 31.0,
+   "f0": "31",
+   "f1": "31.0",
+   "f2": "31.00",
+   "f3": "31.000"
+  },
+  {
+   "valor": 31.25,
+   "f0": "31",
+   "f1": "31.2",
+   "f2": "31.25",
+   "f3": "31.250"
+  },
+  {
+   "valor": 15.625,
+   "f0": "16",
+   "f1": "15.6",
+   "f2": "15.62",
+   "f3": "15.625"
+  },
+  {
+   "valor": 7.8125,
+   "f0": "8",
+   "f1": "7.8",
+   "f2": "7.81",
+   "f3": "7.812"
+  },
+  {
+   "valor": 31.5,
+   "f0": "32",
+   "f1": "31.5",
+   "f2": "31.50",
+   "f3": "31.500"
+  },
+  {
+   "valor": 31.75,
+   "f0": "32",
+   "f1": "31.8",
+   "f2": "31.75",
+   "f3": "31.750"
+  },
+  {
+   "valor": 15.875,
+   "f0": "16",
+   "f1": "15.9",
+   "f2": "15.88",
+   "f3": "15.875"
+  },
+  {
+   "valor": 7.9375,
+   "f0": "8",
+   "f1": "7.9",
+   "f2": "7.94",
+   "f3": "7.938"
+  },
+  {
+   "valor": 32.0,
+   "f0": "32",
+   "f1": "32.0",
+   "f2": "32.00",
+   "f3": "32.000"
+  },
+  {
+   "valor": 32.25,
+   "f0": "32",
+   "f1": "32.2",
+   "f2": "32.25",
+   "f3": "32.250"
+  },
+  {
+   "valor": 16.125,
+   "f0": "16",
+   "f1": "16.1",
+   "f2": "16.12",
+   "f3": "16.125"
+  },
+  {
+   "valor": 8.0625,
+   "f0": "8",
+   "f1": "8.1",
+   "f2": "8.06",
+   "f3": "8.062"
+  },
+  {
+   "valor": 32.5,
+   "f0": "32",
+   "f1": "32.5",
+   "f2": "32.50",
+   "f3": "32.500"
+  },
+  {
+   "valor": 32.75,
+   "f0": "33",
+   "f1": "32.8",
+   "f2": "32.75",
+   "f3": "32.750"
+  },
+  {
+   "valor": 16.375,
+   "f0": "16",
+   "f1": "16.4",
+   "f2": "16.38",
+   "f3": "16.375"
+  },
+  {
+   "valor": 8.1875,
+   "f0": "8",
+   "f1": "8.2",
+   "f2": "8.19",
+   "f3": "8.188"
+  },
+  {
+   "valor": 33.0,
+   "f0": "33",
+   "f1": "33.0",
+   "f2": "33.00",
+   "f3": "33.000"
+  },
+  {
+   "valor": 33.25,
+   "f0": "33",
+   "f1": "33.2",
+   "f2": "33.25",
+   "f3": "33.250"
+  },
+  {
+   "valor": 16.625,
+   "f0": "17",
+   "f1": "16.6",
+   "f2": "16.62",
+   "f3": "16.625"
+  },
+  {
+   "valor": 8.3125,
+   "f0": "8",
+   "f1": "8.3",
+   "f2": "8.31",
+   "f3": "8.312"
+  },
+  {
+   "valor": 33.5,
+   "f0": "34",
+   "f1": "33.5",
+   "f2": "33.50",
+   "f3": "33.500"
+  },
+  {
+   "valor": 33.75,
+   "f0": "34",
+   "f1": "33.8",
+   "f2": "33.75",
+   "f3": "33.750"
+  },
+  {
+   "valor": 16.875,
+   "f0": "17",
+   "f1": "16.9",
+   "f2": "16.88",
+   "f3": "16.875"
+  },
+  {
+   "valor": 8.4375,
+   "f0": "8",
+   "f1": "8.4",
+   "f2": "8.44",
+   "f3": "8.438"
+  },
+  {
+   "valor": 34.0,
+   "f0": "34",
+   "f1": "34.0",
+   "f2": "34.00",
+   "f3": "34.000"
+  },
+  {
+   "valor": 34.25,
+   "f0": "34",
+   "f1": "34.2",
+   "f2": "34.25",
+   "f3": "34.250"
+  },
+  {
+   "valor": 17.125,
+   "f0": "17",
+   "f1": "17.1",
+   "f2": "17.12",
+   "f3": "17.125"
+  },
+  {
+   "valor": 8.5625,
+   "f0": "9",
+   "f1": "8.6",
+   "f2": "8.56",
+   "f3": "8.562"
+  },
+  {
+   "valor": 34.5,
+   "f0": "34",
+   "f1": "34.5",
+   "f2": "34.50",
+   "f3": "34.500"
+  },
+  {
+   "valor": 34.75,
+   "f0": "35",
+   "f1": "34.8",
+   "f2": "34.75",
+   "f3": "34.750"
+  },
+  {
+   "valor": 17.375,
+   "f0": "17",
+   "f1": "17.4",
+   "f2": "17.38",
+   "f3": "17.375"
+  },
+  {
+   "valor": 8.6875,
+   "f0": "9",
+   "f1": "8.7",
+   "f2": "8.69",
+   "f3": "8.688"
+  },
+  {
+   "valor": 35.0,
+   "f0": "35",
+   "f1": "35.0",
+   "f2": "35.00",
+   "f3": "35.000"
+  },
+  {
+   "valor": 35.25,
+   "f0": "35",
+   "f1": "35.2",
+   "f2": "35.25",
+   "f3": "35.250"
+  },
+  {
+   "valor": 17.625,
+   "f0": "18",
+   "f1": "17.6",
+   "f2": "17.62",
+   "f3": "17.625"
+  },
+  {
+   "valor": 8.8125,
+   "f0": "9",
+   "f1": "8.8",
+   "f2": "8.81",
+   "f3": "8.812"
+  },
+  {
+   "valor": 35.5,
+   "f0": "36",
+   "f1": "35.5",
+   "f2": "35.50",
+   "f3": "35.500"
+  },
+  {
+   "valor": 35.75,
+   "f0": "36",
+   "f1": "35.8",
+   "f2": "35.75",
+   "f3": "35.750"
+  },
+  {
+   "valor": 17.875,
+   "f0": "18",
+   "f1": "17.9",
+   "f2": "17.88",
+   "f3": "17.875"
+  },
+  {
+   "valor": 8.9375,
+   "f0": "9",
+   "f1": "8.9",
+   "f2": "8.94",
+   "f3": "8.938"
+  },
+  {
+   "valor": 36.0,
+   "f0": "36",
+   "f1": "36.0",
+   "f2": "36.00",
+   "f3": "36.000"
+  },
+  {
+   "valor": 36.25,
+   "f0": "36",
+   "f1": "36.2",
+   "f2": "36.25",
+   "f3": "36.250"
+  },
+  {
+   "valor": 18.125,
+   "f0": "18",
+   "f1": "18.1",
+   "f2": "18.12",
+   "f3": "18.125"
+  },
+  {
+   "valor": 9.0625,
+   "f0": "9",
+   "f1": "9.1",
+   "f2": "9.06",
+   "f3": "9.062"
+  },
+  {
+   "valor": 36.5,
+   "f0": "36",
+   "f1": "36.5",
+   "f2": "36.50",
+   "f3": "36.500"
+  },
+  {
+   "valor": 36.75,
+   "f0": "37",
+   "f1": "36.8",
+   "f2": "36.75",
+   "f3": "36.750"
+  },
+  {
+   "valor": 18.375,
+   "f0": "18",
+   "f1": "18.4",
+   "f2": "18.38",
+   "f3": "18.375"
+  },
+  {
+   "valor": 9.1875,
+   "f0": "9",
+   "f1": "9.2",
+   "f2": "9.19",
+   "f3": "9.188"
+  },
+  {
+   "valor": 37.0,
+   "f0": "37",
+   "f1": "37.0",
+   "f2": "37.00",
+   "f3": "37.000"
+  },
+  {
+   "valor": 37.25,
+   "f0": "37",
+   "f1": "37.2",
+   "f2": "37.25",
+   "f3": "37.250"
+  },
+  {
+   "valor": 18.625,
+   "f0": "19",
+   "f1": "18.6",
+   "f2": "18.62",
+   "f3": "18.625"
+  },
+  {
+   "valor": 9.3125,
+   "f0": "9",
+   "f1": "9.3",
+   "f2": "9.31",
+   "f3": "9.312"
+  },
+  {
+   "valor": 37.5,
+   "f0": "38",
+   "f1": "37.5",
+   "f2": "37.50",
+   "f3": "37.500"
+  },
+  {
+   "valor": 37.75,
+   "f0": "38",
+   "f1": "37.8",
+   "f2": "37.75",
+   "f3": "37.750"
+  },
+  {
+   "valor": 18.875,
+   "f0": "19",
+   "f1": "18.9",
+   "f2": "18.88",
+   "f3": "18.875"
+  },
+  {
+   "valor": 9.4375,
+   "f0": "9",
+   "f1": "9.4",
+   "f2": "9.44",
+   "f3": "9.438"
+  },
+  {
+   "valor": 38.0,
+   "f0": "38",
+   "f1": "38.0",
+   "f2": "38.00",
+   "f3": "38.000"
+  },
+  {
+   "valor": 38.25,
+   "f0": "38",
+   "f1": "38.2",
+   "f2": "38.25",
+   "f3": "38.250"
+  },
+  {
+   "valor": 19.125,
+   "f0": "19",
+   "f1": "19.1",
+   "f2": "19.12",
+   "f3": "19.125"
+  },
+  {
+   "valor": 9.5625,
+   "f0": "10",
+   "f1": "9.6",
+   "f2": "9.56",
+   "f3": "9.562"
+  },
+  {
+   "valor": 38.5,
+   "f0": "38",
+   "f1": "38.5",
+   "f2": "38.50",
+   "f3": "38.500"
+  },
+  {
+   "valor": 38.75,
+   "f0": "39",
+   "f1": "38.8",
+   "f2": "38.75",
+   "f3": "38.750"
+  },
+  {
+   "valor": 19.375,
+   "f0": "19",
+   "f1": "19.4",
+   "f2": "19.38",
+   "f3": "19.375"
+  },
+  {
+   "valor": 9.6875,
+   "f0": "10",
+   "f1": "9.7",
+   "f2": "9.69",
+   "f3": "9.688"
+  },
+  {
+   "valor": 39.0,
+   "f0": "39",
+   "f1": "39.0",
+   "f2": "39.00",
+   "f3": "39.000"
+  },
+  {
+   "valor": 39.25,
+   "f0": "39",
+   "f1": "39.2",
+   "f2": "39.25",
+   "f3": "39.250"
+  },
+  {
+   "valor": 19.625,
+   "f0": "20",
+   "f1": "19.6",
+   "f2": "19.62",
+   "f3": "19.625"
+  },
+  {
+   "valor": 9.8125,
+   "f0": "10",
+   "f1": "9.8",
+   "f2": "9.81",
+   "f3": "9.812"
+  },
+  {
+   "valor": 39.5,
+   "f0": "40",
+   "f1": "39.5",
+   "f2": "39.50",
+   "f3": "39.500"
+  },
+  {
+   "valor": 39.75,
+   "f0": "40",
+   "f1": "39.8",
+   "f2": "39.75",
+   "f3": "39.750"
+  },
+  {
+   "valor": 19.875,
+   "f0": "20",
+   "f1": "19.9",
+   "f2": "19.88",
+   "f3": "19.875"
+  },
+  {
+   "valor": 9.9375,
+   "f0": "10",
+   "f1": "9.9",
+   "f2": "9.94",
+   "f3": "9.938"
+  },
+  {
+   "valor": 40.0,
+   "f0": "40",
+   "f1": "40.0",
+   "f2": "40.00",
+   "f3": "40.000"
+  },
+  {
+   "valor": 1.38875,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.39",
+   "f3": "1.389"
+  },
+  {
+   "valor": 1.7775,
+   "f0": "2",
+   "f1": "1.8",
+   "f2": "1.78",
+   "f3": "1.778"
+  },
+  {
+   "valor": 2.16625,
+   "f0": "2",
+   "f1": "2.2",
+   "f2": "2.17",
+   "f3": "2.166"
+  },
+  {
+   "valor": 2.555,
+   "f0": "3",
+   "f1": "2.6",
+   "f2": "2.56",
+   "f3": "2.555"
+  },
+  {
+   "valor": 2.94375,
+   "f0": "3",
+   "f1": "2.9",
+   "f2": "2.94",
+   "f3": "2.944"
+  },
+  {
+   "valor": 0.8918617614269788,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.89",
+   "f3": "0.892"
+  },
+  {
+   "valor": 1.2385730211817167,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.24",
+   "f3": "1.239"
+  },
+  {
+   "valor": 1.585284280936455,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.59",
+   "f3": "1.585"
+  },
+  {
+   "valor": 1.9319955406911928,
+   "f0": "2",
+   "f1": "1.9",
+   "f2": "1.93",
+   "f3": "1.932"
+  },
+  {
+   "valor": 2.278706800445931,
+   "f0": "2",
+   "f1": "2.3",
+   "f2": "2.28",
+   "f3": "2.279"
+  },
+  {
+   "valor": 2.6254180602006687,
+   "f0": "3",
+   "f1": "2.6",
+   "f2": "2.63",
+   "f3": "2.625"
+  },
+  {
+   "valor": 0.8048289738430584,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.80",
+   "f3": "0.805"
+  },
+  {
+   "valor": 1.1177062374245472,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.12",
+   "f3": "1.118"
+  },
+  {
+   "valor": 1.4305835010060362,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.43",
+   "f3": "1.431"
+  },
+  {
+   "valor": 1.743460764587525,
+   "f0": "2",
+   "f1": "1.7",
+   "f2": "1.74",
+   "f3": "1.743"
+  },
+  {
+   "valor": 2.056338028169014,
+   "f0": "2",
+   "f1": "2.1",
+   "f2": "2.06",
+   "f3": "2.056"
+  },
+  {
+   "valor": 2.369215291750503,
+   "f0": "2",
+   "f1": "2.4",
+   "f2": "2.37",
+   "f3": "2.369"
+  },
+  {
+   "valor": 0.7332722273143905,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.73",
+   "f3": "0.733"
+  },
+  {
+   "valor": 1.0183318056828599,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.02",
+   "f3": "1.018"
+  },
+  {
+   "valor": 1.3033913840513291,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.30",
+   "f3": "1.303"
+  },
+  {
+   "valor": 1.5884509624197984,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.59",
+   "f3": "1.588"
+  },
+  {
+   "valor": 1.8735105407882677,
+   "f0": "2",
+   "f1": "1.9",
+   "f2": "1.87",
+   "f3": "1.874"
+  },
+  {
+   "valor": 2.158570119156737,
+   "f0": "2",
+   "f1": "2.2",
+   "f2": "2.16",
+   "f3": "2.159"
+  },
+  {
+   "valor": 0.6734006734006734,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.67",
+   "f3": "0.673"
+  },
+  {
+   "valor": 0.9351851851851852,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.94",
+   "f3": "0.935"
+  },
+  {
+   "valor": 1.196969696969697,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.20",
+   "f3": "1.197"
+  },
+  {
+   "valor": 1.4587542087542087,
+   "f0": "1",
+   "f1": "1.5",
+   "f2": "1.46",
+   "f3": "1.459"
+  },
+  {
+   "valor": 1.7205387205387206,
+   "f0": "2",
+   "f1": "1.7",
+   "f2": "1.72",
+   "f3": "1.721"
+  },
+  {
+   "valor": 1.9823232323232323,
+   "f0": "2",
+   "f1": "2.0",
+   "f2": "1.98",
+   "f3": "1.982"
+  },
+  {
+   "valor": 0.622568093385214,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.62",
+   "f3": "0.623"
+  },
+  {
+   "valor": 0.864591439688716,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.86",
+   "f3": "0.865"
+  },
+  {
+   "valor": 1.106614785992218,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.11",
+   "f3": "1.107"
+  },
+  {
+   "valor": 1.34863813229572,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.35",
+   "f3": "1.349"
+  },
+  {
+   "valor": 1.5906614785992217,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.59",
+   "f3": "1.591"
+  },
+  {
+   "valor": 1.8326848249027237,
+   "f0": "2",
+   "f1": "1.8",
+   "f2": "1.83",
+   "f3": "1.833"
+  },
+  {
+   "valor": 0.5788712011577424,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.58",
+   "f3": "0.579"
+  },
+  {
+   "valor": 0.8039073806078147,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.80",
+   "f3": "0.804"
+  },
+  {
+   "valor": 1.0289435600578871,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.03",
+   "f3": "1.029"
+  },
+  {
+   "valor": 1.2539797395079595,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.25",
+   "f3": "1.254"
+  },
+  {
+   "valor": 1.4790159189580319,
+   "f0": "1",
+   "f1": "1.5",
+   "f2": "1.48",
+   "f3": "1.479"
+  },
+  {
+   "valor": 1.7040520984081042,
+   "f0": "2",
+   "f1": "1.7",
+   "f2": "1.70",
+   "f3": "1.704"
+  },
+  {
+   "valor": 0.5409060175794456,
+   "f0": "1",
+   "f1": "0.5",
+   "f2": "0.54",
+   "f3": "0.541"
+  },
+  {
+   "valor": 0.751183231913455,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.75",
+   "f3": "0.751"
+  },
+  {
+   "valor": 0.9614604462474645,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "0.96",
+   "f3": "0.961"
+  },
+  {
+   "valor": 1.171737660581474,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.17",
+   "f3": "1.172"
+  },
+  {
+   "valor": 1.3820148749154835,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.38",
+   "f3": "1.382"
+  },
+  {
+   "valor": 1.592292089249493,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.59",
+   "f3": "1.592"
+  },
+  {
+   "valor": 0.5076142131979695,
+   "f0": "1",
+   "f1": "0.5",
+   "f2": "0.51",
+   "f3": "0.508"
+  },
+  {
+   "valor": 0.7049492385786802,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.70",
+   "f3": "0.705"
+  },
+  {
+   "valor": 0.9022842639593909,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.90",
+   "f3": "0.902"
+  },
+  {
+   "valor": 1.0996192893401016,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.10",
+   "f3": "1.100"
+  },
+  {
+   "valor": 1.2969543147208122,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.30",
+   "f3": "1.297"
+  },
+  {
+   "valor": 1.494289340101523,
+   "f0": "1",
+   "f1": "1.5",
+   "f2": "1.49",
+   "f3": "1.494"
+  },
+  {
+   "valor": 0.4781829049611476,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.48",
+   "f3": "0.478"
+  },
+  {
+   "valor": 0.6640765092647938,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.66",
+   "f3": "0.664"
+  },
+  {
+   "valor": 0.8499701135684399,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.85",
+   "f3": "0.850"
+  },
+  {
+   "valor": 1.035863717872086,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.04",
+   "f3": "1.036"
+  },
+  {
+   "valor": 1.2217573221757323,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.22",
+   "f3": "1.222"
+  },
+  {
+   "valor": 1.4076509264793784,
+   "f0": "1",
+   "f1": "1.4",
+   "f2": "1.41",
+   "f3": "1.408"
+  },
+  {
+   "valor": 0.4519774011299435,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.45",
+   "f3": "0.452"
+  },
+  {
+   "valor": 0.6276836158192091,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.63",
+   "f3": "0.628"
+  },
+  {
+   "valor": 0.8033898305084746,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.80",
+   "f3": "0.803"
+  },
+  {
+   "valor": 0.9790960451977401,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "0.98",
+   "f3": "0.979"
+  },
+  {
+   "valor": 1.1548022598870056,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.15",
+   "f3": "1.155"
+  },
+  {
+   "valor": 1.3305084745762712,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.33",
+   "f3": "1.331"
+  },
+  {
+   "valor": 0.42849491162292447,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.43",
+   "f3": "0.428"
+  },
+  {
+   "valor": 0.5950723085163364,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.60",
+   "f3": "0.595"
+  },
+  {
+   "valor": 0.7616497054097483,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.76",
+   "f3": "0.762"
+  },
+  {
+   "valor": 0.9282271023031602,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.93",
+   "f3": "0.928"
+  },
+  {
+   "valor": 1.094804499196572,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.09",
+   "f3": "1.095"
+  },
+  {
+   "valor": 1.2613818960899839,
+   "f0": "1",
+   "f1": "1.3",
+   "f2": "1.26",
+   "f3": "1.261"
+  },
+  {
+   "valor": 0.4073319755600815,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.41",
+   "f3": "0.407"
+  },
+  {
+   "valor": 0.5656822810590632,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.57",
+   "f3": "0.566"
+  },
+  {
+   "valor": 0.7240325865580448,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.72",
+   "f3": "0.724"
+  },
+  {
+   "valor": 0.8823828920570265,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.88",
+   "f3": "0.882"
+  },
+  {
+   "valor": 1.0407331975560081,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.04",
+   "f3": "1.041"
+  },
+  {
+   "valor": 1.1990835030549898,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.20",
+   "f3": "1.199"
+  },
+  {
+   "valor": 0.38816108685104317,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.39",
+   "f3": "0.388"
+  },
+  {
+   "valor": 0.5390587093643863,
+   "f0": "1",
+   "f1": "0.5",
+   "f2": "0.54",
+   "f3": "0.539"
+  },
+  {
+   "valor": 0.6899563318777293,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.69",
+   "f3": "0.690"
+  },
+  {
+   "valor": 0.8408539543910722,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.84",
+   "f3": "0.841"
+  },
+  {
+   "valor": 0.9917515769044153,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "0.99",
+   "f3": "0.992"
+  },
+  {
+   "valor": 1.1426491994177583,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.14",
+   "f3": "1.143"
+  },
+  {
+   "valor": 0.3707136237256719,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.37",
+   "f3": "0.371"
+  },
+  {
+   "valor": 0.5148285449490269,
+   "f0": "1",
+   "f1": "0.5",
+   "f2": "0.51",
+   "f3": "0.515"
+  },
+  {
+   "valor": 0.6589434661723819,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.66",
+   "f3": "0.659"
+  },
+  {
+   "valor": 0.8030583873957368,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.80",
+   "f3": "0.803"
+  },
+  {
+   "valor": 0.9471733086190918,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.95",
+   "f3": "0.947"
+  },
+  {
+   "valor": 1.0912882298424467,
+   "f0": "1",
+   "f1": "1.1",
+   "f2": "1.09",
+   "f3": "1.091"
+  },
+  {
+   "valor": 0.35476718403547675,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.35",
+   "f3": "0.355"
+  },
+  {
+   "valor": 0.4926829268292683,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.49",
+   "f3": "0.493"
+  },
+  {
+   "valor": 0.6305986696230599,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.63",
+   "f3": "0.631"
+  },
+  {
+   "valor": 0.7685144124168515,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.77",
+   "f3": "0.769"
+  },
+  {
+   "valor": 0.906430155210643,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.91",
+   "f3": "0.906"
+  },
+  {
+   "valor": 1.0443458980044347,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.04",
+   "f3": "1.044"
+  },
+  {
+   "valor": 0.3401360544217687,
+   "f0": "0",
+   "f1": "0.3",
+   "f2": "0.34",
+   "f3": "0.340"
+  },
+  {
+   "valor": 0.4723639455782313,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.47",
+   "f3": "0.472"
+  },
+  {
+   "valor": 0.6045918367346939,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.60",
+   "f3": "0.605"
+  },
+  {
+   "valor": 0.7368197278911565,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.74",
+   "f3": "0.737"
+  },
+  {
+   "valor": 0.8690476190476191,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.87",
+   "f3": "0.869"
+  },
+  {
+   "valor": 1.0012755102040816,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.00",
+   "f3": "1.001"
+  },
+  {
+   "valor": 0.32666394446712943,
+   "f0": "0",
+   "f1": "0.3",
+   "f2": "0.33",
+   "f3": "0.327"
+  },
+  {
+   "valor": 0.453654552878726,
+   "f0": "0",
+   "f1": "0.5",
+   "f2": "0.45",
+   "f3": "0.454"
+  },
+  {
+   "valor": 0.5806451612903226,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.58",
+   "f3": "0.581"
+  },
+  {
+   "valor": 0.7076357697019191,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.71",
+   "f3": "0.708"
+  },
+  {
+   "valor": 0.8346263781135157,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.83",
+   "f3": "0.835"
+  },
+  {
+   "valor": 0.9616169865251123,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "0.96",
+   "f3": "0.962"
+  },
+  {
+   "valor": 0.31421838177533384,
+   "f0": "0",
+   "f1": "0.3",
+   "f2": "0.31",
+   "f3": "0.314"
+  },
+  {
+   "valor": 0.43637077769049487,
+   "f0": "0",
+   "f1": "0.4",
+   "f2": "0.44",
+   "f3": "0.436"
+  },
+  {
+   "valor": 0.558523173605656,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.56",
+   "f3": "0.559"
+  },
+  {
+   "valor": 0.680675569520817,
+   "f0": "1",
+   "f1": "0.7",
+   "f2": "0.68",
+   "f3": "0.681"
+  },
+  {
+   "valor": 0.802827965435978,
+   "f0": "1",
+   "f1": "0.8",
+   "f2": "0.80",
+   "f3": "0.803"
+  },
+  {
+   "valor": 0.924980361351139,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.92",
+   "f3": "0.925"
+  },
+  {
+   "valor": 0.0,
+   "f0": "0",
+   "f1": "0.0",
+   "f2": "0.00",
+   "f3": "0.000"
+  },
+  {
+   "valor": 0.311111,
+   "f0": "0",
+   "f1": "0.3",
+   "f2": "0.31",
+   "f3": "0.311"
+  },
+  {
+   "valor": 0.622222,
+   "f0": "1",
+   "f1": "0.6",
+   "f2": "0.62",
+   "f3": "0.622"
+  },
+  {
+   "valor": 0.933333,
+   "f0": "1",
+   "f1": "0.9",
+   "f2": "0.93",
+   "f3": "0.933"
+  },
+  {
+   "valor": 1.244444,
+   "f0": "1",
+   "f1": "1.2",
+   "f2": "1.24",
+   "f3": "1.244"
+  },
+  {
+   "valor": 1.555555,
+   "f0": "2",
+   "f1": "1.6",
+   "f2": "1.56",
+   "f3": "1.556"
+  },
+  {
+   "valor": 1.866666,
+   "f0": "2",
+   "f1": "1.9",
+   "f2": "1.87",
+   "f3": "1.867"
+  },
+  {
+   "valor": 2.177777,
+   "f0": "2",
+   "f1": "2.2",
+   "f2": "2.18",
+   "f3": "2.178"
+  },
+  {
+   "valor": 2.488888,
+   "f0": "2",
+   "f1": "2.5",
+   "f2": "2.49",
+   "f3": "2.489"
+  },
+  {
+   "valor": 2.799999,
+   "f0": "3",
+   "f1": "2.8",
+   "f2": "2.80",
+   "f3": "2.800"
+  },
+  {
+   "valor": 3.11111,
+   "f0": "3",
+   "f1": "3.1",
+   "f2": "3.11",
+   "f3": "3.111"
+  },
+  {
+   "valor": 3.422221,
+   "f0": "3",
+   "f1": "3.4",
+   "f2": "3.42",
+   "f3": "3.422"
+  },
+  {
+   "valor": 3.733332,
+   "f0": "4",
+   "f1": "3.7",
+   "f2": "3.73",
+   "f3": "3.733"
+  },
+  {
+   "valor": 4.044443,
+   "f0": "4",
+   "f1": "4.0",
+   "f2": "4.04",
+   "f3": "4.044"
+  },
+  {
+   "valor": 4.355554,
+   "f0": "4",
+   "f1": "4.4",
+   "f2": "4.36",
+   "f3": "4.356"
+  },
+  {
+   "valor": 4.666665,
+   "f0": "5",
+   "f1": "4.7",
+   "f2": "4.67",
+   "f3": "4.667"
+  },
+  {
+   "valor": 4.977776,
+   "f0": "5",
+   "f1": "5.0",
+   "f2": "4.98",
+   "f3": "4.978"
+  },
+  {
+   "valor": 5.288887,
+   "f0": "5",
+   "f1": "5.3",
+   "f2": "5.29",
+   "f3": "5.289"
+  },
+  {
+   "valor": 5.599998,
+   "f0": "6",
+   "f1": "5.6",
+   "f2": "5.60",
+   "f3": "5.600"
+  },
+  {
+   "valor": 5.911109,
+   "f0": "6",
+   "f1": "5.9",
+   "f2": "5.91",
+   "f3": "5.911"
+  },
+  {
+   "valor": 6.22222,
+   "f0": "6",
+   "f1": "6.2",
+   "f2": "6.22",
+   "f3": "6.222"
+  },
+  {
+   "valor": 6.533331,
+   "f0": "7",
+   "f1": "6.5",
+   "f2": "6.53",
+   "f3": "6.533"
+  },
+  {
+   "valor": 6.844442,
+   "f0": "7",
+   "f1": "6.8",
+   "f2": "6.84",
+   "f3": "6.844"
+  },
+  {
+   "valor": 7.155553,
+   "f0": "7",
+   "f1": "7.2",
+   "f2": "7.16",
+   "f3": "7.156"
+  },
+  {
+   "valor": 7.466664,
+   "f0": "7",
+   "f1": "7.5",
+   "f2": "7.47",
+   "f3": "7.467"
+  },
+  {
+   "valor": 7.777775,
+   "f0": "8",
+   "f1": "7.8",
+   "f2": "7.78",
+   "f3": "7.778"
+  },
+  {
+   "valor": 8.088886,
+   "f0": "8",
+   "f1": "8.1",
+   "f2": "8.09",
+   "f3": "8.089"
+  },
+  {
+   "valor": 8.399997,
+   "f0": "8",
+   "f1": "8.4",
+   "f2": "8.40",
+   "f3": "8.400"
+  },
+  {
+   "valor": 8.711108,
+   "f0": "9",
+   "f1": "8.7",
+   "f2": "8.71",
+   "f3": "8.711"
+  },
+  {
+   "valor": 9.022219,
+   "f0": "9",
+   "f1": "9.0",
+   "f2": "9.02",
+   "f3": "9.022"
+  },
+  {
+   "valor": 9.33333,
+   "f0": "9",
+   "f1": "9.3",
+   "f2": "9.33",
+   "f3": "9.333"
+  },
+  {
+   "valor": 9.644441,
+   "f0": "10",
+   "f1": "9.6",
+   "f2": "9.64",
+   "f3": "9.644"
+  },
+  {
+   "valor": 9.955552,
+   "f0": "10",
+   "f1": "10.0",
+   "f2": "9.96",
+   "f3": "9.956"
+  },
+  {
+   "valor": 10.266663,
+   "f0": "10",
+   "f1": "10.3",
+   "f2": "10.27",
+   "f3": "10.267"
+  },
+  {
+   "valor": 10.577774,
+   "f0": "11",
+   "f1": "10.6",
+   "f2": "10.58",
+   "f3": "10.578"
+  },
+  {
+   "valor": 10.888885,
+   "f0": "11",
+   "f1": "10.9",
+   "f2": "10.89",
+   "f3": "10.889"
+  },
+  {
+   "valor": 11.199996,
+   "f0": "11",
+   "f1": "11.2",
+   "f2": "11.20",
+   "f3": "11.200"
+  },
+  {
+   "valor": 11.511107,
+   "f0": "12",
+   "f1": "11.5",
+   "f2": "11.51",
+   "f3": "11.511"
+  },
+  {
+   "valor": 11.822218,
+   "f0": "12",
+   "f1": "11.8",
+   "f2": "11.82",
+   "f3": "11.822"
+  },
+  {
+   "valor": 12.133329,
+   "f0": "12",
+   "f1": "12.1",
+   "f2": "12.13",
+   "f3": "12.133"
+  },
+  {
+   "valor": 12.44444,
+   "f0": "12",
+   "f1": "12.4",
+   "f2": "12.44",
+   "f3": "12.444"
+  },
+  {
+   "valor": 12.755551,
+   "f0": "13",
+   "f1": "12.8",
+   "f2": "12.76",
+   "f3": "12.756"
+  },
+  {
+   "valor": 13.066662,
+   "f0": "13",
+   "f1": "13.1",
+   "f2": "13.07",
+   "f3": "13.067"
+  },
+  {
+   "valor": 13.377773,
+   "f0": "13",
+   "f1": "13.4",
+   "f2": "13.38",
+   "f3": "13.378"
+  },
+  {
+   "valor": 13.688884,
+   "f0": "14",
+   "f1": "13.7",
+   "f2": "13.69",
+   "f3": "13.689"
+  },
+  {
+   "valor": 13.999995,
+   "f0": "14",
+   "f1": "14.0",
+   "f2": "14.00",
+   "f3": "14.000"
+  },
+  {
+   "valor": 14.311106,
+   "f0": "14",
+   "f1": "14.3",
+   "f2": "14.31",
+   "f3": "14.311"
+  },
+  {
+   "valor": 14.622217,
+   "f0": "15",
+   "f1": "14.6",
+   "f2": "14.62",
+   "f3": "14.622"
+  },
+  {
+   "valor": 14.933328,
+   "f0": "15",
+   "f1": "14.9",
+   "f2": "14.93",
+   "f3": "14.933"
+  },
+  {
+   "valor": 1e-09,
+   "f0": "0",
+   "f1": "0.0",
+   "f2": "0.00",
+   "f3": "0.000"
+  },
+  {
+   "valor": 123456.789,
+   "f0": "123457",
+   "f1": "123456.8",
+   "f2": "123456.79",
+   "f3": "123456.789"
+  },
+  {
+   "valor": 0.05,
+   "f0": "0",
+   "f1": "0.1",
+   "f2": "0.05",
+   "f3": "0.050"
+  },
+  {
+   "valor": 2.675,
+   "f0": "3",
+   "f1": "2.7",
+   "f2": "2.67",
+   "f3": "2.675"
+  },
+  {
+   "valor": 1.005,
+   "f0": "1",
+   "f1": "1.0",
+   "f2": "1.00",
+   "f3": "1.005"
+  }
+ ],
  "CSS": "@charset \"utf-8\";\n/* Estilo del libro.\n   La fuente se define solo en body, así el lector puede cambiarla si quiere.\n   No fija tamaño, interlineado ni colores, para respetar los ajustes\n   de cada lector (tamaño de letra, modo oscuro). */\n\n/*FUENTES*/\n\nbody { margin: 0; padding: 0; widows: 2; orphans: 2; font-family: __FAMILIA__; }\n\np {\n  margin: 0;\n  text-indent: 1.4em;\n  -webkit-hyphens: auto;\n  hyphens: auto;\n  adobe-hyphenate: auto;\n}\np.primero { text-indent: 0; }\n\n/* Cabecera de capítulo */\ndiv.cabecera { margin: 2.5em 0 2.2em 0; text-align: center; page-break-after: avoid; break-after: avoid; }\np.num-capitulo {\n  text-indent: 0; text-align: center;\n  font-size: 0.8em; letter-spacing: 0.25em; text-transform: uppercase;\n  margin: 0 0 0.9em 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.titulo-capitulo {\n  font-size: 1.6em; font-weight: normal; line-height: 1.25;\n  text-align: center; margin: 0;\n  -webkit-hyphens: none; hyphens: none;\n  page-break-after: avoid; break-after: avoid;\n}\nh2.subtitulo {\n  font-size: 1.1em; font-weight: bold; text-align: center;\n  margin: 1.6em 0 1em 0;\n  page-break-after: avoid; break-after: avoid;\n}\n\n/* Cambio de escena */\np.escena { text-indent: 0; text-align: center; margin: 1.1em 0; }\n\n/* Canciones, poemas, cartas (líneas que empiezan con > ) */\ndiv.versos { margin: 1em 0 1em 1.6em; }\ndiv.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }\ndiv.versos p.estrofa { margin-top: 0.9em; }\n\n/* Páginas de ilustración y portada */\nbody.pagina-imagen { margin: 0; padding: 0; text-align: center; }\ndiv.ilustracion, div.portada {\n  margin: 0; padding: 0; text-align: center; text-indent: 0;\n  page-break-inside: avoid; break-inside: avoid;\n}\ndiv.ilustracion img, div.portada img {\n  display: block; margin: 0 auto;\n  width: auto; height: auto;\n  max-width: 100%;\n  max-height: 100%;\n  max-height: 95vh;\n}\n\n/* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */\ndiv.portadilla { text-align: center; text-indent: 0; margin: 4em 0 0 0; margin-top: 14vh; padding: 0; }\nh1.titulo-libro {\n  text-align: center; text-indent: 0;\n  font-size: 2em; font-weight: normal; line-height: 1.2;\n  margin: 0 0 0.5em 0; padding: 0;\n  -webkit-hyphens: none; hyphens: none;\n}\nh1.con-logo { font-size: 1em; line-height: 1; margin: 0; }\nimg.logo {\n  display: block; margin: 0 auto; padding: 0;\n  width: 88%; max-width: 88%; height: auto;\n}\nimg.logo-oscuro { display: none; }\n@media (prefers-color-scheme: dark) {\n  img.logo-claro { display: none; }\n  img.logo-oscuro { display: block; }\n}\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-claro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-claro { display: none; }\n:root[__ibooks_internal_theme*=\"Night\"] img.logo-oscuro,\n:root[__ibooks_internal_theme*=\"Gray\"] img.logo-oscuro { display: block; }\ndiv.portadilla p { text-indent: 0; text-align: center; -webkit-hyphens: none; hyphens: none; }\np.subtitulo-libro { font-size: 1.15em; font-style: italic; margin: 0; }\np.autor-libro { font-size: 1.15em; letter-spacing: 0.12em; margin: 3em 0 0 0; }\np.sello { font-size: 0.8em; letter-spacing: 0.25em; margin: 5em 0 0 0; }\n\n/* Página de derechos */\ndiv.derechos { margin-top: 4em; }\ndiv.derechos p { text-indent: 0; font-size: 0.85em; margin: 0 0 0.7em 0; -webkit-hyphens: none; hyphens: none; }\n\n/* Dedicatoria */\ndiv.dedicatoria { margin-top: 5em; text-align: center; }\ndiv.dedicatoria p { text-indent: 0; text-align: center; font-style: italic; margin: 0 0 0.6em 0; }\n\n/* Índice */\nnav#toc h1 {\n  font-size: 1.6em; font-weight: normal; text-align: center; text-indent: 0;\n  margin: 2.5em 0 1.6em 0;\n}\nol.indice { list-style-type: none; margin: 0; padding: 0; }\nol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }\nol.indice a { text-decoration: none; }\n",
  "CONFIG_DEFAULT": {
   "titulo": "Sin título",

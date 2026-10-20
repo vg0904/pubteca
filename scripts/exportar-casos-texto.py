@@ -393,6 +393,74 @@ def exportar(mod):
                 "salida": mod.css_libro(fuentes, preferida),
             })
 
+    # --- imagenes: inspeccion de bytes y validacion, por cada rol ---
+    carpeta_img = AQUI.parent / "tests" / "fixtures" / "imagenes"
+    # truncado.png cuelga al Python (struct.error sin capturar): se salta aqui
+    # a proposito y se prueba solo en TypeScript.
+    FRAGILES = {"truncado.png"}
+    casos["imagenes"] = []
+    if carpeta_img.is_dir():
+        for f in sorted(carpeta_img.iterdir()):
+            if not f.is_file() or f.name.startswith(".") or f.name in FRAGILES:
+                continue
+            info = mod.inspeccionar_imagen(f)
+            entrada = {
+                "archivo": f.name,
+                "bytes": info["bytes"],
+                "tipo": info["tipo"],
+                "ancho": info["ancho"],
+                "alto": info["alto"],
+                "alfa": info["alfa"],
+                "cmyk": info["cmyk"],
+                "p3": info["p3"],
+                "media_type": mod.media_type(info["tipo"]) if info["tipo"] else None,
+                "revisiones": {},
+            }
+            for rol, kwargs in [
+                ("ilustracion", {}),
+                ("portada", {"es_portada": True}),
+                ("logo", {"es_logo": True}),
+            ]:
+                del mod.AVISOS[:]
+                del mod.NOTAS[:]
+                del mod.ERRORES[:]
+                if info["tipo"] is not None:
+                    mod.revisar_imagen(f"ilustraciones/{f.name}", info, **kwargs)
+                entrada["revisiones"][rol] = {
+                    "avisos": list(mod.AVISOS),
+                    "notas": list(mod.NOTAS),
+                    "errores": list(mod.ERRORES),
+                }
+                del mod.AVISOS[:]
+                del mod.NOTAS[:]
+                del mod.ERRORES[:]
+            casos["imagenes"].append(entrada)
+
+    # --- formato numerico: Python redondea AL PAR, toFixed hacia arriba ---
+    valores = []
+    # empates exactos: los dyadicos que acaban en .25 y .75 son los unicos
+    # valores donde el redondeo al par se nota a una o dos decimales
+    for k in range(1, 161):
+        valores += [k / 4, k / 8, k / 16]
+    # proporciones alto/ancho plausibles de una ilustracion
+    for w in range(800, 2601, 97):
+        for h in range(800, 2601, 311):
+            valores.append(h / w)
+    # megabytes y megapixeles plausibles
+    for n in range(0, 15_000_001, 311_111):
+        valores.append(n / 1e6)
+    valores += [0.0, 1.0, 1e-9, 123456.789, 0.05, 2.675, 1.005]
+    vistos = set()
+    casos["formato"] = []
+    for v in valores:
+        if v in vistos:
+            continue
+        vistos.add(v)
+        casos["formato"].append({
+            "valor": v,
+            "f0": f"{v:.0f}", "f1": f"{v:.1f}", "f2": f"{v:.2f}", "f3": f"{v:.3f}",
+        })
+
     casos["CSS"] = mod.CSS
     casos["CONFIG_DEFAULT"] = mod.CONFIG_DEFAULT
     casos["VERSION"] = mod.VERSION
