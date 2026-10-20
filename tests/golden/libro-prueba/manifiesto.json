@@ -5,7 +5,7 @@
   "kindle": {
    "epub": "el_faro_de_ibar_Kindle.epub",
    "bytes": 16079,
-   "dcterms_modified": "2026-10-20T19:09:41Z",
+   "dcterms_modified": "2026-10-20T19:22:26Z",
    "entradas": [
     {
      "ruta": "mimetype",
@@ -28,7 +28,7 @@
      "metodo": "DEFLATE",
      "extra": 0,
      "tamano": 5089,
-     "sha256": "beee921382d25887b68c9b6f2ea38c7faf3f22f3c1c941a51201e5e4e54d2cea",
+     "sha256": "bf523958f1bb718a8ab7f3ab2276dd048aebf3a1d13e2b986eb7c4a4195ea666",
      "texto": true
     },
     {
@@ -244,7 +244,7 @@
   "apple": {
    "epub": "el_faro_de_ibar_AppleBooks.epub",
    "bytes": 185375,
-   "dcterms_modified": "2026-10-20T19:09:41Z",
+   "dcterms_modified": "2026-10-20T19:22:26Z",
    "entradas": [
     {
      "ruta": "mimetype",
@@ -275,7 +275,7 @@
      "metodo": "DEFLATE",
      "extra": 0,
      "tamano": 5935,
-     "sha256": "2760c687c1822075847a4495b1f0206fff26ced4aa95a9766b3fbe5e07fcbb28",
+     "sha256": "7d987096d2f377a27344120305e4ee5ef95bb20190d6694f78ccb2c82a3bf24c",
      "texto": true
     },
     {

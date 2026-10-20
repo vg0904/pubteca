@@ -109,6 +109,16 @@ describe('golden: el port contra generar_epub.py', () => {
     expect(reporte(c, ahora)).toBe(esperado)
   })
 
+  it('el reporte usa hora LOCAL mientras dcterms:modified usa UTC', () => {
+    // La asimetria es del Python y se replica. Por eso vite.config.ts fija
+    // TZ=UTC en los tests: sin el pin, el golden dependeria de la zona horaria
+    // de quien lo genero, y este test pasaba en la maquina del autor (UTC-6) y
+    // fallaba en CI (UTC). Lo encontro CI, no el desarrollo local.
+    expect(process.env['TZ']).toBe('UTC')
+    const d = new Date('2026-06-15T23:30:00Z')
+    expect(reporte(c, d).split('\n')[0]).toContain('2026-06-15 23:30')
+  })
+
   for (const { carpeta, tienda } of TIENDAS) {
     describe(carpeta, () => {
       const esperado = manifiesto.tiendas[carpeta]

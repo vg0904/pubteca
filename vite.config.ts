@@ -18,5 +18,10 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     globals: true,
+    // El reporte imprime la hora LOCAL (dcterms:modified va en UTC: la
+    // asimetria es del Python y se replica). Sin fijar la zona, el golden
+    // dependeria de la zona horaria de quien lo genero: el runner de CI esta
+    // en UTC y la maquina del autor en UTC-6, y el test fallaba solo en CI.
+    env: { TZ: 'UTC' },
   },
 })
