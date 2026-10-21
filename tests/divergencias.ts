@@ -180,6 +180,17 @@ export const DE_COMPORTAMIENTO = [
     donde: 'src/core/textos-libro.ts',
   },
   {
+    nombre: 'Imagenes sin comprimir dentro del zip',
+    motivo:
+      'El Python pasa por deflate tambien los PNG y los JPEG, que ya vienen comprimidos: no les ' +
+      'quita casi nada y cuesta mucho. Con 40 ilustraciones (173 MB) el motor bloqueaba la pagina ' +
+      '7,7 s en un Mac, y en un iPad mucho mas. Ahora una imagen de mas de 256 KB solo se comprime ' +
+      'si un trozo de su centro baja al menos un 10 %; las pequeñas, siempre, como antes. El ' +
+      'contenido de cada archivo es identico (los golden tests comparan el sha256); solo cambia ' +
+      'el metodo de cada entrada, y el formato EPUB admite los dos para todo salvo el mimetype.',
+    donde: 'src/core/zip.ts',
+  },
+  {
     nombre: 'n_ilus muerto',
     motivo:
       'seccion_con_titulo declaraba un n_ilus que solo contaba las ilustraciones del cuerpo, ' +

@@ -150,6 +150,10 @@ describe('golden: el port contra generar_epub.py', () => {
       })
 
       it('solo el mimetype va sin comprimir', () => {
+        // Las imagenes del libro de prueba son colores planos y se comprimen
+        // bien, asi que aqui todo lo demas va comprimido, igual que en el
+        // Python. Una imagen que ya viene comprimida (la de Procreate, un JPEG)
+        // se guarda tal cual: lo prueban los tests de zip.ts.
         expect(entradas.filter((e) => e.metodo === 'STORE').map((e) => e.ruta)).toEqual(['mimetype'])
       })
 
