@@ -73,6 +73,7 @@ export class Repositorio {
         alfa: info.alfa,
         cmyk: info.cmyk,
         p3: info.p3,
+        creada: Date.now(),
       })
     }
     return imagen

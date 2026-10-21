@@ -35,6 +35,8 @@ export interface ImagenGuardada {
   readonly alfa?: boolean
   readonly cmyk?: boolean
   readonly p3?: boolean
+  /** Cuando se subio, en ms. Las guardadas antes de existir este campo no lo tienen. */
+  readonly creada?: number
 }
 
 export interface ResumenProyecto {
@@ -218,6 +220,44 @@ export async function borrarProyecto(db: Almacen, id: string): Promise<void> {
     await tx.objectStore('imagenes').delete(imagen)
   }
   await tx.done
+}
+
+/**
+ * Cuanto se respeta una imagen recien subida aunque el proyecto guardado no la
+ * use todavia. Ver `limpiarImagenes`.
+ */
+export const GRACIA_IMAGEN = 24 * 60 * 60 * 1000
+
+/**
+ * Borra las imagenes de un proyecto que el proyecto ya no usa, y devuelve
+ * cuantas.
+ *
+ * Sin esto, cada ilustracion que se quitaba o se sustituia se quedaba en
+ * IndexedDB para siempre: solo se borraban al borrar el libro entero. Quien
+ * itera sus ilustraciones iba llenando el navegador hasta el error de espacio.
+ *
+ * Solo es seguro al ABRIR el libro: mientras esta abierto, deshacer puede
+ * devolver una ilustracion quitada, y su imagen tiene que seguir ahi. Y no se
+ * toca nada subido en las ultimas `GRACIA_IMAGEN`: si el libro esta abierto en
+ * OTRA pestaña, alli se sube la imagen al momento pero el proyecto que la usa
+ * se guarda un poco despues, y abrir aqui en medio la borraria.
+ */
+export async function limpiarImagenes(
+  db: Almacen,
+  proyectoId: string,
+  usadas: ReadonlySet<string>,
+  ahora: number,
+): Promise<number> {
+  const tx = db.transaction('imagenes', 'readwrite')
+  let borradas = 0
+  for (const imagen of await tx.store.index('porProyecto').getAll(proyectoId)) {
+    if (usadas.has(imagen.id)) continue
+    if (imagen.creada !== undefined && ahora - imagen.creada < GRACIA_IMAGEN) continue
+    await tx.store.delete(imagen.id)
+    borradas += 1
+  }
+  await tx.done
+  return borradas
 }
 
 export async function guardarImagen(db: Almacen, imagen: ImagenGuardada): Promise<void> {

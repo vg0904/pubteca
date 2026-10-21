@@ -5,6 +5,7 @@ import {
   borrarProyecto,
   guardarProyecto,
   leerProyecto,
+  limpiarImagenes,
   listarProyectos,
   pedirPersistencia,
   type Almacen,
@@ -13,7 +14,7 @@ import {
 import { descargar, nombreDeCopia, zipDeCopia } from '../copia'
 import { ESTADO_INICIAL, reducir } from '../estado'
 import { exportar } from '../exportar'
-import { bytesDelProyecto, cargarFuentes } from '../generar'
+import { bytesDelProyecto, cargarFuentes, idsDeImagenes } from '../generar'
 import { Guardador } from '../guardado'
 import { crearId } from '../ids'
 import { desdeDialecto, desdeParrafos, desdePropuesta, resultadoImportacion, type ImagenImportada } from '../importacion'
@@ -201,6 +202,10 @@ export default function App() {
         await guardarYa()
         const p = db ? await leerProyecto(db, id) : null
         if (!p) return
+        // Al abrir, y solo al abrir: el historial de deshacer esta vacio, asi
+        // que nada puede devolver una imagen que el libro ya no usa.
+        // Si falla, el libro se abre igual: es limpieza, no puede costar el libro.
+        if (db) await limpiarImagenes(db, id, idsDeImagenes(p), Date.now()).catch(() => 0)
         const { repo: r, imagenes } = await Repositorio.abrir(db, id)
         cambiarRepo(r)
         // Recien leido de IndexedDB: no hay nada que volver a guardar.

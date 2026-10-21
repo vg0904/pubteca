@@ -11,11 +11,14 @@ import {
   imagenesDelProyecto,
   leerImagen,
   leerProyecto,
+  limpiarImagenes,
+  GRACIA_IMAGEN,
   listarProyectos,
   pedirPersistencia,
   type Almacen,
   type ImagenGuardada,
 } from '../src/app/almacen'
+import { idsDeImagenes } from '../src/app/generar'
 import { DATOS_POR_DEFECTO, VERSION_PROYECTO, type Proyecto } from '../src/app/modelo'
 
 function proyecto(id: string, titulo: string, capitulos = 0): Proyecto {
@@ -181,6 +184,68 @@ describe('borrar un proyecto se lleva sus imagenes', () => {
     expect(await imagenesDelProyecto(db, 'p1')).toEqual([])
     // Las del otro proyecto siguen ahi.
     expect(await leerProyecto(db, 'p2')).not.toBeNull()
+    expect(await imagenesDelProyecto(db, 'p2')).toHaveLength(1)
+  })
+})
+
+describe('limpiar las imagenes que el libro ya no usa', () => {
+  const AHORA = 10 * GRACIA_IMAGEN
+  const vieja = (id: string, proyectoId = 'p1'): ImagenGuardada => ({
+    ...imagen(id, proyectoId, new Uint8Array([1])),
+    creada: AHORA - 2 * GRACIA_IMAGEN,
+  })
+
+  it('EL FALLO: una ilustracion quitada o sustituida ya no se queda para siempre', async () => {
+    // Antes solo se borraban al borrar el libro entero.
+    await guardarImagen(db, vieja('en-uso'))
+    await guardarImagen(db, vieja('quitada'))
+    await guardarImagen(db, vieja('sustituida'))
+    expect(await limpiarImagenes(db, 'p1', new Set(['en-uso']), AHORA)).toBe(2)
+    expect((await imagenesDelProyecto(db, 'p1')).map((i) => i.id)).toEqual(['en-uso'])
+  })
+
+  it('no toca lo recien subido: otra pestaña puede no haber guardado aun el libro que la usa', async () => {
+    await guardarImagen(db, { ...vieja('recien'), creada: AHORA - 1000 })
+    expect(await limpiarImagenes(db, 'p1', new Set(), AHORA)).toBe(0)
+    expect(await imagenesDelProyecto(db, 'p1')).toHaveLength(1)
+  })
+
+  it('las guardadas antes de que existiera la fecha cuentan como viejas', async () => {
+    await guardarImagen(db, imagen('sin-fecha', 'p1', new Uint8Array([1])))
+    expect(await limpiarImagenes(db, 'p1', new Set(), AHORA)).toBe(1)
+  })
+
+  it('idsDeImagenes reconoce TODOS los sitios donde el libro usa una imagen', () => {
+    // Si se le escapara uno, la limpieza borraria un dibujo que se esta usando.
+    // Cada imagen lleva un id «IMG-...»; se buscan en el proyecto ENTERO, sin
+    // saber en que campo esta, y tienen que salir todas.
+    const ilus = (id: string) => ({ id: `b-${id}`, tipo: 'ilustracion' as const, imagenId: id, alt: '', decorativa: false })
+    const p: Proyecto = {
+      ...proyecto('p1', 'Todo'),
+      laminas: ['IMG-lamina'],
+      portada: { portada: 'IMG-portada', contraportada: 'IMG-contra', logo: 'IMG-logo', logoBlanco: 'IMG-logo-blanco' },
+      capitulos: [
+        {
+          id: 'c',
+          etiqueta: '',
+          titulo: [],
+          aperturas: [{ imagenId: 'IMG-apertura', alt: '' }],
+          bloques: [ilus('IMG-capitulo')],
+        },
+      ],
+      extras: [
+        { id: 'x', donde: 'final', tipo: 'conTitulo', titulo: [], bloques: [ilus('IMG-extra')], nombreArchivo: 'x' },
+      ],
+    }
+    const enElProyecto = new Set(JSON.stringify(p).match(/IMG-[a-z-]+/gu))
+    expect(enElProyecto.size).toBe(8)
+    expect(idsDeImagenes(p)).toEqual(enElProyecto)
+  })
+
+  it('solo las de ese libro', async () => {
+    await guardarImagen(db, vieja('mia', 'p1'))
+    await guardarImagen(db, vieja('de-otro', 'p2'))
+    await limpiarImagenes(db, 'p1', new Set(), AHORA)
     expect(await imagenesDelProyecto(db, 'p2')).toHaveLength(1)
   })
 })
