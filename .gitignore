@@ -37,3 +37,6 @@ tests/fixtures/libro-prueba/salida/
 # Cache de Python de los scripts de fixtures
 __pycache__/
 *.pyc
+
+# Notas de plan del autor: se quedan en local, no en un repo publico
+plan.md
