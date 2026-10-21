@@ -9,6 +9,7 @@
 import type { Bloque as BloqueCore } from '../core/parser'
 import { escInline } from '../core/texto'
 import { normalizarLinea, type Bloque, type Tramo } from './modelo'
+import { limpiarTexto } from './tramos'
 
 /**
  * Tramos -> el mismo XHTML en linea que produce `enLinea` del motor.
@@ -18,7 +19,10 @@ import { normalizarLinea, type Bloque, type Tramo } from './modelo'
  * de espacio. Y es lo tipograficamente correcto.
  */
 export function htmlDeTramos(tramos: readonly Tramo[]): string {
-  return normalizarLinea(tramos)
+  // Con el mismo filtro que el serializador aplica antes de escribir: si no,
+  // al COMPROBAR cada linea contra enLinea avisaria de un enfasis roto que no
+  // existe. Un modelo nuevo ya llega limpio; uno guardado antes, quiza no.
+  return normalizarLinea(tramos.map((t) => ({ texto: limpiarTexto(t.texto), marcas: t.marcas })))
     .map((t) => {
       const cursiva = t.marcas.includes('cursiva')
       const negrita = t.marcas.includes('negrita')

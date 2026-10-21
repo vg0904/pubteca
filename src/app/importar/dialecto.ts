@@ -12,6 +12,7 @@
 import { parsear, RE_TITULO } from '../../core/parser'
 import { enLinea, textoPlano } from '../../core/texto'
 import type { Bloque, Capitulo, Tramo } from '../modelo'
+import { limpiarTexto } from '../tramos'
 import { tramosDeHtml } from './html-en-linea'
 
 export interface ResumenImportacion {
@@ -77,7 +78,7 @@ function bloquesDelMotor(bloques: ReturnType<typeof parsear>['bloques']): Bloque
           id: nuevoId('b'),
           tipo: 'ilustracion',
           imagenId: b.nombre,
-          alt: b.alt,
+          alt: limpiarTexto(b.alt),
           decorativa: false,
         })
         break
@@ -132,7 +133,9 @@ export function capituloDesdeDialecto(texto: string): Capitulo | null {
     // enLinea despues, al construir la cabecera), asi que para invertirlo hay
     // que pasarlo primero por enLinea.
     titulo: tramosDeHtml(enLinea(cabecera.titulo)),
-    aperturas: r.antes.map((a) => ({ imagenId: a.nombre, alt: a.alt })),
+    // Los tramos ya llegan limpios (enLinea quita lo que XML no admite); las
+    // descripciones no pasan por ahi.
+    aperturas: r.antes.map((a) => ({ imagenId: a.nombre, alt: limpiarTexto(a.alt) })),
     bloques: bloquesDelMotor(r.bloques),
   }
 }

@@ -24,6 +24,7 @@ import {
   type Extra,
   type Tramo,
 } from './modelo'
+import { limpiarTexto } from './tramos'
 
 export interface Aviso {
   readonly que: string
@@ -83,7 +84,11 @@ const JUEGOS = [
 type Juego = (typeof JUEGOS)[number]
 
 function conJuego(tramos: readonly Tramo[], j: Juego, guion: boolean): string {
-  return normalizarLinea(tramos)
+  // El texto se limpia al entrar al modelo, pero un libro guardado antes del
+  // filtro puede traer un salto o un caracter de control: aqui partiria la
+  // linea del dialecto (U+001E es un salto para el motor) o dejaria el EPUB
+  // invalido. Es el mismo filtro, asi que en un modelo limpio no cambia nada.
+  return normalizarLinea(tramos.map((t) => ({ texto: limpiarTexto(t.texto), marcas: t.marcas })))
     .map((t) => {
       const cursiva = t.marcas.includes('cursiva')
       const negrita = t.marcas.includes('negrita')
@@ -247,7 +252,7 @@ function lineasDeBloque(
           sugerencia: 'Quita el corchete de la descripción.',
         })
       }
-      const alt = b.alt.replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
+      const alt = limpiarTexto(b.alt).replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
       return [`[ilustración: ${nombreDeImagen(b.imagenId)} | ${alt}]`]
     }
   }
@@ -272,7 +277,8 @@ function lineaDeTitulo(cap: Capitulo, avisos: Aviso[]): string {
   // Una etiqueta sin titulo («Capitulo 3» a secas) se escribe sola. Con el
   // separador detras, «Capitulo 3: » se leia como un titulo que ACABA en dos
   // puntos, y el libro decia «Capitulo 3:» en la cabecera y en el indice.
-  if (cap.etiqueta) return plano.trim() === '' ? cap.etiqueta : `${cap.etiqueta}: ${titulo}`
+  const etiqueta = limpiarTexto(cap.etiqueta)
+  if (etiqueta) return plano.trim() === '' ? etiqueta : `${etiqueta}: ${titulo}`
 
   if (plano.trim() === '') {
     avisos.push({
@@ -307,7 +313,7 @@ export function serializarCapitulo(
 
   // Las ilustraciones de apertura van ANTES de la cabecera.
   for (const a of cap.aperturas) {
-    lineas.push(`[ilustración: ${nombreDeImagen(a.imagenId)} | ${a.alt.replace(/\]/g, '').trim()}]`)
+    lineas.push(`[ilustración: ${nombreDeImagen(a.imagenId)} | ${limpiarTexto(a.alt).replace(/\]/g, '').trim()}]`)
   }
   lineas.push(lineaDeTitulo(cap, avisos))
   lineas.push('')

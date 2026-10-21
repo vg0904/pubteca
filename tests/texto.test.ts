@@ -12,6 +12,7 @@ import {
   ordenarNatural,
   partirUnaVez,
   sinAcentos,
+  sinNoXml,
   textoPlano,
 } from '../src/core/texto'
 import { etiqueta, oraculo, type Par } from './oraculo'
@@ -167,5 +168,39 @@ describe('limpiar_titulo replica el bug codicioso a proposito', () => {
     // enfasis distintos. Se replica para no romper los golden tests; la
     // correccion esta anotada en el plan como divergencia de fase 2.
     expect(limpiarTitulo('*a* y *b*')).toBe('a* y *b')
+  })
+})
+
+describe('lo que XML no admite (DIVERGENCIA: el Python lo deja pasar)', () => {
+  // Un solo caracter de estos deja el XHTML invalido y la tienda rechaza el
+  // EPUB. Llegan al copiar de un PDF.
+  const fuera: [string, string][] = [
+    ['NUL', '\u0000'],
+    ['U+0001', '\u0001'],
+    ['U+0008', '\u0008'],
+    ['tabulacion vertical', '\u000b'],
+    ['U+001E', '\u001e'],
+    ['U+FFFE', '\ufffe'],
+    ['U+FFFF', '\uffff'],
+    ['un sustituto suelto', '\ud800'],
+  ]
+  for (const [nombre, c] of fuera) {
+    it(`quita ${nombre}`, () => {
+      expect(sinNoXml(`a${c}b`)).toBe('ab')
+      expect(enLinea(`a${c}b`)).toBe('ab')
+      expect(esc(`a${c}b`)).toBe('ab')
+    })
+  }
+
+  it('deja lo que si es texto: tabulador, acentos, emoji, uso privado', () => {
+    const s = 'a\tb ñ \u{1F600} \ue000 \u00a0 \u2011'
+    expect(sinNoXml(s)).toBe(s)
+  })
+
+  it('EL CUELGUE: un «NUL 0 NUL» en el texto ya no revienta el generador', () => {
+    // Era la forma del centinela de enLinea: restauraba un guardado que no
+    // existia y lanzaba TypeError.
+    expect(enLinea('a\u00000\u0000b')).toBe('a0b')
+    expect(enLinea('*x*\u00000\u0000\\*')).toBe('<em>x</em>0*')
   })
 })

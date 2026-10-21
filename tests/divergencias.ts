@@ -160,6 +160,16 @@ export const DE_COMPORTAMIENTO = [
     donde: 'src/core/construir.ts',
   },
   {
+    nombre: 'Caracteres que XML no admite',
+    motivo:
+      'El Python los dejaba pasar, y basta UNO (un U+0001 copiado de un PDF, un NUL, un U+FFFE) ' +
+      'para que el XHTML deje de ser XML valido: la tienda rechaza el EPUB. Ahora esc() y ' +
+      'enLinea() los quitan. En enLinea va ANTES de poner los centinelas, porque el centinela es ' +
+      'un NUL: un «NUL 0 NUL» en el texto restauraba un guardado inexistente y el generador ' +
+      'reventaba. Solo cambia la salida si el texto los lleva, y entonces la del Python era invalida.',
+    donde: 'src/core/texto.ts (sinNoXml)',
+  },
+  {
     nombre: 'n_ilus muerto',
     motivo:
       'seccion_con_titulo declaraba un n_ilus que solo contaba las ilustraciones del cuerpo, ' +

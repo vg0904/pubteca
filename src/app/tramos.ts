@@ -14,18 +14,28 @@
  * repintar y el cursor saltaria. El recorte lo hace el serializador al
  * guardar (`normalizarLinea`), que es donde el formato lo exige.
  */
+import { sinNoXml } from '../core/texto'
 import { normalizarTramos, type Marca, type Tramo } from './modelo'
 
 /**
- * Lo que una linea de texto NO puede contener: un salto de linea parte el
- * parrafo en dos al serializar, porque en el dialecto cada linea es un bloque.
- * Se cambia por un espacio, que conserva la longitud y por tanto el cursor.
+ * Lo que una linea de texto NO puede contener, y es el filtro por el que pasa
+ * TODO texto que entra al modelo: lo que se escribe, lo que se pega, lo que
+ * llega de un Word o de un `.md`, y los datos del libro.
+ *
+ *   - Un salto de linea parte el parrafo en dos al serializar, porque en el
+ *     dialecto cada linea es un bloque. Se cambia por un espacio, que conserva
+ *     la longitud y por tanto el cursor.
+ *   - Lo que XML no admite (caracteres de control, que llegan al copiar de un
+ *     PDF) dejaria el EPUB invalido. Se quita: el motor tambien lo quita al
+ *     generar, pero si se quedara en el modelo la app ensenaria un texto
+ *     distinto del que sale en el libro.
  */
 export function limpiarTexto(s: string): string {
-  // Los caracteres de control son a proposito: \v, \f y NEL tambien parten la
-  // linea para el motor (ver partirLineas en core/config.ts).
+  // Los caracteres de control son a proposito: \v, \f, NEL y los separadores
+  // U+001C a U+001E tambien parten la linea para el motor (ver partirLineas en
+  // core/config.ts), asi que van a espacio como un salto mas.
   // oxlint-disable-next-line no-control-regex
-  return s.replace(/[\r\n\u2028\u2029\u000b\u000c\u0085]/gu, ' ')
+  return sinNoXml(s.replace(/[\r\n\u2028\u2029\u000b\u000c\u0085\u001c-\u001e]/gu, ' '))
 }
 
 /** Longitud de la linea en unidades UTF-16. */

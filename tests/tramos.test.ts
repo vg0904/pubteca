@@ -116,6 +116,15 @@ describe('limpieza', () => {
     expect(limpiarTexto(s).length).toBe(s.length)
   })
 
+  it('los separadores U+001C a U+001E tambien son saltos para el motor', () => {
+    // Sin esto, el parrafo se partia en dos al generar.
+    expect(limpiarTexto('a\u001cb\u001dc\u001ed')).toBe('a b c d')
+  })
+
+  it('quita lo que XML no admite, que dejaria el EPUB invalido', () => {
+    expect(limpiarTexto('a\u0001b\u0000c\ufffed')).toBe('abcd')
+  })
+
   it('canonicos quita tramos vacios y une los iguales', () => {
     expect(canonicos([t(''), t('a'), t('b'), t('', 'cursiva')])).toEqual([t('ab')])
   })

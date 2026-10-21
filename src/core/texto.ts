@@ -13,7 +13,29 @@
 // ---------------------------------------------------------------------------
 
 /**
- * `html.escape(s, quote=True)`.
+ * Lo que XML 1.0 NO admite: los caracteres de control salvo el tabulador y los
+ * saltos de linea, los sustitutos sueltos, U+FFFE y U+FFFF.
+ */
+// oxlint-disable-next-line no-control-regex
+const R_NO_XML = /[^\t\n\r\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu
+
+/**
+ * Quita lo que XML 1.0 no admite.
+ *
+ * DIVERGENCIA: el Python no lo hace, y basta UN caracter de control en el
+ * texto para que el XHTML deje de ser XML valido: las tiendas rechazan el EPUB
+ * y algunos lectores ensenan una pagina de error en lugar del capitulo. Llegan
+ * al copiar de un PDF (U+0002 y U+0003 son tipicos), de algunas webs y de
+ * archivos de texto con la codificacion rota. Se quitan en vez de cambiarse
+ * por otra cosa: no se puede saber que habia ahi, y no es texto del autor.
+ * Verificado con xmllint contra los dos EPUB.
+ */
+export function sinNoXml(s: string): string {
+  return s.replace(R_NO_XML, '')
+}
+
+/**
+ * `html.escape(s, quote=True)`, mas `sinNoXml`.
  *
  * TRAMPA: Python emite `&#x27;` (hexadecimal) para la apostrofe, no `&#39;`
  * ni `&apos;` como casi todos los helpers de JS. Rompe la comparacion de
@@ -21,7 +43,7 @@
  * («D'Artagnan», «l'ete»). El `&` va PRIMERO o se re-escapan los demas.
  */
 export function esc(s: string): string {
-  return s
+  return sinNoXml(s)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -197,7 +219,10 @@ const R_NEGRITA = /\*\*(?=\S)(.+?)(?<=\S)\*\*/gu
 const R_NEGRITA_ = new RegExp(`(?<!${PAL})__(?=\\S)(.+?)(?<=\\S)__(?!${PAL})`, 'gu')
 const R_CURSIVA = /\*(?=\S)(.+?)(?<=\S)\*/gu
 const R_CURSIVA_ = new RegExp(`(?<!${PAL})_(?=\\S)(.+?)(?<=\\S)_(?!${PAL})`, 'gu')
-// El NUL es el centinela a proposito: no puede aparecer en el texto del autor.
+// El NUL es el centinela a proposito: no puede aparecer en el texto del autor
+// porque enLinea quita lo que XML no admite ANTES de poner los centinelas. Antes
+// no se quitaba, y un «NUL 0 NUL» en el texto restauraba un guardado que no
+// existia y el generador reventaba.
 // oxlint-disable-next-line no-control-regex
 const R_CENTINELA = /\u0000([0-9]+)\u0000/g
 
@@ -206,6 +231,7 @@ const R_CENTINELA = /\u0000([0-9]+)\u0000/g
  * `en_linea()` del Python.
  *
  * Los pasos, en este orden:
+ *   0. quitar lo que XML no admite (DIVERGENCIA, ver `sinNoXml`)
  *   1. guardar los caracteres escapados tras un centinela \0N\0
  *   2. escapar HTML (quote=False)
  *   3. aplicar las cinco regex de enfasis
@@ -226,7 +252,7 @@ const R_CENTINELA = /\u0000([0-9]+)\u0000/g
  */
 export function enLinea(s: string): string {
   const guardados: string[] = []
-  let r = s.replace(RE_ESCAPE, (_m, c: string) => {
+  let r = sinNoXml(s).replace(RE_ESCAPE, (_m, c: string) => {
     guardados.push(c)
     return `\u0000${guardados.length - 1}\u0000`
   })

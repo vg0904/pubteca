@@ -36,6 +36,7 @@ import {
   type Marca,
   type Tramo,
 } from '../modelo'
+import { limpiarTexto } from '../tramos'
 import { partirCabecera } from './dialecto'
 import { alinear, parrafosDeDocx, SOLO_IMAGEN, type ParrafoDocx } from './saltos'
 
@@ -147,7 +148,7 @@ function tramosDeNodo(
 ): void {
   for (const hijo of Array.from(nodo.childNodes)) {
     if (hijo.nodeType === 3) {
-      salida.push({ texto: hijo.textContent ?? '', marcas: [...marcas] })
+      salida.push({ texto: limpiarTexto(hijo.textContent ?? ''), marcas: [...marcas] })
       continue
     }
     if (hijo.nodeType !== 1) continue
@@ -193,7 +194,7 @@ interface Contexto {
 function imagenesDe(el: Element, ctx: Contexto): { imagenId: string; alt: string }[] {
   return Array.from(el.querySelectorAll('img')).flatMap((img) => {
     const id = ctx.imagenPorSrc.get(img.getAttribute('src') ?? '')
-    return id ? [{ imagenId: id, alt: img.getAttribute('alt') ?? '' }] : []
+    return id ? [{ imagenId: id, alt: limpiarTexto(img.getAttribute('alt') ?? '') }] : []
   })
 }
 

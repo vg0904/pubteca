@@ -15,7 +15,8 @@
  *     con un `&nbsp;`. Se tiran.
  */
 import { RE_ESCENA } from '../core/parser'
-import { normalizarLinea, normalizarTramos, textoDeTramos, type Bloque, type Marca, type Tramo } from './modelo'
+import { normalizarLinea, textoDeTramos, type Bloque, type Marca, type Tramo } from './modelo'
+import { canonicos } from './tramos'
 
 const POR_ETIQUETA: Record<string, Marca> = { em: 'cursiva', i: 'cursiva', strong: 'negrita', b: 'negrita' }
 const DE_BLOQUE = new Set([
@@ -97,7 +98,9 @@ export function esEscena(tramos: readonly Tramo[]): boolean {
 /** Lineas -> bloques: parrafos, y los «* * *» como cambio de escena. */
 export function bloquesDeLineas(lineas: readonly (readonly Tramo[])[], nuevoId: () => string): Bloque[] {
   return lineas.map((l): Bloque =>
-    esEscena(l) ? { id: nuevoId(), tipo: 'escena' } : { id: nuevoId(), tipo: 'parrafo', tramos: normalizarTramos(l) },
+    // `canonicos` y no solo normalizar: los parrafos del medio de lo pegado
+    // entran al modelo tal cual, sin pasar por el editor que los limpiaria.
+    esEscena(l) ? { id: nuevoId(), tipo: 'escena' } : { id: nuevoId(), tipo: 'parrafo', tramos: canonicos(l) },
   )
 }
 
