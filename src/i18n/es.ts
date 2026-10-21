@@ -357,6 +357,7 @@ export const ui = {
       sup: 'superíndices',
       sub: 'subíndices',
       br: 'saltos de línea sueltos',
+      nota: 'notas al pie',
     } as Record<string, string>,
     faltan: (n: number) =>
       n === 1

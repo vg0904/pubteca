@@ -43,6 +43,21 @@ import { alinear, parrafosDeDocx, SOLO_IMAGEN, type ParrafoDocx } from './saltos
 /** Prefijo del `src` con el que se marcan las imagenes extraidas. */
 const MARCADOR = 'pubteca-imagen:'
 
+/**
+ * Estilos de parrafo que mammoth NO traduce por su cuenta.
+ *
+ * Su mapa por defecto no conoce las citas: un poema con el estilo «Cita» salia
+ * como parrafos sueltos, y la conversion en versos de mas abajo no se ejecutaba
+ * nunca con un Word real (los tests la probaban con HTML escrito a mano). Se
+ * compara con el NOMBRE interno del estilo, que Word guarda en ingles aunque la
+ * interfaz este en español; «Quotations» es el de LibreOffice.
+ */
+const ESTILOS = [
+  "p[style-name='Quote'] => blockquote > p:fresh",
+  "p[style-name='Intense Quote'] => blockquote > p:fresh",
+  "p[style-name='Quotations'] => blockquote > p:fresh",
+]
+
 export interface ImagenExtraida {
   readonly id: string
   readonly nombreOriginal: string
@@ -129,8 +144,24 @@ const RAZONES: Record<string, string> = {
   a: 'Los enlaces se quedan como texto.',
   sup: 'Los superíndices no se conservan.',
   sub: 'Los subíndices no se conservan.',
-  br: 'Un salto de línea suelto se convierte en un párrafo nuevo.',
+  br: 'Un salto de línea suelto se convierte en un párrafo nuevo (y dentro de una cita, en un verso nuevo).',
+  nota:
+    'El formato del libro no tiene notas al pie: la llamada se queda como [1] en el texto y la ' +
+    'nota, como un párrafo al final del documento. Revisa dónde quieres que vayan.',
 }
+
+/** Lo que mammoth pone en el id de cada nota de su lista final. */
+const RE_ID_NOTA = /^(?:footnote|endnote)-(\d+)$/u
+/** La llamada a una nota, dentro del texto. */
+const RE_LLAMADA = /^#(?:footnote|endnote)-\d+$/u
+/** El enlace de vuelta, al final de cada nota: «↑». */
+const RE_VUELTA = /^#(?:footnote|endnote)-ref-\d+$/u
+
+/**
+ * Elementos que, DENTRO de un parrafo, empiezan linea: una nota o una celda
+ * traen sus propios `<p>`, y una lista anidada sus `<li>`.
+ */
+const DE_BLOQUE = new Set(['p', 'li', 'div', 'ul', 'ol', 'table', 'tr', 'td', 'th', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
 
 const MARCAS_EN_LINEA: Record<string, Marca> = {
   em: 'cursiva',
@@ -139,16 +170,34 @@ const MARCAS_EN_LINEA: Record<string, Marca> = {
   b: 'negrita',
 }
 
-/** Recorre los nodos en linea de un elemento y acumula los tramos. */
-function tramosDeNodo(
+const contar = (descartes: Map<string, number>, que: string, n = 1): void => {
+  descartes.set(que, (descartes.get(que) ?? 0) + n)
+}
+
+/**
+ * Recorre un elemento y acumula su texto en LINEAS (la actual es la ultima).
+ *
+ * Antes acumulaba una sola tira, y eso tenia dos fallos:
+ *   - un salto de linea suelto (Mayus+Intro, como se escriben los poemas y las
+ *     cartas) se tiraba y pegaba las palabras: «Era de noche» + salto + «y
+ *     llovia» daba «Era de nochey llovia»;
+ *   - un `<li>` y el `<p>` que lleva dentro se leian los dos, y cada nota al
+ *     pie salia DOS veces.
+ * Ahora un salto abre linea, un bloque anidado abre linea antes y despues, y
+ * cada nodo de texto se lee una sola vez.
+ */
+function lineasDeNodo(
   nodo: Node,
   marcas: readonly Marca[],
-  salida: Tramo[],
+  lineas: Tramo[][],
   descartes: Map<string, number>,
 ): void {
+  const nueva = (): void => {
+    if ((lineas[lineas.length - 1] ?? []).length > 0) lineas.push([])
+  }
   for (const hijo of Array.from(nodo.childNodes)) {
     if (hijo.nodeType === 3) {
-      salida.push({ texto: limpiarTexto(hijo.textContent ?? ''), marcas: [...marcas] })
+      ;(lineas[lineas.length - 1] as Tramo[]).push({ texto: limpiarTexto(hijo.textContent ?? ''), marcas: [...marcas] })
       continue
     }
     if (hijo.nodeType !== 1) continue
@@ -156,23 +205,55 @@ function tramosDeNodo(
     const etiqueta = el.tagName.toLowerCase()
     const marca = MARCAS_EN_LINEA[etiqueta]
     if (marca) {
-      tramosDeNodo(el, marcas.includes(marca) ? marcas : [...marcas, marca], salida, descartes)
+      lineasDeNodo(el, marcas.includes(marca) ? marcas : [...marcas, marca], lineas, descartes)
       continue
     }
     // Una imagen dentro de un parrafo se saca como bloque propio: el motor las
     // pone a pagina completa y no sabe ponerlas en linea.
     if (etiqueta === 'img') continue
-    if (RAZONES[etiqueta]) descartes.set(etiqueta, (descartes.get(etiqueta) ?? 0) + 1)
+    if (etiqueta === 'br') {
+      contar(descartes, 'br')
+      nueva()
+      continue
+    }
+    const href = etiqueta === 'a' ? (el.getAttribute('href') ?? '') : ''
+    // El «↑» que lleva de una nota a su llamada no es texto del autor.
+    if (RE_VUELTA.test(href)) continue
+    // La llamada a una nota («[1]») se conserva como texto, sin contarla como
+    // enlace ni como superindice: la nota se cuenta una vez, en su lista.
+    if (RE_LLAMADA.test(href) || (etiqueta === 'sup' && esLlamada(el))) {
+      ;(lineas[lineas.length - 1] as Tramo[]).push({ texto: limpiarTexto(el.textContent ?? ''), marcas: [...marcas] })
+      continue
+    }
+    if (RAZONES[etiqueta]) contar(descartes, etiqueta)
     // El contenido se conserva aunque la etiqueta se descarte: el texto del
     // autor no se pierde nunca.
-    tramosDeNodo(el, marcas, salida, descartes)
+    if (DE_BLOQUE.has(etiqueta)) {
+      nueva()
+      lineasDeNodo(el, marcas, lineas, descartes)
+      nueva()
+    } else {
+      lineasDeNodo(el, marcas, lineas, descartes)
+    }
   }
 }
 
-function tramosDeElemento(el: Element, descartes: Map<string, number>): Tramo[] {
-  const salida: Tramo[] = []
-  tramosDeNodo(el, [], salida, descartes)
-  return normalizarLinea(salida)
+/** Si un `<sup>` es solo la llamada a una nota. */
+function esLlamada(sup: Element): boolean {
+  const enlaces = Array.from(sup.querySelectorAll('a'))
+  return enlaces.length > 0 && enlaces.every((a) => RE_LLAMADA.test(a.getAttribute('href') ?? ''))
+}
+
+/** Las lineas de un elemento, normalizadas y sin las vacias. */
+function lineasDeElemento(el: Element, descartes: Map<string, number>): Tramo[][] {
+  const lineas: Tramo[][] = [[]]
+  lineasDeNodo(el, [], lineas, descartes)
+  return lineas.map((l) => normalizarLinea(l)).filter((l) => l.length > 0)
+}
+
+/** Varias lineas en una, separadas por un espacio: un subtitulo es una linea. */
+function enUnaLinea(lineas: readonly (readonly Tramo[])[]): Tramo[] {
+  return normalizarLinea(lineas.flatMap((l, i) => (i > 0 ? [{ texto: ' ', marcas: [] }, ...l] : [...l])))
 }
 
 const textoDe = (tramos: readonly Tramo[]): string => tramos.map((t) => t.texto).join('')
@@ -226,22 +307,32 @@ function bloquesDeElemento(el: Element, ctx: Contexto): Trozo {
   }
 
   if (etiqueta === 'blockquote') {
-    // Word marca las citas con el estilo Quote; en una novela eso es casi
-    // siempre una cancion, un poema o una carta: el bloque de versos.
-    const versos = Array.from(el.querySelectorAll('p'))
-      .map((p) => tramosDeElemento(p, ctx.descartes))
-      .filter((t) => textoDe(t).trim() !== '')
-      .map((t) => ({ texto: textoDe(t), marcas: t[0]?.marcas ?? [] }))
-    if (versos.length > 0) {
-      salida.push({ id: nuevo(), tipo: 'versos', estrofas: [versos] })
-      // Todos los versos son el mismo bloque, pero cada uno era un `w:p`.
-      for (const v of versos) parrafos.push({ texto: v.texto, bloque: 0 })
+    // Word marca las citas con el estilo «Cita»; en una novela eso es casi
+    // siempre una cancion, un poema o una carta: el bloque de versos (ver
+    // ESTILOS para como llega aqui).
+    //
+    // Hay dos formas de escribir un poema en Word, y las dos son comunes: un
+    // parrafo por verso (Intro al final de cada linea), o un parrafo por
+    // estrofa con los versos separados por Mayus+Intro. Si hay saltos sueltos,
+    // cada parrafo es una estrofa; si no, es un verso y todo va en una estrofa
+    // (las lineas en blanco entre estrofas las descarta mammoth y no se pueden
+    // recuperar: el autor las pone en el editor con Intro en un verso vacio).
+    const porParrafo = Array.from(el.querySelectorAll('p')).map((p) => lineasDeElemento(p, ctx.descartes))
+    const conSaltos = porParrafo.some((lineas) => lineas.length > 1)
+    const comoVerso = (l: readonly Tramo[]): Tramo => ({ texto: textoDe(l), marcas: l[0]?.marcas ?? [] })
+    const estrofas = conSaltos
+      ? porParrafo.filter((lineas) => lineas.length > 0).map((lineas) => lineas.map(comoVerso))
+      : [porParrafo.flat().map(comoVerso)].filter((e) => e.length > 0)
+    // Todos los versos son el mismo bloque, pero cada `<p>` era un `w:p`.
+    for (const lineas of porParrafo) {
+      if (lineas.length > 0) parrafos.push({ texto: lineas.map(textoDe).join(''), bloque: 0 })
     }
+    if (estrofas.length > 0) salida.push({ id: nuevo(), tipo: 'versos', estrofas })
     return { bloques: salida, parrafos }
   }
 
   if (/^h[2-6]$/u.test(etiqueta)) {
-    const tramos = tramosDeElemento(el, ctx.descartes)
+    const tramos = enUnaLinea(lineasDeElemento(el, ctx.descartes))
     if (tramos.length > 0) {
       salida.push({ id: nuevo(), tipo: 'subtitulo', tramos })
       parrafos.push({ texto: textoDe(tramos), bloque: 0 })
@@ -249,31 +340,48 @@ function bloquesDeElemento(el: Element, ctx: Contexto): Trozo {
     return { bloques: salida, parrafos }
   }
 
-  if (etiqueta === 'table' || etiqueta === 'ul' || etiqueta === 'ol') {
-    ctx.descartes.set(etiqueta, (ctx.descartes.get(etiqueta) ?? 0) + 1)
-    // El texto que hubiera dentro se recupera como parrafos, para no perderlo.
-    for (const p of Array.from(el.querySelectorAll('p, li'))) {
-      const tramos = tramosDeElemento(p, ctx.descartes)
-      if (tramos.length > 0) {
-        parrafos.push({ texto: textoDe(tramos), bloque: salida.length })
+  if (etiqueta === 'ol' && esListaDeNotas(el)) {
+    // Las notas al pie: mammoth las pone en una lista al final del documento.
+    // Se quedan como parrafos «[N] texto» y se dice, una vez por nota.
+    const items = Array.from(el.children).filter((li) => li.tagName.toLowerCase() === 'li')
+    contar(ctx.descartes, 'nota', items.length)
+    for (const li of items) {
+      const numero = RE_ID_NOTA.exec(li.id)?.[1] ?? ''
+      for (const [k, linea] of lineasDeElemento(li, ctx.descartes).entries()) {
+        const tramos = k === 0 ? normalizarLinea([{ texto: `[${numero}] `, marcas: [] }, ...linea]) : linea
         salida.push({ id: nuevo(), tipo: 'parrafo', tramos })
       }
+    }
+    // Sin `parrafos`: las notas viven en word/footnotes.xml, no en
+    // document.xml, y no hay nada con que alinearlas.
+    return { bloques: salida, parrafos }
+  }
+
+  if (etiqueta === 'table' || etiqueta === 'ul' || etiqueta === 'ol') {
+    contar(ctx.descartes, etiqueta)
+    // El texto que hubiera dentro se recupera como parrafos, para no perderlo,
+    // y cada trozo UNA vez: un `<li>` con un `<p>` dentro ya no sale dos.
+    for (const tramos of lineasDeElemento(el, ctx.descartes)) {
+      parrafos.push({ texto: textoDe(tramos), bloque: salida.length })
+      salida.push({ id: nuevo(), tipo: 'parrafo', tramos })
     }
     return { bloques: salida, parrafos }
   }
 
   // Parrafo (y h1, que aqui es un parrafo mas: lo que lo convierte en cabecera
-  // es un corte, y el corte lo confirma el autor).
-  const tramos = tramosDeElemento(el, ctx.descartes)
-  if (tramos.length > 0) {
-    parrafos.push({ texto: textoDe(tramos), bloque: 0 })
-    salida.push({ id: nuevo(), tipo: 'parrafo', tramos })
-  }
+  // es un corte, y el corte lo confirma el autor). Un salto de linea suelto lo
+  // parte en varios: «CAPITULO UNO» + salto + «El despertar» en un mismo
+  // parrafo de Word queda en dos lineas, que es como la cabecera las necesita.
+  const lineas = lineasDeElemento(el, ctx.descartes)
+  for (const tramos of lineas) salida.push({ id: nuevo(), tipo: 'parrafo', tramos })
+  // Para alinear con el .docx: un solo `w:p`, con el texto de todas sus lineas
+  // seguido, igual que lo ve saltos.ts (un salto suelto no es texto).
+  if (lineas.length > 0) parrafos.push({ texto: lineas.map(textoDe).join(''), bloque: 0 })
   const imagenes = imagenesDe(el, ctx)
   // Un parrafo que es SOLO una imagen no tiene texto, pero mammoth si lo emite
   // como `<p><img/></p>`: tiene que ocupar su ranura, y distinguirse de un
   // parrafo vacio de verdad, para que la alineacion no se desplace.
-  if (tramos.length === 0 && imagenes.length > 0) {
+  if (lineas.length === 0 && imagenes.length > 0) {
     parrafos.push({ texto: SOLO_IMAGEN, bloque: 0 })
   }
   for (const img of imagenes) {
@@ -286,6 +394,12 @@ function bloquesDeElemento(el: Element, ctx: Contexto): Trozo {
     })
   }
   return { bloques: salida, parrafos }
+}
+
+/** Si una `<ol>` es la lista de notas al pie (o al final) que pone mammoth. */
+function esListaDeNotas(ol: Element): boolean {
+  const items = Array.from(ol.children).filter((li) => li.tagName.toLowerCase() === 'li')
+  return items.length > 0 && items.every((li) => RE_ID_NOTA.test(li.id))
 }
 
 /** El texto plano de un bloque, vacio si el bloque no lleva texto. */
@@ -561,6 +675,7 @@ export async function importarDocx(
   const resultado = await mammoth.convertToHtml(
     { buffer: bytes, arrayBuffer: bytes } as unknown as EntradaMammoth,
     {
+      styleMap: ESTILOS,
       // SIN esto, mammoth incrusta cada imagen como data:URI en base64 dentro
       // del HTML: decenas de MB en memoria con un libro ilustrado.
       convertImage: mammoth.images.imgElement(async (image) => {

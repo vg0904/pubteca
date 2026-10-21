@@ -514,6 +514,8 @@ describe('alinear: emparejar los parrafos del .docx con los del HTML', () => {
 
   it('el espacio no cuenta: cada lado lo normaliza a su manera', () => {
     expect(alinear(l([' a  b ']), l(['a b']))).toEqual([0])
+    // Un tabulador de Word: mammoth lo escribe y el XML no lo tiene como texto.
+    expect(alinear(l(['Unodos']), l(['Uno\tdos']))).toEqual([0])
   })
 
   it('un desajuste se repara solo y no desplaza lo que viene detras', () => {
@@ -564,6 +566,16 @@ describe('parrafosDeDocx: nunca puede tirar la importacion', () => {
       '</w:body></w:document>'
     const zip = zipSync({ 'word/document.xml': strToU8(xml) })
     expect(parrafosDeDocx(zip)?.map((x) => x.saltoAntes)).toEqual([false, true, false])
+  })
+
+  it('los guiones que mammoth convierte en caracter cuentan como texto', () => {
+    // Si no, el parrafo no se reconoceria por el lado del HTML.
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>anti</w:t><w:noBreakHyphen/><w:t>edad y re</w:t><w:softHyphen/><w:t>vista</w:t></w:r></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    expect(parrafosDeDocx(zip)?.[0]?.texto).toBe('anti\u2011edad y re\u00advista')
   })
 
   it('un salto de linea suelto (Shift+Enter) no es un salto de pagina', () => {
@@ -681,5 +693,83 @@ describe('cabeceraSugerida: adivinar lo que el autor quiso decir en Word', () =>
     ])
     expect(r.cortes).toHaveLength(1)
     expect(r.cortes[0]).toMatchObject({ indice: 0, finCabecera: 1, titulo: 'El despertar' })
+  })
+})
+
+describe('saltos de linea sueltos (Mayus+Intro)', () => {
+  const textos = (p: Propuesta): string[] => p.bloques.map((b) => (b.tipo === 'versos' ? `versos ${JSON.stringify(b.estrofas.map((e) => e.map((v) => v.texto)))}` : textoDe(b)))
+
+  it('EL FALLO: no pegan las palabras; parten el parrafo', async () => {
+    // Antes se tiraban: «Era de noche» + salto + «y llovia» daba
+    // «Era de nochey llovia», y el aviso decia lo contrario de lo que pasaba.
+    const p = await importar('saltos-de-linea')
+    expect(textos(p).slice(1, 3)).toEqual(['Era de noche', 'y llovía sobre el puerto.'])
+    expect(textos(p)).toContain('Firmado:')
+    expect(textos(p)).toContain('Marta Ibar')
+    expect(textos(p).join('|')).not.toMatch(/nochey|Firmado:Marta/u)
+  })
+
+  it('un poema con el estilo «Cita» llega como versos, no como parrafos', async () => {
+    // mammoth no traduce ese estilo por su cuenta: la conversion en versos no
+    // se ejecutaba nunca con un Word real.
+    const p = await importar('saltos-de-linea')
+    expect(textos(p)).toContain('versos [["Las barcas duermen","la sal no duerme","el faro cuenta"]]')
+  })
+
+  it('la cabecera en dos lineas DENTRO de un parrafo tambien se reconoce', async () => {
+    const p = await importar('saltos-de-linea')
+    const corte = p.cortes.find((c) => c.etiqueta === 'CAPÍTULO DOS')
+    expect(corte).toMatchObject({ titulo: 'El regreso', motivo: 'lineaCapitulo' })
+    const r = aplicarCortes(p.bloques, p.cortes, nuevoId)
+    expect(r.capitulos.map((c) => c.titulo.map((t) => t.texto).join(''))).toEqual(['Cartas', 'El regreso'])
+    expect(r.capitulos[1]?.bloques.map(textoDe)).toEqual(['Texto del segundo.'])
+  })
+
+  it('el aviso dice lo que de verdad pasa', async () => {
+    const p = await importar('saltos-de-linea')
+    expect(p.descartado.find((d) => d.que === 'br')?.porque).toMatch(/párrafo nuevo/u)
+  })
+
+  it('en una cita: un parrafo por estrofa si hay saltos sueltos, un verso por parrafo si no', () => {
+    const versos = (html: string): unknown =>
+      propuestaDesdeHtml(html, { nombreArchivo: 'x', nuevoId }, new Map()).bloques.map((b) =>
+        b.tipo === 'versos' ? b.estrofas.map((e) => e.map((v) => v.texto)) : b.tipo,
+      )
+    // Intro al final de cada verso: todo es una estrofa.
+    expect(versos('<blockquote><p>uno</p><p>dos</p><p>tres</p></blockquote>')).toEqual([[['uno', 'dos', 'tres']]])
+    // Mayus+Intro entre versos: cada parrafo es una estrofa.
+    expect(versos('<blockquote><p>a<br/>b</p><p>c<br/>d</p></blockquote>')).toEqual([[['a', 'b'], ['c', 'd']]])
+  })
+})
+
+describe('notas al pie y listas: cada texto una sola vez', () => {
+  it('EL FALLO: las notas salen una vez, con su numero y sin el «↑»', async () => {
+    const p = await importar('notas-al-pie')
+    expect(p.bloques.map(textoDe)).toEqual([
+      'Capítulo 1: El archivo',
+      'El legajo[1] estaba en el sótano.',
+      'Nadie lo había abierto[2].',
+      '[1] Un legajo es un atado de papeles.',
+      '[2] Desde 1931.',
+      'Según el inventario.',
+    ])
+    // Se dice UNA vez por nota, como nota: no como «listas», «enlaces» y
+    // «superindices», que es lo que le parecian al importador.
+    expect(p.descartado.map((d) => [d.que, d.cuantos])).toEqual([['nota', 2]])
+  })
+
+  it('una lista con un parrafo dentro de cada elemento no se duplica', () => {
+    const r = propuestaDesdeHtml('<ol><li><p>uno</p></li><li><p>dos</p></li></ol>', { nombreArchivo: 'x', nuevoId }, new Map())
+    expect(r.bloques.map(textoDe)).toEqual(['uno', 'dos'])
+  })
+
+  it('una lista anidada tampoco: ni se repite ni se pega', () => {
+    // Asi la escribe mammoth: la sublista va DENTRO del <li> del padre.
+    const r = propuestaDesdeHtml(
+      '<ul><li>fruta<ul><li>pera</li><li>manzana</li></ul></li><li>pan</li></ul>',
+      { nombreArchivo: 'x', nuevoId },
+      new Map(),
+    )
+    expect(r.bloques.map(textoDe)).toEqual(['fruta', 'pera', 'manzana', 'pan'])
   })
 })

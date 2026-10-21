@@ -79,6 +79,16 @@ function hechosDe(p: Element): Hechos {
         h.saltoAlFinal = true
         continue
       }
+      // Lo que mammoth convierte en un caracter: si aqui no contara, el
+      // parrafo no se reconoceria por el otro lado.
+      if (esW(hijo, 'noBreakHyphen')) {
+        h.texto += '\u2011'
+        continue
+      }
+      if (esW(hijo, 'softHyphen')) {
+        h.texto += '\u00ad'
+        continue
+      }
       if (esW(hijo, 'drawing') || esW(hijo, 'pict') || esW(hijo, 'object')) {
         h.tieneImagen = true
         continue
@@ -149,9 +159,14 @@ export function parrafosDeDocx(bytes: Uint8Array): ParrafoDocx[] | null {
   return salida
 }
 
-/** Espacios colapsados y extremos recortados, para comparar los dos lados. */
+/**
+ * Sin espacio en blanco ninguno, para comparar los dos lados. El espacio es lo
+ * que mas cambia entre el XML y el HTML (un tabulador de Word, un salto de
+ * linea suelto que en el HTML parte el parrafo, un espacio que el modelo
+ * recorta), y nunca distingue un parrafo de otro.
+ */
 function normalizar(s: string): string {
-  return s === SOLO_IMAGEN ? s : s.replace(/\s+/gu, ' ').trim()
+  return s === SOLO_IMAGEN ? s : s.replace(/\s+/gu, '')
 }
 
 /**

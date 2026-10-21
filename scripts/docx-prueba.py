@@ -104,6 +104,34 @@ def salto_de_pagina():
     return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
 
 
+def salto_de_linea():
+    """Mayus+Intro: un salto DENTRO del parrafo. Asi se escriben los poemas y
+    las cartas, y a veces la cabecera en dos lineas en un solo parrafo."""
+    return "<w:r><w:br/></w:r>"
+
+
+def llamada(n):
+    """La llamada a una nota al pie, en el texto."""
+    return (
+        '<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/></w:rPr>'
+        f'<w:footnoteReference w:id="{n}"/></w:r>'
+    )
+
+
+def notas_xml(notas):
+    """word/footnotes.xml, con los dos separadores que Word pone siempre."""
+    cuerpo = (
+        '<w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>'
+        '<w:footnote w:type="continuationSeparator" w:id="0"><w:p><w:r><w:continuationSeparator/></w:r></w:p></w:footnote>'
+    )
+    for n, parrafos in notas.items():
+        cuerpo += f'<w:footnote w:id="{n}">' + "".join(parrafo([run(t)]) for t in parrafos) + "</w:footnote>"
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'
+        f"<w:footnotes {NS}>{cuerpo}</w:footnotes>"
+    )
+
+
 def tabla():
     celda = '<w:tc><w:p><w:r><w:t>celda</w:t></w:r></w:p></w:tc>'
     return f"<w:tbl><w:tr>{celda}{celda}</w:tr></w:tbl>"
@@ -116,10 +144,16 @@ def documento(cuerpo):
     )
 
 
-def rels_documento(con_imagen):
+def rels_documento(con_imagen, con_notas=False):
     extra = ""
+    if con_notas:
+        extra += (
+            '<Relationship Id="rId8" '
+            'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" '
+            'Target="footnotes.xml"/>'
+        )
     if con_imagen:
-        extra = (
+        extra += (
             '<Relationship Id="rId9" '
             'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" '
             'Target="media/image1.png"/>'
@@ -140,7 +174,7 @@ def rels_documento(con_imagen):
 FECHA = (2020, 1, 1, 0, 0, 0)
 
 
-def escribir(nombre, cuerpo, con_imagen=False):
+def escribir(nombre, cuerpo, con_imagen=False, notas=None):
     destino = SALIDA / nombre
 
     def meter(z, ruta, datos):
@@ -148,12 +182,21 @@ def escribir(nombre, cuerpo, con_imagen=False):
         info.compress_type = zipfile.ZIP_DEFLATED
         z.writestr(info, datos)
 
+    tipos = CONTENT_TYPES
+    if notas:
+        tipos = tipos.replace(
+            "</Types>",
+            '  <Override PartName="/word/footnotes.xml" ContentType="application/'
+            'vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>\n</Types>',
+        )
     with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as z:
-        meter(z, "[Content_Types].xml", CONTENT_TYPES)
+        meter(z, "[Content_Types].xml", tipos)
         meter(z, "_rels/.rels", RELS)
         meter(z, "word/document.xml", documento(cuerpo))
         meter(z, "word/styles.xml", STYLES)
-        meter(z, "word/_rels/document.xml.rels", rels_documento(con_imagen))
+        meter(z, "word/_rels/document.xml.rels", rels_documento(con_imagen, bool(notas)))
+        if notas:
+            meter(z, "word/footnotes.xml", notas_xml(notas))
         if con_imagen:
             meter(z, "word/media/image1.png", IMAGEN.read_bytes())
     print(f"  {nombre:28} {destino.stat().st_size:>8,} bytes")
@@ -295,6 +338,36 @@ DOCUMENTOS = {
         ],
         True,
     ),
+    # Saltos de linea sueltos (Mayus+Intro). Antes se tiraban y pegaban las
+    # palabras: «Era de noche» + salto + «y llovia» daba «Era de nochey llovia».
+    "saltos-de-linea.docx": (
+        [
+            parrafo([run("Cap\u00edtulo 1: Cartas")], "Heading1"),
+            parrafo([run("Era de noche"), salto_de_linea(), run("y llov\u00eda sobre el puerto.")]),
+            # Un poema: con el estilo de cita, cada linea es un verso
+            parrafo(
+                [run("Las barcas duermen"), salto_de_linea(), run("la sal no duerme"), salto_de_linea(), run("el faro cuenta")],
+                "Quote",
+            ),
+            parrafo([run("Firmado:"), salto_de_linea(), run("Marta Ibar")]),
+            salto_de_pagina(),
+            # La cabecera en dos lineas, pero en UN parrafo
+            parrafo([run("CAP\u00cdTULO DOS"), salto_de_linea(), run("El regreso")]),
+            parrafo([run("Texto del segundo.")]),
+        ],
+        False,
+    ),
+    # Notas al pie de verdad, con su word/footnotes.xml. Antes salian DOS veces
+    # al final, con un «↑» suelto.
+    "notas-al-pie.docx": (
+        [
+            parrafo([run("Cap\u00edtulo 1: El archivo")], "Heading1"),
+            parrafo([run("El legajo"), llamada(1), run(" estaba en el s\u00f3tano.")]),
+            parrafo([run("Nadie lo hab\u00eda abierto"), llamada(2), run(".")]),
+        ],
+        False,
+        {1: ["Un legajo es un atado de papeles."], 2: ["Desde 1931.", "Seg\u00fan el inventario."]},
+    ),
     # Vacio
     "vacio.docx": ([], False),
 }
@@ -305,8 +378,8 @@ def main():
         print(f"Falta {IMAGEN}; corre primero scripts/imagenes-prueba.py", file=sys.stderr)
         return 1
     SALIDA.mkdir(parents=True, exist_ok=True)
-    for nombre, (cuerpo, con_imagen) in DOCUMENTOS.items():
-        escribir(nombre, "".join(cuerpo), con_imagen)
+    for nombre, (cuerpo, con_imagen, *notas) in DOCUMENTOS.items():
+        escribir(nombre, "".join(cuerpo), con_imagen, notas[0] if notas else None)
     print(f"{len(DOCUMENTOS)} documentos en {SALIDA.relative_to(SALIDA.parent.parent)}")
     return 0
 
