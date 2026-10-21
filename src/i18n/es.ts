@@ -159,6 +159,8 @@ export const ui = {
     logoBlanco: 'Así se verá en modo oscuro',
     logoOpaco:
       'Este logo no tiene fondo transparente, así que no puedo hacer la versión blanca: en modo oscuro se verá un recuadro. Expórtalo como PNG con transparencia.',
+    sinLogoBlanco:
+      'Este logo no tiene versión para el modo oscuro: en Apple Books con fondo oscuro casi no se verá. Si tiene el fondo pintado, expórtalo como PNG con el fondo transparente y vuelve a subirlo; o sube tú una versión blanca.',
     otroLogoBlanco: 'Usar otra versión blanca…',
     laminas: 'Láminas a color',
     laminasAyuda: 'Van solas al principio del libro, antes de la portadilla, cada una en su página.',

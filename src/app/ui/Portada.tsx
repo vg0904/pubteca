@@ -102,6 +102,12 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
     }
     try {
       const blanco = await logoEnBlanco(blob)
+      if (!blanco) {
+        // Tiene canal alfa pero ningun pixel transparente: el fondo esta pintado.
+        despachar({ tipo: 'portada', cambios: { logo: logo.id, logoBlanco: null } })
+        avisar(ui.portada.logoOpaco, { tipo: 'error' })
+        return
+      }
       const nombre = logo.nombreOriginal.replace(/\.(png|jpe?g)$/iu, '') + '-blanco.png'
       const [img] = await subir([new File([blanco], nombre, { type: 'image/png' })])
       despachar({ tipo: 'portada', cambios: { logo: logo.id, logoBlanco: img?.id ?? null } })
@@ -153,6 +159,7 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
         alQuitar={() => despachar({ tipo: 'portada', cambios: { logo: null } })}
       >
         {logo && !logo.alfa && <p className="alerta nivel-aviso compacta">{ui.portada.logoOpaco}</p>}
+        {logo && logo.alfa && !p.logoBlanco && <p className="alerta nivel-aviso compacta">{ui.portada.sinLogoBlanco}</p>}
         {logo && p.logoBlanco && (
           <div className="logo-oscuro">
             <p className="rotulo">{ui.portada.logoBlanco}</p>

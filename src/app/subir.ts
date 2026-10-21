@@ -51,14 +51,53 @@ export async function decodifica(archivo: Blob): Promise<boolean> {
 }
 
 /**
- * La version del logo para el modo oscuro: el mismo dibujo, en blanco.
+ * Que parte de los pixeles deja ver el fondo: alfa por debajo de 250.
  *
- * Se pinta el logo y encima un rectangulo blanco con `source-in`, que solo
- * pinta donde el logo ya tenia tinta y conserva el alfa de cada pixel (el
- * suavizado de los bordes incluido). Por eso exige fondo transparente: con un
- * fondo opaco, el resultado seria un rectangulo blanco.
+ * Es lo que decide si se puede hacer la version blanca, y NO basta con mirar
+ * si el PNG tiene canal alfa: Procreate y Canva exportan casi siempre con
+ * canal alfa y el fondo pintado, y entonces todos los pixeles son opacos.
  */
-export async function logoEnBlanco(logo: Blob): Promise<Blob> {
+export function porcionTransparente(rgba: ArrayLike<number>): number {
+  let transparentes = 0
+  let total = 0
+  for (let i = 3; i < rgba.length; i += 4) {
+    total += 1
+    if ((rgba[i] as number) < 250) transparentes += 1
+  }
+  return total === 0 ? 0 : transparentes / total
+}
+
+/**
+ * Por debajo de esto no hay version blanca que hacer. Un logo sobre fondo
+ * transparente deja ver el fondo en buena parte de la imagen; uno con el fondo
+ * pintado, en ninguna (o solo en el suavizado de una esquina).
+ */
+export const MINIMO_TRANSPARENTE = 0.02
+
+/**
+ * El mismo dibujo en blanco: cada pixel pasa a blanco y CONSERVA su alfa, el
+ * suavizado de los bordes incluido.
+ */
+export function enBlanco(rgba: ArrayLike<number>): Uint8ClampedArray<ArrayBuffer> {
+  const salida = new Uint8ClampedArray(rgba.length)
+  salida.set(rgba)
+  for (let i = 0; i < salida.length; i += 4) {
+    salida[i] = 255
+    salida[i + 1] = 255
+    salida[i + 2] = 255
+  }
+  return salida
+}
+
+/**
+ * La version del logo para el modo oscuro, o `null` si el logo no tiene fondo
+ * transparente: pintado de blanco saldria un rectangulo blanco, que es justo lo
+ * que pasaba antes con un PNG de Procreate.
+ *
+ * El lienzo solo decodifica y vuelve a codificar; lo que se decide y lo que se
+ * pinta esta en funciones puras, con sus tests.
+ */
+export async function logoEnBlanco(logo: Blob): Promise<Blob | null> {
   const bmp = await createImageBitmap(logo)
   const lienzo = document.createElement('canvas')
   lienzo.width = bmp.width
@@ -67,9 +106,9 @@ export async function logoEnBlanco(logo: Blob): Promise<Blob> {
   if (!ctx) throw new Error('Este navegador no deja dibujar en un lienzo.')
   ctx.drawImage(bmp, 0, 0)
   bmp.close()
-  ctx.globalCompositeOperation = 'source-in'
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, lienzo.width, lienzo.height)
+  const pixeles = ctx.getImageData(0, 0, lienzo.width, lienzo.height)
+  if (porcionTransparente(pixeles.data) < MINIMO_TRANSPARENTE) return null
+  ctx.putImageData(new ImageData(enBlanco(pixeles.data), lienzo.width, lienzo.height), 0, 0)
   return new Promise((resolver, rechazar) => {
     lienzo.toBlob((b) => (b ? resolver(b) : rechazar(new Error('No pude generar el logo blanco.'))), 'image/png')
   })
