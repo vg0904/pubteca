@@ -73,7 +73,10 @@ export function PantallaInicio({
   return (
     <main className="inicio">
       <header>
-        <h1>{ui.nombre}</h1>
+        <h1>
+          <img className="logo-app" src={`${import.meta.env.BASE_URL}icono-192.png`} alt="" width={56} height={56} />
+          {ui.nombre}
+        </h1>
         <p className="lema">{ui.lema}</p>
         <p>{ui.descripcion}</p>
       </header>

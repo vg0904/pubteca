@@ -165,7 +165,10 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
 /* ------------------------------------------------------------------ */
 
 .inicio { max-width: 46rem; margin: 0 auto; padding: 3.5rem 16px 4rem; }
-.inicio header h1 { font-size: 2.6rem; margin: 0; }
+.inicio header h1 { font-size: 2.6rem; margin: 0; display: flex; align-items: center; gap: 0.7rem; }
+/* El logo va al lado del nombre: alt vacio, porque el nombre ya esta escrito. */
+.logo-app { display: block; flex: none; }
+.inicio .logo-app { width: 3.4rem; height: 3.4rem; }
 .inicio .lema { margin: 0.2rem 0 1rem; font-family: var(--libro); font-style: italic; font-size: 1.2rem; color: var(--suave); }
 .inicio-acciones { display: grid; grid-template-columns: 1fr 1.4fr; gap: 1rem; margin: 2rem 0 1.2rem; }
 .tarjeta-accion {
@@ -223,7 +226,8 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
   border-bottom: 1px solid var(--borde);
   flex-wrap: wrap;
 }
-.marca { border: 0; background: none; font-family: var(--libro); font-size: 1.2rem; padding: 0.2rem 0.3rem; }
+.marca { border: 0; background: none; font-family: var(--libro); font-size: 1.2rem; padding: 0.2rem 0.3rem; display: inline-flex; align-items: center; gap: 0.45rem; }
+.marca .logo-app { width: 1.4rem; height: 1.4rem; }
 .barra-titulo { font-family: var(--libro); font-style: italic; color: var(--suave); max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .estado-guardado { font-size: 0.85em; color: var(--suave); }
 .estado-error, .estado-sinAlmacen, .estado-conflicto { color: var(--rojo); }

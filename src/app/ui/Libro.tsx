@@ -49,6 +49,7 @@ function BarraSuperior({
   return (
     <header className="barra">
       <button type="button" className="marca" onClick={() => despachar({ tipo: 'cerrar' })} title={ui.barra.inicio}>
+        <img className="logo-app" src={`${import.meta.env.BASE_URL}icono-192.png`} alt="" width={22} height={22} />
         {ui.nombre}
       </button>
       <span className="barra-titulo">{proyecto.datos.titulo || ui.inicio.sinTitulo}</span>

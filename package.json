@@ -14,7 +14,8 @@
     "generar": "tsx scripts/generar.ts",
     "oraculo": "python3 -I scripts/exportar-casos-texto.py",
     "golden": "tsx scripts/generar.ts tests/fixtures/libro-prueba tmp/epubs",
-    "imagenes": "python3 -I scripts/imagenes-prueba.py"
+    "imagenes": "python3 -I scripts/imagenes-prueba.py",
+    "iconos": "python3 -I scripts/iconos.py"
   },
   "dependencies": {
     "fflate": "^0.8.3",
