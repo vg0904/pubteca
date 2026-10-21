@@ -88,6 +88,14 @@ export interface Imagen {
   readonly bytes: number
   readonly ancho: number
   readonly alto: number
+  /**
+   * Lo que la inspeccion de bytes encontro al subirla, para avisar en la propia
+   * tarjeta sin esperar a generar. Opcionales: el motor vuelve a inspeccionar
+   * los bytes al construir, asi que esto solo adelanta el aviso.
+   */
+  readonly alfa?: boolean
+  readonly cmyk?: boolean
+  readonly p3?: boolean
 }
 
 export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco'
@@ -117,6 +125,22 @@ export interface Proyecto {
   readonly laminas: readonly string[]
   /** rol -> id de imagen. */
   readonly portada: Readonly<Partial<Record<RolPortada, string>>>
+  /**
+   * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
+   * interfaz la ensena siempre: el navegador puede borrar lo que guarda.
+   */
+  readonly ultimaCopia?: number
+  /**
+   * Con que identidad se descargo el libro por ultima vez. El identificador
+   * del EPUB sale de titulo|autor (sin ISBN), asi que si cambian despues de
+   * publicar, para las tiendas es OTRO libro, y hay que avisar.
+   */
+  readonly descargado?: {
+    readonly uid: string
+    readonly titulo: string
+    readonly autor: string
+    readonly cuando: number
+  }
 }
 
 /** La version del formato guardado. Subirla obliga a escribir una migracion. */

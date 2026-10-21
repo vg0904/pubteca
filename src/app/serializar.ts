@@ -171,15 +171,15 @@ function lineaDeTexto(
     avisos.push({
       que: `${contexto}: «${textoDeTramos(tramos)}»`,
       porque:
-        'Este texto esta hecho solo de simbolos que el formato del libro usa para marcar un ' +
+        'Este texto está hecho solo de símbolos que el formato del libro usa para marcar un ' +
         'cambio de escena, y no se pueden escapar.',
-      sugerencia: 'Anade una palabra o un punto, o conviertelo en un cambio de escena.',
+      sugerencia: 'Añade una palabra o un punto, o conviértelo en un cambio de escena.',
     })
   } else {
     avisos.push({
       que: `${contexto}: «${textoDeTramos(tramos)}»`,
       porque:
-        'La combinacion de cursivas y negritas de este texto no se puede guardar sin que cambie ' +
+        'La combinación de cursivas y negritas de este texto no se puede guardar sin que cambie ' +
         'al volver a leerla.',
       sugerencia: 'Separa las partes en cursiva y en negrita con alguna palabra o signo.',
     })
@@ -214,9 +214,9 @@ function lineasDeBloque(
 ): string[] {
   switch (b.tipo) {
     case 'parrafo':
-      return [lineaDeTexto(b.tramos, 'Parrafo', avisos)]
+      return [lineaDeTexto(b.tramos, 'Párrafo', avisos)]
     case 'subtitulo':
-      return [`# ${lineaDeTexto(b.tramos, 'Subtitulo', avisos, false)}`]
+      return [`# ${lineaDeTexto(b.tramos, 'Subtítulo', avisos, false)}`]
     case 'escena':
       return [separador]
     case 'versos': {
@@ -242,9 +242,9 @@ function lineasDeBloque(
       // que cerraria la marca antes de tiempo.
       if (b.alt.includes(']')) {
         avisos.push({
-          que: `Descripcion de una ilustracion: «${b.alt}»`,
-          porque: 'La descripcion no puede llevar un corchete de cierre «]»: cerraria la marca.',
-          sugerencia: 'Quita el corchete de la descripcion.',
+          que: `Descripción de una ilustración: «${b.alt}»`,
+          porque: 'La descripción no puede llevar un corchete de cierre «]»: cerraría la marca.',
+          sugerencia: 'Quita el corchete de la descripción.',
         })
       }
       const alt = b.alt.replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
@@ -263,23 +263,34 @@ function lineaDeTitulo(cap: Capitulo, avisos: Aviso[]): string {
   const envuelto = /^(\*\*\*|\*\*|\*|__|_)(.+)\1$/u.test(titulo)
   if (envuelto) {
     avisos.push({
-      que: `Titulo del capitulo «${plano}»`,
-      porque: 'Un titulo con el enfasis aplicado a TODO el texto se pierde al guardarlo.',
-      sugerencia: 'Deja alguna palabra del titulo sin cursiva ni negrita, o quita el enfasis.',
+      que: `Título del capítulo «${plano}»`,
+      porque: 'Un título con el énfasis aplicado a TODO el texto se pierde al guardarlo.',
+      sugerencia: 'Deja alguna palabra del título sin cursiva ni negrita, o quita el énfasis.',
     })
   }
 
-  if (cap.etiqueta) return `${cap.etiqueta}: ${titulo}`
+  // Una etiqueta sin titulo («Capitulo 3» a secas) se escribe sola. Con el
+  // separador detras, «Capitulo 3: » se leia como un titulo que ACABA en dos
+  // puntos, y el libro decia «Capitulo 3:» en la cabecera y en el indice.
+  if (cap.etiqueta) return plano.trim() === '' ? cap.etiqueta : `${cap.etiqueta}: ${titulo}`
+
+  if (plano.trim() === '') {
+    avisos.push({
+      que: 'Un capítulo sin título',
+      porque: 'Sin título ni etiqueta, el libro tomaría su primer párrafo como título.',
+      sugerencia: 'Ponle un título, o una etiqueta como «Capítulo 3».',
+    })
+  }
 
   // Sin etiqueta, pero si el titulo solo ya parece una cabecera de capitulo, al
   // releerlo se partiria en etiqueta + titulo.
   if (RE_TITULO.test(plano)) {
     avisos.push({
-      que: `Titulo del capitulo «${plano}»`,
+      que: `Título del capítulo «${plano}»`,
       porque:
-        'El titulo, sin etiqueta, parece ya una cabecera de capitulo, asi que al volver a ' +
-        'leerlo se partiria en dos.',
-      sugerencia: 'Pon la parte de «Capitulo N» en el campo de etiqueta.',
+        'El título, sin etiqueta, parece ya una cabecera de capítulo, así que al volver a ' +
+        'leerlo se partiría en dos.',
+      sugerencia: 'Pon la parte de «Capítulo N» en el campo de etiqueta.',
     })
   }
   return titulo

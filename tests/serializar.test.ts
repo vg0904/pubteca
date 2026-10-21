@@ -213,7 +213,7 @@ describe('lo que el dialecto NO puede representar: se avisa, no se corrompe', ()
     const r = idaYVuelta(capitulo([p([t('\u2042')])]))
     expect(r.avisos).toHaveLength(1)
     expect(r.avisos[0]?.porque).toContain('cambio de escena')
-    expect(r.avisos[0]?.sugerencia).toContain('Anade una palabra')
+    expect(r.avisos[0]?.sugerencia).toContain('Añade una palabra')
   })
 
   it('un titulo con el enfasis aplicado a todo el texto', () => {
@@ -274,6 +274,21 @@ describe('ida y vuelta: la cabecera del capitulo', () => {
       expect(leido).toEqual({ etiqueta, titulo })
     })
   }
+
+  it('una etiqueta sin titulo sale sola, sin dos puntos colgando', () => {
+    // «Capítulo 3: » se leia como un titulo que ACABA en dos puntos: la
+    // cabecera y el indice decian «Capítulo 3:».
+    const cap: Capitulo = { id: 'c', etiqueta: 'Cap\u00edtulo 3', titulo: [], aperturas: [], bloques: [p([t('x')])] }
+    const r = idaYVuelta(cap)
+    expect(r.avisos).toEqual([])
+    expect(r.titulo).toBe('Cap\u00edtulo 3')
+  })
+
+  it('un capitulo sin titulo ni etiqueta avisa: el motor tomaria su primer parrafo', () => {
+    const cap: Capitulo = { id: 'c', etiqueta: '', titulo: [], aperturas: [], bloques: [p([t('Primer parrafo.')])] }
+    const r = idaYVuelta(cap)
+    expect(r.avisos.map((a) => a.que)).toEqual(['Un cap\u00edtulo sin t\u00edtulo'])
+  })
 
   it('«Cap. 3» funciona gracias al arreglo del bug del titulo', () => {
     // Con el Python original esto daba la etiqueta «Cap. 3» y el titulo

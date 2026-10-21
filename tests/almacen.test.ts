@@ -81,6 +81,25 @@ describe('proyectos', () => {
     expect(leido).toMatchObject(p)
   })
 
+  it('dos pestañas con el mismo libro: la que va atrasada NO pisa a la otra', async () => {
+    // Pestaña A abre el libro (modificado 1000). Pestaña B lo abre tambien,
+    // escribe y guarda (2000). Cuando A guarda, lo que hay ya no es lo que
+    // ella leyo: escribir encima borraria lo de B sin avisar.
+    await guardarProyecto(db, proyecto('p1', 'Original'), 1000)
+    const leidoPorA = await leerProyecto(db, 'p1')
+    expect(await guardarProyecto(db, proyecto('p1', 'Desde B'), 2000, leidoPorA?.modificado)).toBe('ok')
+    expect(await guardarProyecto(db, proyecto('p1', 'Desde A'), 3000, leidoPorA?.modificado)).toBe('conflicto')
+    expect((await leerProyecto(db, 'p1'))?.datos.titulo).toBe('Desde B')
+  })
+
+  it('la pestaña al dia guarda, y un libro nuevo se guarda la primera vez', async () => {
+    expect(await guardarProyecto(db, proyecto('n', 'Nuevo'), 1000, null)).toBe('ok')
+    expect(await guardarProyecto(db, proyecto('n', 'Nuevo 2'), 2000, 1000)).toBe('ok')
+    expect((await leerProyecto(db, 'n'))?.datos.titulo).toBe('Nuevo 2')
+    // Un «libro nuevo» que ya existe es que otra pestaña lo guardo antes.
+    expect(await guardarProyecto(db, proyecto('n', 'Otro'), 3000, null)).toBe('conflicto')
+  })
+
   it('un id que no existe da null, no un error', async () => {
     expect(await leerProyecto(db, 'no-existe')).toBeNull()
   })
@@ -115,7 +134,7 @@ describe('proyectos', () => {
     const futuro = { ...proyecto('p1', 'Del futuro'), version: VERSION_PROYECTO + 1 }
     await guardarProyecto(db, futuro, 1000)
     await expect(leerProyecto(db, 'p1')).rejects.toThrow(ErrorAlmacen)
-    await expect(leerProyecto(db, 'p1')).rejects.toThrow(/version mas nueva/)
+    await expect(leerProyecto(db, 'p1')).rejects.toThrow(/versión más nueva/)
   })
 })
 

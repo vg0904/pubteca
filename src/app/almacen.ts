@@ -31,6 +31,10 @@ export interface ImagenGuardada {
   readonly alto: number
   readonly tamano: number
   readonly datos: Blob
+  /** Banderas de la inspeccion de bytes. Ver `Imagen` en modelo.ts. */
+  readonly alfa?: boolean
+  readonly cmyk?: boolean
+  readonly p3?: boolean
 }
 
 export interface ResumenProyecto {
@@ -82,9 +86,9 @@ export async function abrirAlmacen(): Promise<Almacen> {
         }
       },
     })
-  } catch (e) {
+  } catch {
     throw new ErrorAlmacen(
-      'No pude abrir el almacen del navegador. Si estas en una ventana privada, tu trabajo no se ' +
+      'No pude abrir el almacén del navegador. Si estás en una ventana privada, tu trabajo no se ' +
         'va a guardar: abre Pubteca en una ventana normal.',
       'privado',
     )
@@ -134,13 +138,34 @@ export async function guardarProyecto(
   db: Almacen,
   proyecto: Proyecto,
   modificado: number,
-): Promise<void> {
+  /**
+   * El `modificado` que esta pestaña cree que hay guardado (null si el libro
+   * es nuevo). Si lo que hay es OTRA cosa, alguien lo guardo desde otra
+   * pestaña o ventana, y escribir encima borraria sus cambios sin avisar: no
+   * se escribe y se devuelve `conflicto`. Sin este argumento no se comprueba.
+   */
+  esperado?: number | null,
+): Promise<'ok' | 'conflicto'> {
   try {
-    await db.put('proyectos', { ...proyecto, modificado })
+    if (esperado === undefined) {
+      await db.put('proyectos', { ...proyecto, modificado })
+      return 'ok'
+    }
+    // Leer y escribir en la MISMA transaccion: entre las dos no puede colarse
+    // el guardado de otra pestaña.
+    const tx = db.transaction('proyectos', 'readwrite')
+    const actual = await tx.store.get(proyecto.id)
+    if ((actual?.modificado ?? null) !== esperado) {
+      await tx.done
+      return 'conflicto'
+    }
+    await tx.store.put({ ...proyecto, modificado })
+    await tx.done
+    return 'ok'
   } catch (e) {
     if (esFaltaDeEspacio(e)) {
       throw new ErrorAlmacen(
-        'No cabe mas en este navegador. Guarda una copia (.zip) ahora mismo: se hace desde ' +
+        'No cabe más en este navegador. Guarda una copia (.zip) ahora mismo: se hace desde ' +
           'memoria y no necesita espacio.',
         'sinEspacio',
       )
@@ -156,13 +181,16 @@ export async function guardarProyecto(
  * interpretarlo mal: el autor habra usado una version mas reciente de Pubteca
  * en otro navegador, y leerlo a medias le estropearia el libro.
  */
-export async function leerProyecto(db: Almacen, id: string): Promise<Proyecto | null> {
+export async function leerProyecto(
+  db: Almacen,
+  id: string,
+): Promise<(Proyecto & { readonly modificado: number }) | null> {
   const p = await db.get('proyectos', id)
   if (!p) return null
   if (p.version > VERSION_PROYECTO) {
     throw new ErrorAlmacen(
-      `Este libro se guardo con una version mas nueva de Pubteca (formato ${p.version}, esta ` +
-        `version entiende hasta ${VERSION_PROYECTO}). Actualiza la pagina antes de abrirlo.`,
+      `Este libro se guardó con una versión más nueva de Pubteca (formato ${p.version}, esta ` +
+        `versión entiende hasta ${VERSION_PROYECTO}). Actualiza la página antes de abrirlo.`,
       'versionFutura',
     )
   }
@@ -199,7 +227,7 @@ export async function guardarImagen(db: Almacen, imagen: ImagenGuardada): Promis
     if (esFaltaDeEspacio(e)) {
       throw new ErrorAlmacen(
         `No cabe «${imagen.nombreOriginal}» en este navegador. Guarda una copia (.zip) y revisa ` +
-          'las ilustraciones mas pesadas.',
+          'las ilustraciones más pesadas.',
         'sinEspacio',
       )
     }

@@ -55,8 +55,14 @@ export interface Descartado {
   readonly porque: string
 }
 
-/** Por que se sugiere un corte. El autor necesita saberlo para confiar o corregir. */
-export type MotivoCorte = 'estiloTitulo' | 'lineaCapitulo' | 'saltoDePagina'
+/**
+ * Por que se sugiere un corte. El autor necesita saberlo para confiar o corregir.
+ *
+ * Los dos ultimos no salen de este modulo: `manual` es un «Cortar aqui» del
+ * autor en la pantalla de importar, y `archivo` el comienzo de cada archivo
+ * cuando se importan varios `.md` o `.txt` (ver app/importacion.ts).
+ */
+export type MotivoCorte = 'estiloTitulo' | 'lineaCapitulo' | 'saltoDePagina' | 'manual' | 'archivo'
 
 export interface CorteSugerido {
   /** Indice, en la lista plana, del bloque que seria la cabecera del capitulo. */
@@ -86,6 +92,15 @@ export interface CorteSugerido {
    * sugerencia, y no tiene por que repetirlo.
    */
   readonly marcado?: boolean
+  /**
+   * Donde empiezan las laminas de apertura de este capitulo, si se SABE.
+   *
+   * Sin el, `aplicarCortes` adivina: la racha de ilustraciones pegada justo
+   * antes de la cabecera abre el capitulo. En un Word es la mejor apuesta, pero
+   * al importar varios `.md` se sabe de verdad de que archivo es cada dibujo, y
+   * adivinar se llevaba la ultima ilustracion de un capitulo al siguiente.
+   */
+  readonly inicioAperturas?: number
 }
 
 /** El `finCabecera` efectivo de un corte. */
@@ -105,15 +120,15 @@ export interface Propuesta {
 }
 
 const RAZONES: Record<string, string> = {
-  table: 'Un EPUB de novela no lleva tablas, y en la pantalla de un movil no caben.',
+  table: 'Un EPUB de novela no lleva tablas, y en la pantalla de un móvil no caben.',
   ul: 'Las listas no forman parte del formato del libro.',
   ol: 'Las listas no forman parte del formato del libro.',
   s: 'El tachado no se conserva.',
   u: 'El subrayado no se conserva: en un libro se usa la cursiva.',
   a: 'Los enlaces se quedan como texto.',
-  sup: 'Los superindices no se conservan.',
-  sub: 'Los subindices no se conservan.',
-  br: 'Un salto de linea suelto se convierte en un parrafo nuevo.',
+  sup: 'Los superíndices no se conservan.',
+  sub: 'Los subíndices no se conservan.',
+  br: 'Un salto de línea suelto se convierte en un párrafo nuevo.',
 }
 
 const MARCAS_EN_LINEA: Record<string, Marca> = {
@@ -285,7 +300,7 @@ function textoDeBloque(b: Bloque | undefined): string {
 const RE_NO_TITULO = /^[\p{Ll}\u2014\u2013\-«"'(]/u
 
 /** Si una linea tiene pinta de ser el titulo del capitulo y no su primer parrafo. */
-function pareceTitulo(s: string): boolean {
+export function pareceTitulo(s: string): boolean {
   return (
     s !== '' &&
     s.length <= 70 &&
@@ -482,6 +497,7 @@ export function aplicarCortes(
   // dibujo, y hay que calcularlo antes de repartir para que esos bloques no
   // cuenten dos veces (ni se queden en el capitulo anterior, ni en huerfanos).
   const inicioAperturas = ordenados.map((corte, i) => {
+    if (corte.inicioAperturas !== undefined) return corte.inicioAperturas
     const limite = i === 0 ? 0 : finDeCabecera(ordenados[i - 1] as CorteSugerido) + 1
     let j = corte.indice - 1
     while (j >= limite && bloques[j]?.tipo === 'ilustracion') j -= 1
@@ -533,18 +549,26 @@ export async function importarDocx(
   const imagenes: ImagenExtraida[] = []
   const imagenPorSrc = new Map<string, string>()
 
-  // OJO: la clave es `buffer`, NO `arrayBuffer`. En mammoth 1.13 `openZip`
-  // acepta `path`, `buffer` o `file`, y con cualquier otra clave falla con
-  // «Could not find file in options», que no dice nada de la causa.
+  // OJO: mammoth tiene DOS `openZip`, y cada uno quiere su clave. El de Node
+  // (lib/unzip.js, el de los tests) acepta `path`, `buffer` o `file`; el del
+  // navegador (browser/unzip.js, que Vite elige por el campo «browser» del
+  // package.json) SOLO acepta `arrayBuffer`. Con la clave equivocada fallan
+  // con «Could not find file in options», que no dice nada de la causa. Los
+  // tests en Node pasaban con `buffer` y la app real no podia abrir ni un
+  // .docx: se paso por alto hasta probarlo en el navegador. Van las dos.
   type EntradaMammoth = Parameters<typeof mammoth.convertToHtml>[0]
   const resultado = await mammoth.convertToHtml(
-    { buffer: bytes } as unknown as EntradaMammoth,
+    { buffer: bytes, arrayBuffer: bytes } as unknown as EntradaMammoth,
     {
       // SIN esto, mammoth incrusta cada imagen como data:URI en base64 dentro
       // del HTML: decenas de MB en memoria con un libro ilustrado.
       convertImage: mammoth.images.imgElement(async (image) => {
         const id = opciones.nuevoId('img')
-        const crudos = (await image.read()) as unknown as Uint8Array
+        // `readAsArrayBuffer`, NO `read()`: sin codificacion, `read()` hace
+        // `Buffer.from(...)`, y `Buffer` no existe en el navegador. En Node
+        // funcionaba, asi que los tests pasaban y en la app las ilustraciones
+        // del Word desaparecian sin un error: el `<img>` se quedaba sin imagen.
+        const crudos = await image.readAsArrayBuffer()
         const src = `${MARCADOR}${id}`
         imagenPorSrc.set(src, id)
         imagenes.push({

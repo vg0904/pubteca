@@ -197,6 +197,8 @@ const R_NEGRITA = /\*\*(?=\S)(.+?)(?<=\S)\*\*/gu
 const R_NEGRITA_ = new RegExp(`(?<!${PAL})__(?=\\S)(.+?)(?<=\\S)__(?!${PAL})`, 'gu')
 const R_CURSIVA = /\*(?=\S)(.+?)(?<=\S)\*/gu
 const R_CURSIVA_ = new RegExp(`(?<!${PAL})_(?=\\S)(.+?)(?<=\\S)_(?!${PAL})`, 'gu')
+// El NUL es el centinela a proposito: no puede aparecer en el texto del autor.
+// oxlint-disable-next-line no-control-regex
 const R_CENTINELA = /\u0000([0-9]+)\u0000/g
 
 /**
