@@ -14,6 +14,7 @@ import { descargar, nombreDeCopia, zipDeCopia } from '../copia'
 import { ESTADO_INICIAL, reducir } from '../estado'
 import { exportar } from '../exportar'
 import { bytesDelProyecto, cargarFuentes } from '../generar'
+import { Guardador } from '../guardado'
 import { crearId } from '../ids'
 import { desdeDialecto, desdeParrafos, desdePropuesta, resultadoImportacion, type ImagenImportada } from '../importacion'
 import { importarDocx } from '../importar/docx'
@@ -59,26 +60,11 @@ export default function App() {
     setTimeout(() => setAvisos((a) => a.filter((x) => x.id !== id)), opciones.tipo === 'error' ? 12_000 : 7_000)
   }, [])
 
-  // -- almacen ----------------------------------------------------------------
-  useEffect(() => {
-    abrirAlmacen()
-      .then(async (d) => {
-        setDb(d)
-        setProyectos(await listarProyectos(d))
-      })
-      .catch((e: unknown) => {
-        setSinAlmacen(e instanceof Error ? e.message : ui.inicio.privado)
-      })
-  }, [])
-
-  // Al volver al inicio se refresca la lista.
-  useEffect(() => {
-    if (estado.pantalla === 'inicio' && db) void listarProyectos(db).then(setProyectos)
-  }, [estado.pantalla, db])
-
   // -- autoguardado -----------------------------------------------------------
   // El estado de guardado se DERIVA: lo guardado es el ultimo proyecto que
   // llego a IndexedDB, y si el actual es otro objeto, hay cambios en camino.
+  // La logica (la cola, un pendiente por libro, los conflictos) esta en
+  // guardado.ts, con sus tests.
   const [guardadoHasta, setGuardadoHasta] = useState<Proyecto | null>(null)
   const [errorGuardar, setErrorGuardar] = useState(false)
   /**
@@ -86,36 +72,51 @@ export default function App() {
    * encima borraria esos cambios sin avisar; ver guardarProyecto.
    */
   const [conflicto, setConflicto] = useState<string | null>(null)
-  /** Lo que esta pestaña sabe que hay guardado de cada libro: su `modificado`. */
-  const conocido = useRef(new Map<string, number | null>())
-  const pendiente = useRef<Proyecto | null>(null)
-  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Nace con el almacen: ver el efecto que lo abre. */
+  const [guardador, setGuardador] = useState<Guardador | null>(null)
+
+  // -- almacen ----------------------------------------------------------------
+  useEffect(() => {
+    abrirAlmacen()
+      .then(async (d) => {
+        setDb(d)
+        setGuardador(
+          new Guardador({
+            guardar: (p, cuando, esperado) => guardarProyecto(d, p, cuando, esperado),
+            ahora: Date.now,
+            espera: ESPERA_GUARDAR,
+            alGuardar: (p) => {
+              setGuardadoHasta(p)
+              setErrorGuardar(false)
+            },
+            alConflicto: setConflicto,
+            alError: (e) => {
+              setErrorGuardar(true)
+              avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
+            },
+          }),
+        )
+        setProyectos(await listarProyectos(d))
+      })
+      .catch((e: unknown) => {
+        setSinAlmacen(e instanceof Error ? e.message : ui.inicio.privado)
+      })
+  }, [avisar])
+
+  /** Guarda ya todo lo pendiente; se puede esperar antes de leer de IndexedDB. */
   const guardarYa = useCallback(async () => {
-    const p = pendiente.current
-    if (!p || !db) return
-    pendiente.current = null
-    try {
-      const cuando = Date.now()
-      const r = await guardarProyecto(db, p, cuando, conocido.current.get(p.id) ?? null)
-      if (r === 'conflicto') {
-        setConflicto(p.id)
-        return
-      }
-      conocido.current.set(p.id, cuando)
-      setGuardadoHasta(p)
-      setErrorGuardar(false)
-    } catch (e) {
-      setErrorGuardar(true)
-      avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
-    }
-  }, [db, avisar])
+    await guardador?.ya()
+  }, [guardador])
 
   useEffect(() => {
-    if (!estado.proyecto || !db || estado.proyecto === guardadoHasta || conflicto === estado.proyecto.id) return
-    pendiente.current = estado.proyecto
-    if (temporizador.current) clearTimeout(temporizador.current)
-    temporizador.current = setTimeout(() => void guardarYa(), ESPERA_GUARDAR)
-  }, [estado.proyecto, db, guardarYa, guardadoHasta, conflicto])
+    if (estado.proyecto && estado.proyecto !== guardadoHasta) guardador?.programar(estado.proyecto)
+  }, [estado.proyecto, guardador, guardadoHasta])
+
+  // Al volver al inicio se refresca la lista, DESPUES de guardar lo pendiente:
+  // si no, el libro del que se acaba de salir saldria con su fecha vieja.
+  useEffect(() => {
+    if (estado.pantalla === 'inicio' && db) void guardarYa().then(() => listarProyectos(db)).then(setProyectos)
+  }, [estado.pantalla, db, guardarYa])
 
   const guardado: EstadoGuardado = sinAlmacen
     ? 'sinAlmacen'
@@ -185,10 +186,10 @@ export default function App() {
   const nuevo = useCallback(() => {
     void pedirPersistencia()
     const id = crearId('libro')
-    conocido.current.set(id, null)
+    guardador?.conocer(id, null)
     cambiarRepo(new Repositorio(db, id))
     despachar({ tipo: 'nuevoProyecto', id, capitulo: crearId('cap'), bloque: crearId('b') })
-  }, [db, cambiarRepo])
+  }, [db, cambiarRepo, guardador])
 
   const abrir = useCallback(
     async (id: string) => {
@@ -197,14 +198,13 @@ export default function App() {
         // Lo que quede por guardar se guarda ANTES de leer: si el autor sale y
         // vuelve a entrar enseguida, se leeria la version de antes y lo ultimo
         // que escribio se perderia al seguir editando.
-        if (temporizador.current) clearTimeout(temporizador.current)
         await guardarYa()
         const p = db ? await leerProyecto(db, id) : null
         if (!p) return
         const { repo: r, imagenes } = await Repositorio.abrir(db, id)
         cambiarRepo(r)
         // Recien leido de IndexedDB: no hay nada que volver a guardar.
-        conocido.current.set(id, p.modificado)
+        guardador?.conocer(id, p.modificado)
         setGuardadoHasta(p)
         setConflicto(null)
         despachar({ tipo: 'abrir', proyecto: p, imagenes })
@@ -214,7 +214,7 @@ export default function App() {
         setOcupado(null)
       }
     },
-    [db, avisar, cambiarRepo, guardarYa],
+    [db, avisar, cambiarRepo, guardarYa, guardador],
   )
 
   const borrar = useCallback(
@@ -301,7 +301,7 @@ export default function App() {
       }
       if (!estado.proyecto) {
         void pedirPersistencia()
-        conocido.current.set(idP, null)
+        guardador?.conocer(idP, null)
       }
       cambiarRepo(destino)
       despachar({ tipo: 'incorporar', idProyecto: idP, capitulos: r.capitulos, extras: r.extras, imagenes })
@@ -310,7 +310,7 @@ export default function App() {
     } finally {
       setImportando(false)
     }
-  }, [estado.importacion, estado.proyecto, repo, db, avisar, cambiarRepo])
+  }, [estado.importacion, estado.proyecto, repo, db, avisar, cambiarRepo, guardador])
 
   // -- copia (.zip) -----------------------------------------------------------
   const guardarCopia = useCallback(async () => {
