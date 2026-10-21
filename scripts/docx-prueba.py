@@ -134,16 +134,28 @@ def rels_documento(con_imagen):
     )
 
 
+# Fecha fija dentro del zip. Sin esto, zipfile pone la hora actual y los .docx
+# salen distintos byte a byte en cada ejecucion: regenerar uno ensuciaba el
+# diff de los ocho.
+FECHA = (2020, 1, 1, 0, 0, 0)
+
+
 def escribir(nombre, cuerpo, con_imagen=False):
     destino = SALIDA / nombre
+
+    def meter(z, ruta, datos):
+        info = zipfile.ZipInfo(ruta, date_time=FECHA)
+        info.compress_type = zipfile.ZIP_DEFLATED
+        z.writestr(info, datos)
+
     with zipfile.ZipFile(destino, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml", CONTENT_TYPES)
-        z.writestr("_rels/.rels", RELS)
-        z.writestr("word/document.xml", documento(cuerpo))
-        z.writestr("word/styles.xml", STYLES)
-        z.writestr("word/_rels/document.xml.rels", rels_documento(con_imagen))
+        meter(z, "[Content_Types].xml", CONTENT_TYPES)
+        meter(z, "_rels/.rels", RELS)
+        meter(z, "word/document.xml", documento(cuerpo))
+        meter(z, "word/styles.xml", STYLES)
+        meter(z, "word/_rels/document.xml.rels", rels_documento(con_imagen))
         if con_imagen:
-            z.writestr("word/media/image1.png", IMAGEN.read_bytes())
+            meter(z, "word/media/image1.png", IMAGEN.read_bytes())
     print(f"  {nombre:28} {destino.stat().st_size:>8,} bytes")
 
 
@@ -240,6 +252,48 @@ DOCUMENTOS = {
             parrafo([run("Texto del quinto.")]),
         ],
         False,
+    ),
+    # La forma mas comun en un manuscrito de Word: la etiqueta en una linea y
+    # el titulo en la SIGUIENTE. Sin tratarlo, el titulo acababa siendo el
+    # primer parrafo del capitulo.
+    "manuscrito-dos-lineas.docx": (
+        [
+            parrafo([run("CAP\u00cdTULO UNO")]),
+            parrafo([run("El despertar")]),
+            parrafo([run("Texto del primero.")]),
+            salto_de_pagina(),
+            # Detras de la etiqueta va un dialogo, que NO es el titulo
+            parrafo([run("CAP\u00cdTULO DOS")]),
+            parrafo([run("\u2014No puedo \u2014dijo ella.")]),
+            parrafo([run("Texto del segundo.")]),
+            salto_de_pagina(),
+            # Detras de la etiqueta va prosa que acaba en punto: tampoco
+            parrafo([run("Pr\u00f3logo")]),
+            parrafo([run("Llovia sobre el puerto.")]),
+            salto_de_pagina(),
+            # Y aqui si: etiqueta y titulo, los dos en su linea
+            parrafo([run("Cap\u00edtulo 4")]),
+            parrafo([run("La casa de los Arriaga")]),
+            parrafo([run("Texto del cuarto.")]),
+        ],
+        False,
+    ),
+    # Una lamina a pagina completa entre dos capitulos: el salto que la precede
+    # NO es un capitulo nuevo.
+    "manuscrito-con-lamina.docx": (
+        [
+            parrafo([run("Cap\u00edtulo 1: El puerto")], "Heading1"),
+            parrafo([run("Texto del primero.")]),
+            salto_de_pagina(),
+            imagen_parrafo("rId9"),
+            # Prosa detras de la lamina, y SIN salto: si el salto de antes de la
+            # lamina se arrastrara hasta aqui, partiria el capitulo por la mitad
+            parrafo([run("Sigue el primero.")]),
+            salto_de_pagina(),
+            parrafo([run("Cap\u00edtulo 2: La bahia")], "Heading1"),
+            parrafo([run("Texto del segundo.")]),
+        ],
+        True,
     ),
     # Vacio
     "vacio.docx": ([], False),

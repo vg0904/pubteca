@@ -4,12 +4,17 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { inspeccionarImagen } from '../src/core/imagen-inspeccion'
 import { bloquesDelModelo } from '../src/app/html'
+import { strToU8, zipSync } from 'fflate'
 import {
   aplicarCortes,
+  cabeceraSugerida,
+  finDeCabecera,
   importarDocx,
+  propuestaDesdeHtml,
   type CorteSugerido,
   type Propuesta,
 } from '../src/app/importar/docx'
+import { alinear, parrafosDeDocx } from '../src/app/importar/saltos'
 import { capituloDesdeDialecto, reiniciarIds, resumir } from '../src/app/importar/dialecto'
 import { serializarCapitulo } from '../src/app/serializar'
 import type { Bloque, Capitulo } from '../src/app/modelo'
@@ -22,6 +27,7 @@ import type { Bloque, Capitulo } from '../src/app/modelo'
  */
 
 const CARPETA = join(import.meta.dirname, 'fixtures', 'docx')
+const NS_W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 
 let n = 0
 const nuevoId = (prefijo: string): string => `${prefijo}-${++n}`
@@ -81,7 +87,14 @@ describe('los cortes se SUGIEREN, con el motivo a la vista', () => {
   it('el estilo Titulo 1 sugiere un corte', async () => {
     const p = await importar('capitulo-completo')
     expect(p.cortes).toEqual([
-      { indice: 0, etiqueta: 'Cap\u00edtulo 1', titulo: 'La luz que no tocaba', motivo: 'estiloTitulo' },
+      {
+        indice: 0,
+        finCabecera: 0,
+        etiqueta: 'Cap\u00edtulo 1',
+        titulo: 'La luz que no tocaba',
+        motivo: 'estiloTitulo',
+        marcado: true,
+      },
     ])
   })
 
@@ -89,7 +102,14 @@ describe('los cortes se SUGIEREN, con el motivo a la vista', () => {
     // Cubre al autor que escribe «Capitulo 3: ...» a mano, que son muchos.
     const p = await importar('sin-estilo-de-titulo')
     expect(p.cortes).toEqual([
-      { indice: 0, etiqueta: 'Cap\u00edtulo 3', titulo: 'Sin estilo', motivo: 'lineaCapitulo' },
+      {
+        indice: 0,
+        finCabecera: 0,
+        etiqueta: 'Cap\u00edtulo 3',
+        titulo: 'Sin estilo',
+        motivo: 'lineaCapitulo',
+        marcado: true,
+      },
     ])
   })
 
@@ -331,59 +351,335 @@ describe('EL CASO REAL: un manuscrito entero en UN archivo', () => {
     expect(p.cortes.map((c) => c.etiqueta)).toEqual(['Capítulo 1', 'Capítulo 2', ''])
   })
 
-  it('LIMITE: mammoth descarta los saltos de pagina, que no dejan ni rastro', async () => {
-    // Es la forma mas comun de separar capitulos en un documento unico, y es
-    // invisible para nosotros. Recuperarlo exige leer word/document.xml a mano
-    // buscando <w:br w:type="page"/>; fflate ya es dependencia, asi que se
-    // puede. Anotado en el plan como lo primero que resolver en H5.
-    const p = await importar('manuscrito-realista')
-    const texto = p.bloques.map(textoDe).join('|')
-    expect(texto).not.toContain('\f')
-    // Los 10 parrafos estan, pero nada marca donde estaban los 4 saltos.
-    expect(p.bloques).toHaveLength(10)
+  it('los saltos de pagina se recuperan del XML, uno por capitulo', async () => {
+    // mammoth los descarta sin dejar rastro, asi que se leen de
+    // word/document.xml. Es la señal mas fuerte del caso real: en un documento
+    // unico, Ctrl+Enter es como se separan los capitulos.
+    const buf = readFileSync(join(CARPETA, 'manuscrito-realista.docx'))
+    const parrafos = parrafosDeDocx(new Uint8Array(buf))
+    expect(parrafos).not.toBeNull()
+    // 4 saltos, y cada uno marca el parrafo donde empieza la pagina nueva. El
+    // parrafo que solo contiene el salto no se marca a si mismo: mammoth lo
+    // borra, asi que la marca pasa al primero con contenido.
+    expect((parrafos ?? []).filter((x) => x.saltoAntes).map((x) => x.texto)).toEqual([
+      'CAPÍTULO DOS',
+      'Capítulo III',
+      '4',
+      'La luz que no tocaba',
+    ])
   })
 
-  it('LIMITE: detecta 3 de los 5 capitulos, y solo por el patron del titulo', async () => {
+  it('con los saltos, acierta los 5 capitulos del manuscrito realista', async () => {
+    // Antes acertaba 3: se le escapaban «4» (un capitulo marcado solo con el
+    // numero) y «La luz que no tocaba» (un titulo sin la palabra «capitulo»).
+    // Ninguno de los dos se puede detectar por el texto; el salto de pagina si.
     const p = await importar('manuscrito-realista')
     expect(p.cortes.map((c) => c.titulo)).toEqual([
       'CAPÍTULO UNO',
       'CAPÍTULO DOS',
       'Capítulo III',
+      '4',
+      'La luz que no tocaba',
     ])
-    // Se le escapan «4» (solo el numero) y «La luz que no tocaba» (un titulo
-    // sin la palabra «capitulo»). Sin el salto de pagina no hay forma de
-    // saberlo por el texto, asi que el autor tendra que marcarlos con
-    // «Cortar aqui»: por eso esa accion no puede estar escondida.
-    expect(p.cortes).toHaveLength(3)
+    expect(p.cortes.map((c) => c.motivo)).toEqual([
+      'lineaCapitulo',
+      'lineaCapitulo',
+      'lineaCapitulo',
+      'saltoDePagina',
+      'saltoDePagina',
+    ])
+    const r = aplicarCortes(p.bloques, p.cortes, nuevoId)
+    expect(r.capitulos).toHaveLength(5)
+    expect(r.huerfanos).toEqual([])
+    expect(r.capitulos.map((c) => c.bloques.length)).toEqual([1, 1, 1, 1, 1])
   })
 
-  it('LIMITE: sin separador, la etiqueta se queda vacia y el titulo se la come', async () => {
-    const p = await importar('manuscrito-realista')
-    // Lo correcto seria etiqueta «CAPITULO UNO» y titulo vacio. RE_TITULO casa,
-    // pero `partirCabecera` solo separa cuando hay un «:», un «.» o un guion
-    // detras del numero, y aqui no hay nada detras.
-    expect(p.cortes[0]).toEqual({
-      indice: 0,
-      etiqueta: '',
-      titulo: 'CAPÍTULO UNO',
-      motivo: 'lineaCapitulo',
-    })
+  it('un salto antes de una lamina a pagina completa no corta capitulo', async () => {
+    // Una ilustracion sola en su pagina va precedida de un salto, y eso no es
+    // un capitulo nuevo: es una lamina.
+    const p = await importar('manuscrito-con-lamina')
+    expect(p.bloques.map((b) => b.tipo)).toEqual([
+      'parrafo',
+      'parrafo',
+      'ilustracion',
+      'parrafo',
+      'parrafo',
+      'parrafo',
+    ])
+    expect(p.cortes.map((c) => ({ indice: c.indice, motivo: c.motivo }))).toEqual([
+      { indice: 0, motivo: 'estiloTitulo' },
+      { indice: 4, motivo: 'estiloTitulo' },
+    ])
+    // El salto de antes de la lamina tampoco se arrastra hasta la prosa que
+    // viene detras: el primer capitulo sigue entero.
+    const r = aplicarCortes(p.bloques, p.cortes, nuevoId)
+    expect(r.capitulos.map((c) => c.bloques.map((b) => b.tipo))).toEqual([
+      ['parrafo', 'ilustracion', 'parrafo'],
+      ['parrafo'],
+    ])
   })
 
-  it('aun asi, el autor puede arreglarlo todo con cortes propios', async () => {
-    // Lo que salva el caso real no es la deteccion, es que aplicarCortes acepte
-    // lo que el autor decida. Con los 5 cortes puestos a mano, sale bien.
+  it('un salto antes de prosa se propone SIN marcar', async () => {
+    // El salto de pagina tambien separa la dedicatoria o los agradecimientos,
+    // asi que por si solo no basta para dar un capitulo por hecho: se enseña
+    // sin marcar y lo decide el autor.
+    const r = propuestaDesdeHtml(
+      '<p>Capítulo 1: El puerto</p><p>Primera parte del capítulo.</p>' +
+        '<p>Sigue el mismo capítulo, en otra página.</p>',
+      { nombreArchivo: 'x', nuevoId },
+      new Map(),
+      [
+        { texto: 'Capítulo 1: El puerto', saltoAntes: false },
+        { texto: 'Primera parte del capítulo.', saltoAntes: false },
+        { texto: 'Sigue el mismo capítulo, en otra página.', saltoAntes: true },
+      ],
+    )
+    expect(r.cortes.map((c) => ({ motivo: c.motivo, marcado: c.marcado }))).toEqual([
+      { motivo: 'lineaCapitulo', marcado: true },
+      { motivo: 'saltoDePagina', marcado: false },
+    ])
+  })
+
+  it('LA FORMA MAS COMUN: la etiqueta en una linea y el titulo en la siguiente', async () => {
+    const p = await importar('manuscrito-dos-lineas')
+    expect(
+      p.cortes.map((c) => ({ etiqueta: c.etiqueta, titulo: c.titulo, fin: finDeCabecera(c) })),
+    ).toEqual([
+      // Las dos lineas forman la cabecera: el titulo NO se queda de parrafo.
+      { etiqueta: 'CAPÍTULO UNO', titulo: 'El despertar', fin: 1 },
+      // Detras de la etiqueta hay un dialogo: eso no es un titulo.
+      { etiqueta: '', titulo: 'CAPÍTULO DOS', fin: 3 },
+      // Ni prosa que acaba en punto.
+      { etiqueta: '', titulo: 'Prólogo', fin: 6 },
+      { etiqueta: 'Capítulo 4', titulo: 'La casa de los Arriaga', fin: 9 },
+    ])
+
+    const r = aplicarCortes(p.bloques, p.cortes, nuevoId)
+    expect(r.capitulos.map((c) => c.bloques.map(textoDe))).toEqual([
+      // «El despertar» es el titulo, no el primer parrafo.
+      ['Texto del primero.'],
+      ['—No puedo —dijo ella.', 'Texto del segundo.'],
+      ['Llovia sobre el puerto.'],
+      ['Texto del cuarto.'],
+    ])
+  })
+
+  it('una etiqueta a solas se queda como titulo, no como etiqueta sin titulo', async () => {
+    // El motor pinta la etiqueta ENCIMA de un <h1>. Si la etiqueta se llevara
+    // «CAPITULO DOS» y el titulo quedara vacio, saldria un <h1> vacio en el
+    // libro. Es mejor que «CAPITULO DOS» sea el titulo, que es lo que el lector
+    // espera ver.
+    const p = await importar('manuscrito-dos-lineas')
+    const corte = p.cortes[1]
+    expect(corte?.etiqueta).toBe('')
+    expect(corte?.titulo).toBe('CAPÍTULO DOS')
+  })
+
+  it('el autor sigue pudiendo arreglarlo todo con cortes propios', async () => {
+    // Lo que salva el caso real no es la deteccion —nunca va a acertar
+    // siempre— es que aplicarCortes acepte lo que el autor decida. Por eso
+    // «Cortar aqui» no puede estar escondido en la interfaz.
     const p = await importar('manuscrito-realista')
     const aMano: CorteSugerido[] = [
       { indice: 0, etiqueta: 'Capítulo 1', titulo: '', motivo: 'lineaCapitulo' },
-      { indice: 2, etiqueta: 'Capítulo 2', titulo: '', motivo: 'lineaCapitulo' },
-      { indice: 4, etiqueta: 'Capítulo 3', titulo: '', motivo: 'lineaCapitulo' },
-      { indice: 6, etiqueta: 'Capítulo 4', titulo: '', motivo: 'lineaCapitulo' },
-      { indice: 8, etiqueta: 'Capítulo 5', titulo: 'La luz que no tocaba', motivo: 'lineaCapitulo' },
+      { indice: 4, etiqueta: 'Capítulo 2', titulo: '', motivo: 'lineaCapitulo' },
     ]
     const r = aplicarCortes(p.bloques, aMano, nuevoId)
-    expect(r.capitulos).toHaveLength(5)
+    expect(r.capitulos).toHaveLength(2)
     expect(r.huerfanos).toEqual([])
-    expect(r.capitulos.every((c) => c.bloques.length === 1)).toBe(true)
+    expect(r.capitulos.map((c) => c.bloques.length)).toEqual([3, 5])
+  })
+
+  it('el enfasis del titulo sobrevive a la importacion', async () => {
+    const p = await importar('capitulo-completo')
+    const r = aplicarCortes(p.bloques, p.cortes, nuevoId)
+    // «Capitulo 1: La luz que no tocaba» no lleva enfasis, pero el camino que
+    // lo conserva es el mismo: si el titulo propuesto es el texto entero del
+    // bloque, se usan sus tramos en vez de aplanarlo.
+    expect(r.capitulos[0]?.titulo).toEqual([{ texto: 'La luz que no tocaba', marcas: [] }])
+  })
+})
+
+describe('alinear: emparejar los parrafos del .docx con los del HTML', () => {
+  const l = (textos: string[]): { texto: string }[] => textos.map((texto) => ({ texto }))
+
+  it('uno a uno', () => {
+    expect(alinear(l(['a', 'b', 'c']), l(['a', 'b', 'c']))).toEqual([0, 1, 2])
+  })
+
+  it('mammoth descarta los vacios, y el hueco no arrastra al resto', () => {
+    expect(alinear(l(['a', '', 'b']), l(['a', 'b']))).toEqual([0, null, 1])
+    expect(alinear(l(['', 'a', '', '', 'b']), l(['a', 'b']))).toEqual([null, 0, null, null, 1])
+  })
+
+  it('el espacio no cuenta: cada lado lo normaliza a su manera', () => {
+    expect(alinear(l([' a  b ']), l(['a b']))).toEqual([0])
+  })
+
+  it('un desajuste se repara solo y no desplaza lo que viene detras', () => {
+    // Un parrafo que mammoth convirtio en algo que no reconocemos.
+    expect(alinear(l(['a', 'raro', 'c']), l(['a', 'c']))).toEqual([0, null, 1])
+    // O al contrario: un parrafo que mammoth se invento.
+    expect(alinear(l(['a', 'c']), l(['a', 'raro', 'c']))).toEqual([0, 2])
+  })
+
+  it('una lista vacia no revienta', () => {
+    expect(alinear([], l(['a']))).toEqual([])
+    expect(alinear(l(['a']), [])).toEqual([null])
+  })
+})
+
+describe('parrafosDeDocx: nunca puede tirar la importacion', () => {
+  it('un archivo que no es un zip devuelve null', () => {
+    expect(parrafosDeDocx(new Uint8Array([1, 2, 3, 4]))).toBeNull()
+  })
+
+  it('un zip sin word/document.xml devuelve null', () => {
+    const zip = zipSync({ 'otra/cosa.xml': strToU8('<a/>') })
+    expect(parrafosDeDocx(zip)).toBeNull()
+  })
+
+  it('un document.xml mal formado devuelve null', () => {
+    const zip = zipSync({ 'word/document.xml': strToU8('<w:body><sin cerrar') })
+    expect(parrafosDeDocx(zip)).toBeNull()
+  })
+
+  it('el texto borrado con control de cambios no cuenta', () => {
+    // mammoth no lo emite; si aqui contara, la alineacion se desajustaria.
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>vale</w:t></w:r><w:del><w:r><w:delText>fuera</w:delText></w:r></w:del></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    expect(parrafosDeDocx(zip)).toEqual([{ texto: 'vale', saltoAntes: false }])
+  })
+
+  it('el salto que trae el estilo del parrafo tambien cuenta', () => {
+    // «Titulo 1» de Word suele llevar pageBreakBefore.
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>uno</w:t></w:r></w:p>' +
+      '<w:p><w:pPr><w:pageBreakBefore/></w:pPr><w:r><w:t>dos</w:t></w:r></w:p>' +
+      '<w:p><w:pPr><w:pageBreakBefore w:val="0"/></w:pPr><w:r><w:t>tres</w:t></w:r></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    expect(parrafosDeDocx(zip)?.map((x) => x.saltoAntes)).toEqual([false, true, false])
+  })
+
+  it('un salto de linea suelto (Shift+Enter) no es un salto de pagina', () => {
+    // Se usa dentro de un poema o de una direccion postal. Si contara, cada
+    // estrofa partiria el libro en capitulos.
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>uno</w:t><w:br/><w:t>dos</w:t></w:r></w:p>' +
+      '<w:p><w:r><w:br/></w:r></w:p>' +
+      '<w:p><w:r><w:t>tres</w:t></w:r></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    expect(parrafosDeDocx(zip)?.map((x) => x.saltoAntes)).toEqual([false, false, false])
+  })
+
+  it('un salto a mitad de parrafo no se inventa un corte', () => {
+    // Queda texto detras del salto, asi que el parrafo sigue siendo uno solo y
+    // no hay donde cortar: mejor no decir nada que partir por el sitio erroneo.
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>antes</w:t><w:br w:type="page"/><w:t>despues</w:t></w:r></w:p>' +
+      '<w:p><w:r><w:t>siguiente</w:t></w:r></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    expect(parrafosDeDocx(zip)?.map((x) => x.saltoAntes)).toEqual([false, false])
+  })
+
+  it('varios saltos seguidos se encadenan hasta el parrafo con texto', () => {
+    const xml =
+      `<w:document xmlns:w="${NS_W}"><w:body>` +
+      '<w:p><w:r><w:t>uno</w:t></w:r></w:p>' +
+      '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' +
+      '<w:p><w:r><w:br w:type="page"/></w:r></w:p>' +
+      '<w:p><w:r><w:t>dos</w:t></w:r></w:p>' +
+      '</w:body></w:document>'
+    const zip = zipSync({ 'word/document.xml': strToU8(xml) })
+    // Los dos parrafos de salto estan vacios y mammoth los borra, asi que la
+    // marca viaja de uno al siguiente hasta caer en «dos», que es el unico que
+    // la alineacion va a encontrar.
+    expect(parrafosDeDocx(zip)?.map((x) => x.saltoAntes)).toEqual([false, false, true, true])
+  })
+})
+
+describe('cabeceraSugerida: adivinar lo que el autor quiso decir en Word', () => {
+  const par = (texto: string): Bloque => ({
+    id: texto,
+    tipo: 'parrafo',
+    tramos: [{ texto, marcas: [] }],
+  })
+
+  const casos: [string, string[], { etiqueta: string; titulo: string; finCabecera: number }][] = [
+    [
+      'con separador, igual que el motor',
+      ['Capítulo 1: La luz', 'Prosa.'],
+      { etiqueta: 'Capítulo 1', titulo: 'La luz', finCabecera: 0 },
+    ],
+    [
+      'etiqueta y titulo en dos lineas',
+      ['CAPÍTULO UNO', 'El despertar', 'Prosa.'],
+      { etiqueta: 'CAPÍTULO UNO', titulo: 'El despertar', finCabecera: 1 },
+    ],
+    [
+      'etiqueta sola al final del documento',
+      ['Epílogo'],
+      { etiqueta: '', titulo: 'Epílogo', finCabecera: 0 },
+    ],
+    [
+      'detras de la etiqueta hay prosa',
+      ['Prólogo', 'Llovia sobre el puerto.'],
+      { etiqueta: '', titulo: 'Prólogo', finCabecera: 0 },
+    ],
+    [
+      'detras de la etiqueta hay dialogo',
+      ['Capítulo 2', '—No puedo —dijo ella'],
+      { etiqueta: '', titulo: 'Capítulo 2', finCabecera: 0 },
+    ],
+    [
+      'detras de la etiqueta hay otra etiqueta',
+      ['Capítulo 2', 'Capítulo 3'],
+      { etiqueta: '', titulo: 'Capítulo 2', finCabecera: 0 },
+    ],
+    [
+      'detras de la etiqueta hay un parrafo largo',
+      ['Capítulo 2', 'A'.repeat(71)],
+      { etiqueta: '', titulo: 'Capítulo 2', finCabecera: 0 },
+    ],
+    [
+      'un titulo con pregunta si vale',
+      ['Capítulo 2', '¿Quién llamaba?'],
+      { etiqueta: 'Capítulo 2', titulo: '¿Quién llamaba?', finCabecera: 1 },
+    ],
+    [
+      'un titulo que no es cabecera de nada se queda entero',
+      ['La luz que no tocaba', 'Prosa.'],
+      { etiqueta: '', titulo: 'La luz que no tocaba', finCabecera: 0 },
+    ],
+  ]
+
+  for (const [nombre, textos, esperado] of casos) {
+    it(nombre, () => {
+      expect(cabeceraSugerida(textos.map(par), 0)).toEqual(esperado)
+    })
+  }
+
+  it('la linea del titulo no se propone ademas como cabecera propia', () => {
+    // Si una segunda señal propusiera un corte en la linea que la cabecera ya
+    // se llevo como titulo, saldrian dos capitulos y el primero vacio.
+    const html =
+      '<h1>CAPÍTULO UNO</h1><p>El despertar</p><p>Texto.</p>'
+    const r = propuestaDesdeHtml(html, { nombreArchivo: 'x', nuevoId }, new Map(), [
+      { texto: 'CAPÍTULO UNO', saltoAntes: false },
+      // Un salto justo en la linea del titulo: la cabecera ya la tomo.
+      { texto: 'El despertar', saltoAntes: true },
+      { texto: 'Texto.', saltoAntes: false },
+    ])
+    expect(r.cortes).toHaveLength(1)
+    expect(r.cortes[0]).toMatchObject({ indice: 0, finCabecera: 1, titulo: 'El despertar' })
   })
 })

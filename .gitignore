@@ -33,3 +33,7 @@ libro-real/
 
 # La salida del libro de prueba se regenera; el golden es tests/golden/
 tests/fixtures/libro-prueba/salida/
+
+# Cache de Python de los scripts de fixtures
+__pycache__/
+*.pyc
