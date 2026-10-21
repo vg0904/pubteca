@@ -14,6 +14,7 @@ import { paginaImagen, xhtml } from './plantillas'
 import { buscarEn, type Archivo, type Proyecto } from './proyecto'
 import { secuencia } from './secuencia'
 import { enLinea, esc, nombreSeguro, ordenarNatural, textoPlano, valorDigitos } from './texto'
+import { textosLibro, type TextosLibro } from './textos-libro'
 
 export type Seccion = 'portada' | 'inicio' | 'capitulos' | 'final'
 
@@ -40,6 +41,8 @@ const EXT_IMG = ['.png', '.jpg', '.jpeg']
 export class Libro {
   readonly cfg: Config
   readonly idioma: string
+  /** Lo que el libro dice por su cuenta («Indice», «Edicion digital»...), en su idioma. */
+  readonly t: TextosLibro
   readonly imagenes: Imagenes
   readonly paginas: Pagina[] = []
   readonly indice: EntradaIndice[] = []
@@ -56,6 +59,7 @@ export class Libro {
     this.dg = dg
     this.anioActual = anioActual
     this.idioma = cfg.idioma || 'es'
+    this.t = textosLibro(this.idioma)
     this.imagenes = new Imagenes(proyecto.ilustraciones, dg)
   }
 
@@ -101,7 +105,7 @@ export class Libro {
   private alt(alt: string, nombre: string, donde: string): string {
     if (alt) return alt
     this.imagenes.sinDescripcion.push(`${donde} → ${nombre}`)
-    return 'Ilustración'
+    return this.t.ilustracion
   }
 
   // -- partes del libro ----------------------------------------------------
@@ -118,8 +122,8 @@ export class Libro {
     if (img) {
       this.agregar(
         'portada',
-        'Portada',
-        paginaImagen(img.href, `Portada de ${this.cfg.titulo}`, 'portada'),
+        this.t.portada,
+        paginaImagen(img.href, this.t.portadaDe(this.cfg.titulo), 'portada'),
         'portada',
         'pagina-imagen',
       )
@@ -138,7 +142,7 @@ export class Libro {
       const img = this.imagenes.buscar(k, 'láminas a color')
       if (img) {
         const n = i + 1
-        const etiqueta = `Lámina a color ${n}`
+        const etiqueta = this.t.laminaColor(n)
         this.paginaDeIlustracion(
           `lamina-${String(n).padStart(2, '0')}`,
           img,
@@ -218,11 +222,11 @@ export class Libro {
       lineas.push(`<p>${esc(txt)}</p>`)
     }
     if (c.isbn) lineas.push(`<p>ISBN: ${esc(c.isbn)}</p>`)
-    if (c.sello) lineas.push(`<p>Publicado por ${esc(c.sello)}</p>`)
-    lineas.push(`<p>Edición digital, ${this.anio()}</p>`)
+    if (c.sello) lineas.push(`<p>${esc(this.t.publicadoPor(c.sello))}</p>`)
+    lineas.push(`<p>${esc(this.t.edicionDigital(this.anio()))}</p>`)
     this.agregar(
       'derechos',
-      'Derechos',
+      this.t.derechos,
       '<section epub:type="copyright-page">\n<div class="derechos">\n' +
         lineas.join('\n') +
         '\n</div>\n</section>',
@@ -254,7 +258,7 @@ export class Libro {
         const tipo = esDedicatoria ? 'dedication' : 'epigraph'
         this.agregar(
           base,
-          esDedicatoria ? 'Dedicatoria' : 'Epígrafe',
+          esDedicatoria ? this.t.dedicatoria : this.t.epigrafe,
           `<section epub:type="${tipo}">\n<div class="dedicatoria">\n${parr}\n</div>\n</section>`,
           cuando,
         )
@@ -304,7 +308,7 @@ export class Libro {
           `${base}-ilus${String(k).padStart(2, '0')}`,
           img,
           this.alt(a.alt, a.nombre, donde),
-          `Ilustración · ${tituloTxt}`,
+          this.t.ilustracionDe(tituloTxt),
           seccion,
         )
         primera = primera ?? h
@@ -343,7 +347,7 @@ export class Libro {
             `${base}-ilus${String(k).padStart(2, '0')}`,
             img,
             this.alt(t.alt, t.nombre, donde),
-            `Ilustración · ${tituloTxt}`,
+            this.t.ilustracionDe(tituloTxt),
             seccion,
           )
         }
@@ -449,8 +453,8 @@ export class Libro {
       this.paginaDeIlustracion(
         'contraportada',
         img,
-        `Contraportada de ${this.cfg.titulo}`,
-        'Contraportada',
+        this.t.contraportadaDe(this.cfg.titulo),
+        this.t.contraportada,
         'final',
       )
     }

@@ -18,6 +18,7 @@
  *     una vez.
  */
 import { nombreSeguro } from '../core/texto'
+import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
 import {
   DATOS_POR_DEFECTO,
@@ -1026,7 +1027,13 @@ export function reducir(e: Estado, a: Accion): Estado {
       const valor = typeof a.valor === 'string' ? limpiarTexto(a.valor) : a.valor
       const actual = p.datos[a.campo]
       if (typeof actual !== typeof valor || actual === valor) return e
-      return cambiar(e, { ...p, datos: { ...p.datos, [a.campo]: valor } }, { grupo: `dato:${a.campo}`, ahora: a.ahora })
+      let datos: DatosLibro = { ...p.datos, [a.campo]: valor }
+      // La linea de derechos que se propone va en el idioma del libro. Si el
+      // autor no la ha tocado, cambia con el idioma; si la escribio el, no.
+      if (a.campo === 'idioma' && typeof valor === 'string' && p.datos.derechos === textosLibro(p.datos.idioma).derechosPorDefecto) {
+        datos = { ...datos, derechos: textosLibro(valor).derechosPorDefecto }
+      }
+      return cambiar(e, { ...p, datos }, { grupo: `dato:${a.campo}`, ahora: a.ahora })
     }
     case 'descargado':
       return {

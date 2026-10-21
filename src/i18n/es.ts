@@ -1,7 +1,7 @@
 // Textos de la INTERFAZ. Siguen el idioma de la app.
-// No poner aqui ningun texto que acabe dentro del EPUB: eso va en libro-es.ts
-// y sigue el idioma del LIBRO. Mezclarlos produce libros en ingles que dicen
-// «CAPITULO».
+// No poner aqui ningun texto que acabe dentro del EPUB: eso va en
+// src/core/textos-libro.ts y sigue el idioma del LIBRO. Mezclarlos produce
+// libros en ingles que dicen «Indice».
 import type { ClaveGrupo } from '../app/avisos'
 import type { ClaveProblema } from '../app/revision'
 
@@ -200,6 +200,18 @@ export const ui = {
     titulo: 'Descargar los EPUB',
     datos: 'Datos del libro',
     datosAyuda: 'Lo que las tiendas y los lectores ven del libro. Solo el título es obligatorio.',
+    /** Los idiomas del LIBRO que se ofrecen: los que tienen textos en core/textos-libro.ts. */
+    idiomas: {
+      es: 'Español',
+      en: 'Inglés',
+      ca: 'Catalán',
+      gl: 'Gallego',
+      eu: 'Euskera',
+      pt: 'Portugués',
+      fr: 'Francés',
+      it: 'Italiano',
+      de: 'Alemán',
+    } as Record<string, string>,
     campos: {
       titulo: 'Título',
       subtitulo: 'Subtítulo',

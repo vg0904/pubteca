@@ -10,6 +10,7 @@ import type { Fuente } from './fuentes'
 import type { Registro } from './imagenes'
 import type { Pagina } from './libro'
 import { esc } from './texto'
+import { textosLibro } from './textos-libro'
 
 export interface OpfEntrada {
   readonly cfg: Config
@@ -82,12 +83,9 @@ export function opf(e: OpfEntrada): string {
     '<meta property="schema:accessibilityFeature">structuralNavigation</meta>',
     '<meta property="schema:accessibilityHazard">none</meta>',
   )
-  let resumen = 'Novela con navegación por capítulos.'
-  if (e.imagenes.length > 0) {
-    resumen += e.todasConAlt
-      ? ' Las ilustraciones incluyen descripción alternativa.'
-      : ' Algunas ilustraciones no tienen descripción alternativa.'
-  }
+  const t = textosLibro(e.idioma)
+  let resumen = t.resumenAccesibilidad
+  if (e.imagenes.length > 0) resumen += e.todasConAlt ? t.conDescripciones : t.sinDescripciones
   md.push(`<meta property="schema:accessibilitySummary">${esc(resumen)}</meta>`)
 
   const man: string[] = [
@@ -120,12 +118,12 @@ export function opf(e: OpfEntrada): string {
   }
   if (!navPuesto) spine.push('<itemref idref="nav"/>')
 
-  const guia = ['<reference type="toc" title="Índice" href="texto/nav.xhtml"/>']
+  const guia = [`<reference type="toc" title="${esc(t.indice)}" href="texto/nav.xhtml"/>`]
   if (e.inicioLectura) {
-    guia.push(`<reference type="text" title="Comienzo" href="${e.inicioLectura}"/>`)
+    guia.push(`<reference type="text" title="${esc(t.comienzo)}" href="${e.inicioLectura}"/>`)
   }
   if (e.conPortada && e.portadaImg) {
-    guia.unshift('<reference type="cover" title="Portada" href="texto/portada.xhtml"/>')
+    guia.unshift(`<reference type="cover" title="${esc(t.portada)}" href="texto/portada.xhtml"/>`)
   }
 
   const sep = '\n    '

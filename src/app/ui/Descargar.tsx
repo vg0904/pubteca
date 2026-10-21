@@ -10,17 +10,8 @@ import type { DatosLibro, Proyecto } from '../modelo'
 import { bloquea, cambioDeIdentidad, nombresLegibles, revisar, type Problema } from '../revision'
 import { useAvisar, useDespacho, useMedios } from './contexto'
 
-const IDIOMAS: [string, string][] = [
-  ['es', 'Español'],
-  ['en', 'Inglés'],
-  ['ca', 'Catalán'],
-  ['gl', 'Gallego'],
-  ['eu', 'Euskera'],
-  ['pt', 'Portugués'],
-  ['fr', 'Francés'],
-  ['it', 'Italiano'],
-  ['de', 'Alemán'],
-]
+/** Solo los idiomas en que el libro sabe escribir sus propios textos. */
+const IDIOMAS = Object.entries(ui.descargar.idiomas)
 
 type CampoTexto = Exclude<keyof DatosLibro, 'incluirContraportada'>
 

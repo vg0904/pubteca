@@ -7,6 +7,7 @@
  */
 import { xhtml } from './plantillas'
 import { esc } from './texto'
+import { textosLibro } from './textos-libro'
 
 export interface EntradaIndice {
   readonly texto: string
@@ -30,23 +31,24 @@ export function nav(
     .map((e) => `<li><a href="${soloNombre(e.href)}">${esc(e.texto)}</a></li>`)
     .join('\n')
 
+  const t = textosLibro(idioma)
   const marcas: string[] = []
   if (conPortada) {
-    marcas.push('<li><a epub:type="cover" href="portada.xhtml">Portada</a></li>')
+    marcas.push(`<li><a epub:type="cover" href="portada.xhtml">${esc(t.portada)}</a></li>`)
   }
-  marcas.push('<li><a epub:type="toc" href="nav.xhtml#toc">Índice</a></li>')
+  marcas.push(`<li><a epub:type="toc" href="nav.xhtml#toc">${esc(t.indice)}</a></li>`)
   if (inicioLectura) {
     marcas.push(
-      `<li><a epub:type="bodymatter" href="${soloNombre(inicioLectura)}">Comienzo</a></li>`,
+      `<li><a epub:type="bodymatter" href="${soloNombre(inicioLectura)}">${esc(t.comienzo)}</a></li>`,
     )
   }
 
   const cuerpo =
-    `<nav epub:type="toc" id="toc" role="doc-toc">\n<h1>Índice</h1>\n` +
+    `<nav epub:type="toc" id="toc" role="doc-toc">\n<h1>${esc(t.indice)}</h1>\n` +
     `<ol class="indice">\n${items}\n</ol>\n</nav>\n` +
-    `<nav epub:type="landmarks" hidden="">\n<h2>Guía</h2>\n<ol>\n` +
+    `<nav epub:type="landmarks" hidden="">\n<h2>${esc(t.guia)}</h2>\n<ol>\n` +
     marcas.join('\n') +
     '\n</ol>\n</nav>'
 
-  return xhtml('Índice', cuerpo, idioma)
+  return xhtml(t.indice, cuerpo, idioma)
 }

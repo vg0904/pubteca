@@ -11,6 +11,7 @@
  * silencio, que es el fallo mas caro de esta herramienta: ver una cosa en la
  * app y otra en su Kindle.
  */
+import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
 export type Marca = 'cursiva' | 'negrita'
@@ -155,7 +156,7 @@ export const DATOS_POR_DEFECTO: DatosLibro = {
   descripcion: '',
   isbn: '',
   fechaPublicacion: '',
-  derechos: '© {año} {autor}. Todos los derechos reservados.',
+  derechos: textosLibro('es').derechosPorDefecto,
   incluirContraportada: true,
   separadorDeEscena: '* * *',
   fuente: 'Baskerville',

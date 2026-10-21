@@ -170,6 +170,16 @@ export const DE_COMPORTAMIENTO = [
     donde: 'src/core/texto.ts (sinNoXml)',
   },
   {
+    nombre: 'Textos del libro en su idioma',
+    motivo:
+      'El Python escribia en español «Indice», «Comienzo», «Portada», «Lamina a color», ' +
+      '«Publicado por», «Edicion digital» y el resumen de accesibilidad, fuera cual fuera el ' +
+      'idioma del libro, y la interfaz ofrece elegirlo: un libro en ingles salia con lang="en" y ' +
+      'esos textos en español. Ahora salen de una tabla por idioma. En español la salida es ' +
+      'identica byte a byte, y los golden tests lo fijan.',
+    donde: 'src/core/textos-libro.ts',
+  },
+  {
     nombre: 'n_ilus muerto',
     motivo:
       'seccion_con_titulo declaraba un n_ilus que solo contaba las ilustraciones del cuerpo, ' +
