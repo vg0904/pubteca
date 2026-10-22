@@ -746,8 +746,9 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .aviso-error { background: var(--rojo); color: #fff; }
 
 /* Vista previa del EPUB */
-.vista-previa { margin-top: 1.6rem; }
-.vista-previa h2 { margin-bottom: 0.2rem; }
+/* Nombre propio: «.vista-previa» ya es la del capitulo en la pantalla de importar. */
+.vista-epub { margin-top: 1.6rem; }
+.vista-epub h2 { margin-bottom: 0.2rem; }
 .vista-controles { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem 1rem; margin: 0.8rem 0; }
 .vista-controles label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--suave); }
 .vista-controles .vista-pagina { flex: 1 1 14rem; }

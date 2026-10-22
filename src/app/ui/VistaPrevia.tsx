@@ -48,7 +48,7 @@ export function VistaPrevia({ resultados }: { resultados: readonly LibroGenerado
   if (!epub || !pagina || !previa) return null
 
   return (
-    <section className="vista-previa" aria-label={ui.vistaPrevia.titulo}>
+    <section className="vista-epub" aria-label={ui.vistaPrevia.titulo}>
       <h2>{ui.vistaPrevia.titulo}</h2>
       <p className="ayuda">{ui.vistaPrevia.ayuda}</p>
       <div className="vista-controles">
