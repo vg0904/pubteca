@@ -223,7 +223,12 @@ function lineasDeBloque(
     case 'subtitulo':
       return [`# ${lineaDeTexto(b.tramos, 'Subtítulo', avisos, false)}`]
     case 'escena':
-      return [separador]
+      // `separador_de_escena` dice como se VE el cambio de escena en el libro
+      // (puede ser «§» o «— o —»), pero aqui hace falta una MARCA que el motor
+      // reconozca al leer. Si el separador no lo es, el cambio de escena se
+      // leeria como un parrafo con ese texto. El motor pinta despues el
+      // separador del libro, sea cual sea la marca.
+      return [RE_ESCENA.test(separador.trim()) ? separador.trim() : '* * *']
     case 'versos': {
       // Un verso vacio no se puede representar: «>» a solas es un cambio de
       // estrofa para el motor, no un verso en blanco. Se omite, igual que hace

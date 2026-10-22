@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react'
 import { ui } from '../../i18n/es'
+import type { Copia } from '../abrir-copia'
 import type { ResumenProyecto } from '../almacen'
 import { haceDias } from '../formato'
+import { ConfirmarCopia } from './AbrirCopia'
 import { esArrastreDeArchivos } from './archivos'
 
-export const ACEPTA_MANUSCRITO = '.docx,.md,.markdown,.txt,image/png,image/jpeg'
+export const ACEPTA_MANUSCRITO = '.docx,.md,.markdown,.txt,image/png,image/jpeg,.zip'
 
 /** El cuadro para pegar texto: el HTML del portapapeles trae la cursiva. */
 export function PegarTexto({ alUsar, alCancelar }: { alUsar: (texto: string, html: string) => void; alCancelar: () => void }) {
@@ -55,6 +57,10 @@ export function PantallaInicio({
   alPegar,
   alAbrir,
   alBorrar,
+  alAbrirCopia,
+  copia,
+  alConfirmarCopia,
+  alCancelarCopia,
 }: {
   proyectos: readonly ResumenProyecto[]
   sinAlmacen: string | null
@@ -65,6 +71,11 @@ export function PantallaInicio({
   alPegar: (texto: string, html: string) => void
   alAbrir: (id: string) => void
   alBorrar: (p: ResumenProyecto) => void
+  alAbrirCopia: () => void
+  /** La copia leida que espera confirmacion. */
+  copia: Copia | null
+  alConfirmarCopia: () => void
+  alCancelarCopia: () => void
 }) {
   const [encima, setEncima] = useState(false)
   const [pegando, setPegando] = useState(false)
@@ -116,6 +127,15 @@ export function PantallaInicio({
           <span className="ayuda">{ui.importar.soltar}</span>
         </div>
       </div>
+
+      <div className="abrir-copia">
+        <button type="button" className="boton-secundario" onClick={alAbrirCopia} disabled={ocupado !== null}>
+          {ui.copia.abrir}
+        </button>
+        <span className="ayuda">{ui.copia.abrirDetalle}</span>
+      </div>
+
+      {copia && <ConfirmarCopia copia={copia} ocupado={ocupado !== null} alAbrir={alConfirmarCopia} alCancelar={alCancelarCopia} />}
 
       {pegando && (
         <PegarTexto

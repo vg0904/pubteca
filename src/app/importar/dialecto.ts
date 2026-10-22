@@ -140,6 +140,40 @@ export function capituloDesdeDialecto(texto: string): Capitulo | null {
   }
 }
 
+/**
+ * Un archivo de `extras/` -> lo que el modelo guarda de una pagina extra.
+ *
+ * El motor las lee distinto que los capitulos, y aqui se calca:
+ *   - la dedicatoria y el epigrafe no tienen titulo, y de su texto solo usa
+ *     los parrafos y los versos (los pinta como parrafos);
+ *   - las demas toman la primera linea ENTERA como titulo, sin separar
+ *     etiqueta (`num` es null para un extra), o el nombre del archivo si no
+ *     hay ninguna.
+ * Un extra del modelo no tiene laminas de apertura: las que hubiera antes del
+ * titulo pasan a ser sus primeros bloques.
+ */
+export function extraDesdeDialecto(
+  texto: string,
+  tipo: 'dedicatoria' | 'epigrafe' | 'conTitulo',
+  nombreArchivo: string,
+): { titulo: Tramo[]; bloques: Bloque[] } {
+  if (tipo !== 'conTitulo') {
+    const r = parsear(texto, false)
+    const bloques = bloquesDelMotor(r.bloques).filter((b) => b.tipo === 'parrafo' || b.tipo === 'versos')
+    return { titulo: [], bloques }
+  }
+  const r = parsear(texto)
+  const aperturas: Bloque[] = r.antes.map((a) => ({
+    id: nuevoId('b'),
+    tipo: 'ilustracion',
+    imagenId: a.nombre,
+    alt: limpiarTexto(a.alt),
+    decorativa: false,
+  }))
+  const titulo = r.titulo !== null ? tramosDeHtml(enLinea(r.titulo)) : [{ texto: nombreArchivo, marcas: [] }]
+  return { titulo, bloques: [...aperturas, ...bloquesDelMotor(r.bloques)] }
+}
+
 /** Cuenta lo que entro, para la pantalla de confirmacion de la importacion. */
 export function resumir(capitulos: readonly Capitulo[]): ResumenImportacion {
   let parrafos = 0

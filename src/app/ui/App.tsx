@@ -11,6 +11,7 @@ import {
   type Almacen,
   type ResumenProyecto,
 } from '../almacen'
+import { archivosDeZip, leerCopia, type Copia } from '../abrir-copia'
 import { descargar, nombreDeCopia, zipDeCopia } from '../copia'
 import { ESTADO_INICIAL, reducir } from '../estado'
 import { exportar } from '../exportar'
@@ -231,12 +232,74 @@ export default function App() {
     [db],
   )
 
+  // -- abrir una copia (.zip) ---------------------------------------------------
+  // Primero se lee y se enseña lo que trae; se abre al confirmar.
+  const [copiaPendiente, setCopiaPendiente] = useState<Copia | null>(null)
+
+  const leerArchivoDeCopia = useCallback(
+    async (f: File) => {
+      setOcupado(ui.copia.leyendo)
+      try {
+        const archivos = archivosDeZip(new Uint8Array(await f.arrayBuffer()))
+        if (!archivos) {
+          avisar(ui.copia.errores.noEsZip, { tipo: 'error' })
+          return
+        }
+        const r = leerCopia(archivos, crearId)
+        if (!r.ok) avisar(ui.copia.errores[r.error], { tipo: 'error' })
+        else setCopiaPendiente(r.copia)
+      } catch (e) {
+        avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
+      } finally {
+        setOcupado(null)
+      }
+    },
+    [avisar],
+  )
+
+  const elegirCopia = useCallback(async () => {
+    const [f] = await elegirArchivos('.zip,application/zip', false)
+    if (f) await leerArchivoDeCopia(f)
+  }, [leerArchivoDeCopia])
+
+  const abrirCopiaPendiente = useCallback(async () => {
+    const c = copiaPendiente
+    if (!c) return
+    setOcupado(ui.inicio.cargando)
+    try {
+      // Un libro NUEVO, con su repositorio: los ids de la copia ya son nuevos.
+      const destino = new Repositorio(db, c.proyecto.id)
+      const imagenes: Imagen[] = []
+      for (const i of c.imagenes) {
+        if (i.info.tipo === null) continue
+        imagenes.push(await destino.anadir(i.id, i.nombreOriginal, new Blob([i.bytes as Uint8Array<ArrayBuffer>]), i.info, i.info.tipo))
+      }
+      void pedirPersistencia()
+      // Nada guardado aun: el autoguardado lo escribe en cuanto se abre.
+      guardador?.conocer(c.proyecto.id, null)
+      cambiarRepo(destino)
+      setCopiaPendiente(null)
+      despachar({ tipo: 'abrir', proyecto: c.proyecto, imagenes })
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
+    } finally {
+      setOcupado(null)
+    }
+  }, [copiaPendiente, db, guardador, cambiarRepo, avisar])
+
   // -- importar ---------------------------------------------------------------
   const tieneDedicatoria = Boolean(estado.proyecto?.extras.some((x) => x.tipo === 'dedicatoria'))
 
   const empezarConArchivos = useCallback(
     async (archivos: readonly File[]) => {
       if (archivos.length === 0) return
+      // Una copia se abre sola, por su camino: no es un manuscrito que cortar.
+      const zip = archivos.find((f) => /\.zip$/iu.test(f.name))
+      if (zip) {
+        if (archivos.length > 1) avisar(ui.copia.soloCopia)
+        await leerArchivoDeCopia(zip)
+        return
+      }
       const docx = archivos.filter((f) => /\.docx$/iu.test(f.name))
       const textos = archivos.filter((f) => EXT_TEXTO.test(f.name))
       const imagenes = archivos.filter((f) => EXT_IMAGEN.test(f.name) || f.type.startsWith('image/'))
@@ -271,7 +334,7 @@ export default function App() {
         setOcupado(null)
       }
     },
-    [avisar, tieneDedicatoria],
+    [avisar, tieneDedicatoria, leerArchivoDeCopia],
   )
 
   const elegirManuscrito = useCallback(async () => {
@@ -334,7 +397,7 @@ export default function App() {
     const empezo = performance.now()
     try {
       const [bytes, fuentes] = await Promise.all([bytesDelProyecto(p, repo), cargarFuentes()])
-      const zip = zipDeCopia(exportar(p, estado.imagenes, bytes, fuentes))
+      const zip = zipDeCopia(exportar(p, estado.imagenes, bytes, fuentes), p, estado.imagenes, new Date())
       const nombre = nombreDeCopia(p.datos.titulo, new Date())
       if (performance.now() - empezo < ESPERA_COPIA) {
         descargar(zip, nombre, 'application/zip')
@@ -382,6 +445,10 @@ export default function App() {
               alPegar={empezarConTexto}
               alAbrir={(id) => void abrir(id)}
               alBorrar={(p) => void borrar(p)}
+              alAbrirCopia={() => void elegirCopia()}
+              copia={copiaPendiente}
+              alConfirmarCopia={() => void abrirCopiaPendiente()}
+              alCancelarCopia={() => setCopiaPendiente(null)}
             />
           )}
           {estado.pantalla === 'importar' && estado.importacion && (

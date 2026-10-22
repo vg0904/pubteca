@@ -171,6 +171,13 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
 .inicio .logo-app { width: 3.4rem; height: 3.4rem; }
 .inicio .lema { margin: 0.2rem 0 1rem; font-family: var(--libro); font-style: italic; font-size: 1.2rem; color: var(--suave); }
 .inicio-acciones { display: grid; grid-template-columns: 1fr 1.4fr; gap: 1rem; margin: 2rem 0 1.2rem; }
+.abrir-copia { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.9rem; margin: -0.2rem 0 1.4rem; }
+.abrir-copia .ayuda { flex: 1 1 18rem; }
+.confirmar-copia { border: 1px solid var(--borde); border-radius: 10px; padding: 1rem 1.2rem; margin: 0 0 1.6rem; background: var(--papel); }
+.confirmar-copia h2 { margin: 0 0 0.4rem; font-size: 1.2rem; }
+.confirmar-copia .copia-libro { font-family: var(--libro); font-size: 1.15rem; margin: 0 0 0.2rem; }
+.confirmar-copia ul { margin: 0.3rem 0 0; padding-left: 1.2rem; }
+.confirmar-copia .botones { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.9rem; }
 .tarjeta-accion {
   display: flex;
   flex-direction: column;

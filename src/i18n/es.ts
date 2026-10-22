@@ -2,6 +2,7 @@
 // No poner aqui ningun texto que acabe dentro del EPUB: eso va en
 // src/core/textos-libro.ts y sigue el idioma del LIBRO. Mezclarlos produce
 // libros en ingles que dicen «Indice».
+import type { ClaveAvisoCopia, ErrorCopia } from '../app/abrir-copia'
 import type { ClaveGrupo } from '../app/avisos'
 import type { ClaveProblema } from '../app/revision'
 
@@ -26,10 +27,58 @@ export const ui = {
     confirmarBorrar: (titulo: string) =>
       `¿Borrar «${titulo}» de este navegador? Se borran también sus imágenes. Si no tienes una copia (.zip), no se puede recuperar.`,
     honestidad:
-      'Ojo: Safari y otros navegadores pueden borrar lo que guarda una página si pasas semanas sin abrirla. La copia de verdad es el .zip que guardas tú: el botón «Guardar copia» está siempre arriba.',
+      'Ojo: Safari y otros navegadores pueden borrar lo que guarda una página si pasas semanas sin abrirla. La copia de verdad es el .zip que guardas tú: el botón «Guardar copia» está siempre arriba, y «Abrir copia» la recupera.',
     privado:
       'No puedo guardar nada en este navegador (¿ventana privada?). Puedes trabajar, pero al cerrar la pestaña se pierde todo: guarda una copia antes.',
     cargando: 'Abriendo…',
+  },
+
+  copia: {
+    abrir: 'Abrir copia (.zip)',
+    abrirDetalle:
+      'Una copia que guardaste con Pubteca, o la carpeta de un libro del generador comprimida en .zip. Se abre como un libro nuevo: no pisa nada.',
+    leyendo: 'Leyendo la copia…',
+    titulo: 'Esto trae la copia',
+    hecha: (fecha: string) => `Copia hecha el ${fecha}.`,
+    deCarpetas: 'Se leyó desde sus carpetas (libro.txt, capitulos/, ilustraciones/…), como las lee el generador.',
+    resumen: (capitulos: number, extras: number, imagenes: number) =>
+      [
+        capitulos === 1 ? '1 capítulo' : `${capitulos} capítulos`,
+        extras === 0 ? '' : extras === 1 ? '1 página extra' : `${extras} páginas extra`,
+        imagenes === 0 ? '' : imagenes === 1 ? '1 imagen' : `${imagenes} imágenes`,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    hayAvisos: 'Lo que no se pudo recuperar tal cual:',
+    abrirLibro: 'Abrir como libro nuevo',
+    cancelar: 'Cancelar',
+    soloCopia: 'Una copia (.zip) se abre sola: el resto de archivos no se importaron.',
+    errores: {
+      noEsZip: 'Ese archivo no es un .zip, o está dañado.',
+      noEsCopia:
+        'En ese .zip no hay ningún libro: no es una copia de Pubteca y no trae la carpeta capitulos/ con tus capítulos en .md o .txt.',
+      danada: 'La copia está dañada: su proyecto.json no se puede leer.',
+      versionFutura: 'Esta copia se hizo con una versión más nueva de Pubteca. Recarga la página e inténtalo otra vez.',
+    } satisfies Record<ErrorCopia, string>,
+    avisos: {
+      faltaImagen: (d: string) => `Falta una imagen (${d}). Donde iba, el libro te lo marcará para que la vuelvas a poner.`,
+      imagenIlegible: (d: string) => `${d} no es PNG ni JPG, o está dañada: no se abrió.`,
+      imagenSinUsar: (d: string) => `${d} no la usa ningún capítulo, así que se quedó fuera (el generador tampoco la usaba).`,
+      capituloVacio: (d: string) => `${d} está vacío: no se abrió.`,
+      idioma: (d: string) => `El libro no sabe escribir en «${d}»: se puso en español. Cámbialo en «Descargar EPUB».`,
+      fecha: (d: string) => `«${d}» no es una fecha (año-mes-día): la fecha de publicación se quitó.`,
+      sinLibroTxt: () => 'No traía libro.txt: el título, el autor y los demás datos se piden al descargar.',
+      descartados: (d: string) => `${d} ${d === '1' ? 'parte' : 'partes'} de la copia no se entendieron y se quedaron fuera.`,
+      dedicatoriaDeMas: (d: string) =>
+        `${d}: un libro lleva una sola dedicatoria. Esta pasó a ser una página del principio, con su texto entero.`,
+      epigrafeDeMas: (d: string) =>
+        `${d}: un libro lleva un solo epígrafe. Este pasó a ser una página del principio, con su texto entero.`,
+      copiaAntigua: () =>
+        'Es una copia de una versión anterior de Pubteca: vuelve todo el texto y las imágenes, pero no qué ilustraciones eran decorativas ni el nombre con que subiste cada imagen.',
+      editadaFuera: () =>
+        'Los archivos de texto de la copia se cambiaron fuera de Pubteca después de hacerla: se abrió lo que dicen ellos, que es lo último que escribiste.',
+      fuentesPropias: () => 'Traía fuentes propias: Pubteca usa la suya, Libre Baskerville.',
+    } satisfies Record<ClaveAvisoCopia, (d: string) => string>,
   },
 
   barra: {

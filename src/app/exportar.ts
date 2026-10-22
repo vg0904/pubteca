@@ -25,6 +25,13 @@ export interface Exportado {
   readonly avisos: readonly Aviso[]
   /** id de imagen -> nombre con el que entro al proyecto. Para la vista previa. */
   readonly nombres: ReadonlyMap<string, string>
+  /**
+   * id de imagen -> la ruta donde estan sus bytes en el proyecto del motor
+   * (`ilustraciones/cap01-02.png`, `portada/logo.png`). Si una imagen va en dos
+   * sitios, la primera. Es lo que la copia (.zip) apunta en proyecto.json para
+   * poder devolver cada imagen a su sitio al abrirla.
+   */
+  readonly rutas: ReadonlyMap<string, string>
 }
 
 const EXT: Record<Imagen['tipo'], string> = { png: '.png', jpeg: '.jpg' }
@@ -83,6 +90,7 @@ export function exportar(
 ): Exportado {
   const avisos: Aviso[] = []
   const nombres = new Map<string, string>()
+  const rutas = new Map<string, string>()
   const ilustraciones: Archivo[] = []
 
   const registrar = (id: string, base: string): string => {
@@ -91,7 +99,10 @@ export function exportar(
     const nombre = `${base}${extensionDe(imagenes, id)}`
     nombres.set(id, nombre)
     const datos = bytes.get(id)
-    if (datos) ilustraciones.push(archivo(`ilustraciones/${nombre}`, datos))
+    if (datos) {
+      ilustraciones.push(archivo(`ilustraciones/${nombre}`, datos))
+      rutas.set(id, `ilustraciones/${nombre}`)
+    }
     return nombre
   }
 
@@ -157,6 +168,7 @@ export function exportar(
     const nombre = `${base}${extensionDe(imagenes, id)}`
     nombres.set(id, nombre)
     portada.push(archivo(`portada/${nombre}`, datos))
+    if (!rutas.has(id)) rutas.set(id, `portada/${nombre}`)
   }
 
   return {
@@ -170,5 +182,6 @@ export function exportar(
     },
     avisos,
     nombres,
+    rutas,
   }
 }

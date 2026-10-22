@@ -370,7 +370,7 @@ export function nombresDeExtras(extras: readonly Extra[]): Extra[] {
 }
 
 /** Los extras en el orden en que salen en el libro: inicio, luego final. */
-function ordenarExtras(extras: readonly Extra[]): Extra[] {
+export function ordenarExtras(extras: readonly Extra[]): Extra[] {
   const peso = (x: Extra): number => (x.tipo === 'dedicatoria' ? 0 : x.tipo === 'epigrafe' ? 1 : x.donde === 'inicio' ? 2 : 3)
   return [...extras].map((x, i) => ({ x, i })).sort((a, b) => peso(a.x) - peso(b.x) || a.i - b.i).map((e) => e.x)
 }

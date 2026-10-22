@@ -34,9 +34,9 @@ export interface ResumenCapitulo {
   readonly ilustraciones: number
 }
 
-const EXT_TEXTO = ['.md', '.txt', '.markdown']
-const EXT_EXTRA = ['.md', '.txt']
-const EXT_IMG = ['.png', '.jpg', '.jpeg']
+export const EXT_TEXTO = ['.md', '.txt', '.markdown']
+export const EXT_EXTRA = ['.md', '.txt']
+export const EXT_IMG = ['.png', '.jpg', '.jpeg']
 
 export class Libro {
   readonly cfg: Config
