@@ -1,13 +1,13 @@
-import { ui } from '../../i18n/es'
 import type { Foco } from '../estado'
 import { crearId } from '../ids'
 import type { DondeExtra, Extra, Proyecto, TipoExtra } from '../modelo'
 import { nombreDeExtra } from '../revision'
-import { useAvisar, useDespacho } from './contexto'
+import { useAvisar, useDespacho, useTextos } from './contexto'
 import { EditorExtra } from './EditorCapitulo'
 import { Menu } from './Menu'
 
 function Grupo({ titulo, extras, activo, todos }: { titulo: string; extras: readonly Extra[]; activo: string | null; todos: readonly Extra[] }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const avisar = useAvisar()
   if (extras.length === 0) return null
@@ -73,6 +73,7 @@ export function PantallaExtras({
   separador: string
   bloqueActivo: string | null
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const extras = proyecto.extras
   const hay = (t: TipoExtra): boolean => extras.some((x) => x.tipo === t)

@@ -1,5 +1,5 @@
-import { ui } from '../../i18n/es'
 import type { Copia } from '../abrir-copia'
+import { useTextos } from './contexto'
 
 /**
  * Lo que trae una copia, ANTES de abrirla. Nada se aplica sin confirmar, y lo
@@ -17,6 +17,7 @@ export function ConfirmarCopia({
   alAbrir: () => void
   alCancelar: () => void
 }) {
+  const ui = useTextos()
   const p = copia.proyecto
   const fecha = copia.creada !== null ? new Date(copia.creada).toLocaleDateString('es', { day: 'numeric', month: 'long', year: 'numeric' }) : null
   return (

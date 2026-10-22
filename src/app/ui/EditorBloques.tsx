@@ -1,5 +1,4 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ui } from '../../i18n/es'
 import { entrarEn, vecino } from '../editor-dom'
 import { objetivoVerso, type Donde, type Foco } from '../estado'
 import { crearId } from '../ids'
@@ -14,7 +13,9 @@ import {
   versosVacios,
   type Estrofas,
 } from '../versos'
-import { conMod, MOD, useDespacho, useMedios } from './contexto'
+import type { Ui } from '../../i18n'
+import { arreglable } from '../imagen-ajuste'
+import { conMod, MOD, useAjustar, useDespacho, useMedios, useTextos } from './contexto'
 import { elegirArchivos, esArrastreDeArchivos, imagenesDe } from './archivos'
 import { focoPendiente } from './foco'
 import { Menu } from './Menu'
@@ -44,6 +45,7 @@ const BloqueTexto = memo(function BloqueTexto({
   foco: Foco | null
   primero: boolean
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const id = bloque.id
   const onCambio = useCallback(
@@ -127,6 +129,7 @@ const BloqueEscena = memo(function BloqueEscena({
   indice: number
   separador: string
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const ref = useFocoDeTarjeta(foco)
   const teclas = (e: React.KeyboardEvent<HTMLDivElement>): void => {
@@ -191,6 +194,7 @@ function Verso({
   v: number
   foco: Foco | null
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const verso = estrofas[e]?.[v] as Tramo
   const ref = useAltoAutomatico(verso.texto)
@@ -291,6 +295,7 @@ const BloqueVersos = memo(function BloqueVersos({
   bloque: Extract<Bloque, { tipo: 'versos' }>
   foco: Foco | null
 }) {
+  const ui = useTextos()
   return (
     <div className="bloque bloque-versos" data-bloque={bloque.id}>
       {bloque.estrofas.map((estrofa, e) => (
@@ -311,6 +316,8 @@ const BloqueVersos = memo(function BloqueVersos({
 
 /** Los avisos de una imagen, en una linea cada uno, con icono Y palabra. */
 export function AvisosDeImagen({ imagen, rol }: { imagen: Imagen; rol: 'ilustracion' | 'portada' | 'logo' }) {
+  const ui = useTextos()
+  const ajustar = useAjustar()
   const grupos = avisosDeImagen(imagen, rol)
   if (grupos.length === 0) return null
   return (
@@ -322,6 +329,13 @@ export function AvisosDeImagen({ imagen, rol }: { imagen: Imagen; rol: 'ilustrac
           </span>
           <span className="sr">{ui.niveles[g.nivel].palabra}: </span>
           {g.clave === 'otro' ? g.mensajes[0] : ui.grupos[g.clave].titulo}
+          {/* El aviso trae su arreglo: mandar al autor a otro programa es lo
+              que hacia el reporte de texto, y es lo que no se arregla nunca. */}
+          {arreglable(g.clave) && (
+            <button type="button" className="enlace arreglar" onClick={() => ajustar(imagen)}>
+              {ui.ajustar.arreglar}
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -341,7 +355,9 @@ const BloqueIlustracion = memo(function BloqueIlustracion({
   indice: number
   total: number
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
+  const ajustar = useAjustar()
   const { repo, imagenes, subir } = useMedios()
   const ref = useFocoDeTarjeta(foco)
   const imagen = imagenes.get(bloque.imagenId)
@@ -448,6 +464,7 @@ const BloqueIlustracion = memo(function BloqueIlustracion({
           etiqueta={ui.ilustracion.menu}
           opciones={[
             { etiqueta: url ? ui.ilustracion.cambiar : ui.ilustracion.elegir, accion: () => void cambiarImagen() },
+            imagen !== undefined && { etiqueta: ui.ajustar.abrir, accion: () => ajustar(imagen) },
             donde.tipo === 'capitulo' && {
               etiqueta: ui.ilustracion.abrirCapitulo,
               accion: () => despachar({ tipo: 'aApertura', capitulo: donde.id, bloque: bloque.id }),
@@ -509,8 +526,12 @@ function useInsertar(donde: Donde, indice: number): (tipo: Insertable, archivos?
   }
 }
 
-function opcionesDeInsertar(permitidos: Permitidos, insertar: (t: Insertable) => Promise<void>) {
-  const t = ui.editor.insertables
+function opcionesDeInsertar(
+  insertables: Ui['editor']['insertables'],
+  permitidos: Permitidos,
+  insertar: (t: Insertable) => Promise<void>,
+) {
+  const t = insertables
   return [
     { etiqueta: t.parrafo, accion: () => void insertar('parrafo') },
     permitidos.subtitulo && { etiqueta: t.subtitulo, accion: () => void insertar('subtitulo') },
@@ -546,17 +567,19 @@ function useSoltarImagenes(permitido: boolean, alSoltar: (archivos: File[]) => v
 }
 
 const Hueco = memo(function Hueco({ donde, indice, permitidos }: { donde: Donde; indice: number; permitidos: Permitidos }) {
+  const ui = useTextos()
   const insertar = useInsertar(donde, indice)
   const soltar = useSoltarImagenes(permitidos.ilustracion, (archivos) => void insertar('ilustracion', archivos))
   return (
     <div className={`hueco${soltar.encima ? ' encima' : ''}`} {...soltar.props}>
-      <Menu className="hueco-menu" etiqueta={ui.editor.insertar} icono="+" opciones={opcionesDeInsertar(permitidos, insertar)} />
+      <Menu className="hueco-menu" etiqueta={ui.editor.insertar} icono="+" opciones={opcionesDeInsertar(ui.editor.insertables, permitidos, insertar)} />
       {soltar.encima && <span className="hueco-soltar">{ui.editor.soltarImagen}</span>}
     </div>
   )
 })
 
 function AlFinal({ donde, indice, permitidos }: { donde: Donde; indice: number; permitidos: Permitidos }) {
+  const ui = useTextos()
   const insertar = useInsertar(donde, indice)
   const soltar = useSoltarImagenes(permitidos.ilustracion, (archivos) => void insertar('ilustracion', archivos))
   const t = ui.editor.insertables
@@ -595,6 +618,7 @@ export function BarraFormato({
   activo: string | null
   permitidos: Permitidos
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const [estado, setEstado] = useState({ cursiva: false, negrita: false })
   const indice = bloques.findIndex((b) => b.id === activo)

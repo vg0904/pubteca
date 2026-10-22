@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ui } from '../../i18n/es'
 import type { LibroGenerado } from '../motor'
 import { abrirEpub, documentoDePagina, tipoDe, type Tema } from '../vista-previa'
+import { useTextos } from './contexto'
 
 /**
  * El EPUB generado, pagina a pagina, en un iframe aislado: el XHTML y el CSS
@@ -12,6 +12,7 @@ import { abrirEpub, documentoDePagina, tipoDe, type Tema } from '../vista-previa
  * `blob:`, que son de esta pagina.
  */
 export function VistaPrevia({ resultados }: { resultados: readonly LibroGenerado[] }) {
+  const ui = useTextos()
   const [tienda, setTienda] = useState<LibroGenerado['tienda']>('AppleBooks')
   const [tema, setTema] = useState<Tema>('claro')
   const [indice, setIndice] = useState(0)

@@ -1,9 +1,7 @@
 import { useState, type ReactNode } from 'react'
-import { ui } from '../../i18n/es'
-import { tamano } from '../formato'
 import type { Imagen, Proyecto, RolPortada } from '../modelo'
 import { logoEnBlanco } from '../subir'
-import { useAvisar, useDespacho, useMedios } from './contexto'
+import { useAjustar, useAvisar, useDespacho, useMedios, useTextos } from './contexto'
 import { AvisosDeImagen } from './EditorBloques'
 import { elegirArchivos, esArrastreDeArchivos, imagenesDe } from './archivos'
 import { Menu } from './Menu'
@@ -28,6 +26,8 @@ function Ranura({
   oscura?: boolean
   children?: ReactNode
 }) {
+  const ui = useTextos()
+  const ajustar = useAjustar()
   const { repo, imagenes } = useMedios()
   const [encima, setEncima] = useState(false)
   const imagen: Imagen | undefined = imagenId ? imagenes.get(imagenId) : undefined
@@ -59,7 +59,7 @@ function Ranura({
         <div className="ranura-datos">
           {imagen && (
             <p className="medidas">
-              {imagen.nombreOriginal} · {ui.portada.medidas(imagen.ancho, imagen.alto, tamano(imagen.bytes))}
+              {imagen.nombreOriginal} · {ui.portada.medidas(imagen.ancho, imagen.alto, ui.formato.tamano(imagen.bytes))}
             </p>
           )}
           {imagen && <AvisosDeImagen imagen={imagen} rol={rolAvisos} />}
@@ -67,6 +67,11 @@ function Ranura({
             <button type="button" onClick={() => void elegir()}>
               {imagen ? ui.portada.cambiar : ui.portada.elegir}
             </button>
+            {imagen && (
+              <button type="button" onClick={() => ajustar(imagen)}>
+                {ui.ajustar.abrir}
+              </button>
+            )}
             {imagen && (
               <button type="button" className="peligro" onClick={alQuitar}>
                 {ui.portada.quitar}
@@ -81,6 +86,8 @@ function Ranura({
 }
 
 export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
+  const ui = useTextos()
+  const ajustar = useAjustar()
   const despachar = useDespacho()
   const avisar = useAvisar()
   const { subir, repo, imagenes } = useMedios()
@@ -197,6 +204,7 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
                 <Menu
                   etiqueta={ui.menu}
                   opciones={[
+                    img !== undefined && { etiqueta: ui.ajustar.abrir, accion: () => ajustar(img) },
                     { etiqueta: ui.extras.subir, desactivada: i === 0, accion: () => despachar({ tipo: 'moverLamina', indice: i, delta: -1 }) },
                     {
                       etiqueta: ui.extras.bajar,

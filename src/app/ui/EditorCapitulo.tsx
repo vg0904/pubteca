@@ -1,12 +1,11 @@
 import { useCallback, useMemo, useState } from 'react'
-import { ui } from '../../i18n/es'
 import { entrarEn, porObjetivo, vecino } from '../editor-dom'
 import { objetivoTitulo, type Donde, type Foco } from '../estado'
 import { crearId } from '../ids'
 import { textoDeTramos, type Capitulo, type Extra, type Tramo } from '../modelo'
 import { etiquetaReconocida } from '../revision'
-import { useDespacho, useMedios } from './contexto'
-import { BarraFormato, EditorBloques } from './EditorBloques'
+import { useAjustar, useDespacho, useMedios, useTextos } from './contexto'
+import { AvisosDeImagen, BarraFormato, EditorBloques } from './EditorBloques'
 import { Menu } from './Menu'
 import { PAGINA, SOLO_TEXTO, TODO_PERMITIDO } from './permitidos'
 import { TextoEditable } from './TextoEditable'
@@ -60,6 +59,8 @@ function Titulo({
 
 /** Las ilustraciones que abren el capitulo, antes de la cabecera. */
 function Aperturas({ capitulo }: { capitulo: Capitulo }) {
+  const ui = useTextos()
+  const ajustar = useAjustar()
   const despachar = useDespacho()
   const { repo, imagenes } = useMedios()
   if (capitulo.aperturas.length === 0) return null
@@ -67,7 +68,8 @@ function Aperturas({ capitulo }: { capitulo: Capitulo }) {
     <div className="aperturas">
       <p className="rotulo">{ui.editor.aperturas}</p>
       {capitulo.aperturas.map((a, i) => {
-        const url = imagenes.has(a.imagenId) ? repo?.url(a.imagenId) : undefined
+        const imagen = imagenes.get(a.imagenId)
+        const url = imagen ? repo?.url(a.imagenId) : undefined
         return (
           <div className="apertura" key={`${a.imagenId}-${i}`}>
             <p className="pagina-propia" aria-hidden="true">
@@ -77,20 +79,24 @@ function Aperturas({ capitulo }: { capitulo: Capitulo }) {
               <div className="ilus-miniatura">
                 {url ? <img src={url} alt="" /> : <p className="ilus-falta">{ui.ilustracion.falta(a.imagenId)}</p>}
               </div>
-              <label className="campo ilus-campos">
-                <span>{ui.ilustracion.alt}</span>
-                <textarea
-                  rows={2}
-                  value={a.alt}
-                  placeholder={ui.ilustracion.altAyuda}
-                  onChange={(e) =>
-                    despachar({ tipo: 'aperturaAlt', capitulo: capitulo.id, indice: i, alt: e.target.value, ahora: Date.now() })
-                  }
-                />
-              </label>
+              <div className="ilus-campos">
+                <label className="campo">
+                  <span>{ui.ilustracion.alt}</span>
+                  <textarea
+                    rows={2}
+                    value={a.alt}
+                    placeholder={ui.ilustracion.altAyuda}
+                    onChange={(e) =>
+                      despachar({ tipo: 'aperturaAlt', capitulo: capitulo.id, indice: i, alt: e.target.value, ahora: Date.now() })
+                    }
+                  />
+                </label>
+                {imagen && <AvisosDeImagen imagen={imagen} rol="ilustracion" />}
+              </div>
               <Menu
                 etiqueta={ui.ilustracion.menu}
                 opciones={[
+                  imagen !== undefined && { etiqueta: ui.ajustar.abrir, accion: () => ajustar(imagen) },
                   {
                     etiqueta: ui.ilustracion.devolver,
                     accion: () => despachar({ tipo: 'deApertura', capitulo: capitulo.id, indice: i, nuevoId: crearId('b') }),
@@ -121,6 +127,7 @@ export function EditorCapitulo({
   separador: string
   bloqueActivo: string | null
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const donde = useMemo<Donde>(() => ({ tipo: 'capitulo', id: capitulo.id }), [capitulo.id])
   const [encima, setEncima] = useState(false)
@@ -195,6 +202,7 @@ export function EditorExtra({
   separador: string
   bloqueActivo: string | null
 }) {
+  const ui = useTextos()
   const donde = useMemo<Donde>(() => ({ tipo: 'extra', id: extra.id }), [extra.id])
   const permitidos = extra.tipo === 'conTitulo' ? PAGINA : SOLO_TEXTO
   return (

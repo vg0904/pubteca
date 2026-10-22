@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
-import { ui } from '../../i18n/es'
 import {
   abrirAlmacen,
   borrarProyecto,
@@ -15,17 +14,19 @@ import { archivosDeZip, leerCopia, type Copia } from '../abrir-copia'
 import { descargar, nombreDeCopia, zipDeCopia } from '../copia'
 import { ESTADO_INICIAL, reducir } from '../estado'
 import { exportar } from '../exportar'
-import { bytesDelProyecto, cargarFuentes, idsDeImagenes } from '../generar'
+import { bytesDelProyecto, cargarFuentes } from '../generar'
 import { Guardador } from '../guardado'
 import { crearId } from '../ids'
 import { desdeDialecto, desdeParrafos, desdePropuesta, resultadoImportacion, type ImagenImportada } from '../importacion'
 import { importarDocx } from '../importar/docx'
-import type { Imagen, Proyecto } from '../modelo'
+import { idsDeImagenes, type Imagen, type Proyecto } from '../modelo'
 import { lineasDeHtml, lineasDeTexto } from '../pegar'
 import { Repositorio } from '../repositorio'
 import { decodifica, inspeccionarArchivo } from '../subir'
 import { elegirArchivos } from './archivos'
-import { AvisosCtx, conMod, DespachoCtx, MediosCtx, type Aviso, type Medios } from './contexto'
+import { CLAVE_GUARDADA, idiomaInicial, textos, type Idioma } from '../../i18n'
+import { AjustarCtx, AvisosCtx, conMod, DespachoCtx, LenguaCtx, MediosCtx, TextosCtx, type Aviso, type Lengua, type Medios } from './contexto'
+import { AjustarImagen } from './AjustarImagen'
 import { PantallaImportar } from './Importar'
 import { ACEPTA_MANUSCRITO, PantallaInicio } from './Inicio'
 import { PantallaLibro, type EstadoGuardado } from './Libro'
@@ -54,6 +55,38 @@ export default function App() {
   const copiaLista = useRef<{ bytes: Uint8Array; nombre: string } | null>(null)
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const siguienteAviso = useRef(0)
+
+  // -- idioma de la interfaz --------------------------------------------------
+  // Se lee una vez, al arrancar: lo que el autor eligio alguna vez, y si no,
+  // el primero de los idiomas del navegador que Pubteca hable. El acceso va en
+  // try/catch porque en una ventana privada de Safari leer localStorage lanza.
+  const [idioma, setIdioma] = useState<Idioma>(() => {
+    let guardado: string | null = null
+    try {
+      guardado = localStorage.getItem(CLAVE_GUARDADA)
+    } catch {
+      guardado = null
+    }
+    return idiomaInicial(typeof navigator === 'undefined' ? [] : navigator.languages, guardado)
+  })
+  const ui = textos(idioma)
+
+  const cambiarIdioma = useCallback((i: Idioma) => {
+    setIdioma(i)
+    try {
+      localStorage.setItem(CLAVE_GUARDADA, i)
+    } catch {
+      // Sin almacen no se recuerda, pero el idioma de esta sesion si cambia.
+    }
+  }, [])
+
+  const lengua = useMemo<Lengua>(() => ({ idioma, cambiar: cambiarIdioma }), [idioma, cambiarIdioma])
+
+  // El `lang` del documento: los lectores de pantalla eligen la voz con el, y
+  // sin esto leerian la interfaz inglesa con pronunciacion española.
+  useEffect(() => {
+    document.documentElement.lang = idioma
+  }, [idioma])
 
   // -- avisos breves ---------------------------------------------------------
   const avisar = useCallback((texto: string, opciones: { tipo?: 'info' | 'error'; deshacer?: boolean } = {}) => {
@@ -103,7 +136,7 @@ export default function App() {
       .catch((e: unknown) => {
         setSinAlmacen(e instanceof Error ? e.message : ui.inicio.privado)
       })
-  }, [avisar])
+  }, [avisar, ui])
 
   /** Guarda ya todo lo pendiente; se puede esperar antes de leer de IndexedDB. */
   const guardarYa = useCallback(async () => {
@@ -179,10 +212,17 @@ export default function App() {
       if (subidas.length > 0) despachar({ tipo: 'registrarImagenes', imagenes: subidas })
       return subidas
     },
-    [repo, avisar],
+    [repo, avisar, ui],
   )
 
   const medios = useMemo<Medios>(() => ({ repo, imagenes: estado.imagenes, subir }), [repo, estado.imagenes, subir])
+
+  // -- ajustar una imagen -----------------------------------------------------
+  // El cuadro se pinta una sola vez, aqui; cualquier tarjeta lo abre por el
+  // contexto. Lo que sale es una imagen NUEVA y `sustituirImagen` apunta a ella
+  // en todos los sitios donde se usaba la vieja, asi que «Deshacer» funciona
+  // y los bytes del original siguen intactos en el almacen.
+  const [ajustando, setAjustando] = useState<Imagen | null>(null)
 
   // -- abrir, crear, borrar ---------------------------------------------------
   const nuevo = useCallback(() => {
@@ -220,7 +260,7 @@ export default function App() {
         setOcupado(null)
       }
     },
-    [db, avisar, cambiarRepo, guardarYa, guardador],
+    [db, avisar, cambiarRepo, guardarYa, guardador, ui],
   )
 
   const borrar = useCallback(
@@ -229,7 +269,7 @@ export default function App() {
       await borrarProyecto(db, p.id)
       setProyectos(await listarProyectos(db))
     },
-    [db],
+    [db, ui],
   )
 
   // -- abrir una copia (.zip) ---------------------------------------------------
@@ -254,7 +294,7 @@ export default function App() {
         setOcupado(null)
       }
     },
-    [avisar],
+    [avisar, ui],
   )
 
   const elegirCopia = useCallback(async () => {
@@ -285,7 +325,7 @@ export default function App() {
     } finally {
       setOcupado(null)
     }
-  }, [copiaPendiente, db, guardador, cambiarRepo, avisar])
+  }, [copiaPendiente, db, guardador, cambiarRepo, avisar, ui])
 
   // -- importar ---------------------------------------------------------------
   const tieneDedicatoria = Boolean(estado.proyecto?.extras.some((x) => x.tipo === 'dedicatoria'))
@@ -334,7 +374,7 @@ export default function App() {
         setOcupado(null)
       }
     },
-    [avisar, tieneDedicatoria, leerArchivoDeCopia],
+    [avisar, tieneDedicatoria, leerArchivoDeCopia, ui],
   )
 
   const elegirManuscrito = useCallback(async () => {
@@ -413,7 +453,7 @@ export default function App() {
       setCopia(null)
       avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
     }
-  }, [estado.proyecto, estado.imagenes, repo, copia, avisar])
+  }, [estado.proyecto, estado.imagenes, repo, copia, avisar, ui])
 
   // -- deshacer fuera de los campos de texto ------------------------------------
   useEffect(() => {
@@ -431,8 +471,11 @@ export default function App() {
   }, [estado.pantalla])
 
   return (
-    <DespachoCtx.Provider value={despachar}>
+    <TextosCtx.Provider value={ui}>
+     <LenguaCtx.Provider value={lengua}>
+      <DespachoCtx.Provider value={despachar}>
       <MediosCtx.Provider value={medios}>
+      <AjustarCtx.Provider value={setAjustando}>
         <AvisosCtx.Provider value={avisar}>
           {estado.pantalla === 'inicio' && (
             <PantallaInicio
@@ -504,8 +547,18 @@ export default function App() {
               </div>
             ))}
           </div>
+          {ajustando && (
+            <AjustarImagen
+              imagen={ajustando}
+              alHecho={(nueva) => despachar({ tipo: 'sustituirImagen', viejo: ajustando.id, nuevo: nueva.id })}
+              alCerrar={() => setAjustando(null)}
+            />
+          )}
         </AvisosCtx.Provider>
+      </AjustarCtx.Provider>
       </MediosCtx.Provider>
-    </DespachoCtx.Provider>
+      </DespachoCtx.Provider>
+     </LenguaCtx.Provider>
+    </TextosCtx.Provider>
   )
 }

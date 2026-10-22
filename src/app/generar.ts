@@ -11,8 +11,10 @@
  * navegador no puede abrir el hilo, corre aqui; el resultado es el mismo.
  */
 import { archivo, type Archivo } from '../core/proyecto'
+import { entregaKindle, paraKindle, type Codificador } from './entrega'
 import { exportar, type Exportado } from './exportar'
-import type { Imagen, Proyecto } from './modelo'
+import { ajustarImagen } from './imagen-canvas'
+import { idsDeImagenes, type Imagen, type Proyecto } from './modelo'
 import type { PedidoMotor, RespuestaMotor } from './motor'
 import type { Repositorio } from './repositorio'
 
@@ -40,17 +42,6 @@ export function cargarFuentes(): Promise<Archivo[]> {
   return fuentesEnCache
 }
 
-/** Todas las imagenes que el proyecto usa, por id. */
-export function idsDeImagenes(p: Proyecto): Set<string> {
-  const ids = new Set<string>([...p.laminas, ...Object.values(p.portada)])
-  for (const c of p.capitulos) {
-    for (const a of c.aperturas) ids.add(a.imagenId)
-    for (const b of c.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
-  }
-  for (const x of p.extras) for (const b of x.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
-  return ids
-}
-
 export async function bytesDelProyecto(p: Proyecto, repo: Repositorio): Promise<Map<string, Uint8Array>> {
   const bytes = new Map<string, Uint8Array>()
   for (const id of idsDeImagenes(p)) {
@@ -64,6 +55,8 @@ export interface Generado {
   readonly exportado: Exportado
   readonly motor: RespuestaMotor
   readonly sinFuentes: boolean
+  /** Lo que pesaban y lo que pesan las imagenes de Kindle, si se comprimieron. */
+  readonly kindle: { readonly antes: number; readonly ahora: number } | null
 }
 
 /** El hilo del motor: se abre la primera vez y se reutiliza. null si no se puede. */
@@ -120,14 +113,65 @@ export function enSuHilo(pedido: PedidoMotor): Promise<RespuestaMotor> {
   })
 }
 
+/**
+ * El codificador de verdad: el lienzo.
+ *
+ * Los tests le pasan otro al motor de entrega (ver `paraKindle`), que es lo
+ * que deja probar en node toda la decision sin un navegador.
+ */
+export const conLienzo: Codificador = async (origen, _imagen, ajuste) => {
+  const r = await ajustarImagen(new Blob([origen as Uint8Array<ArrayBuffer>]), ajuste)
+  return { bytes: new Uint8Array(await r.blob.arrayBuffer()), ancho: r.ancho, alto: r.alto, tipo: r.tipo }
+}
+
+/**
+ * Genera los dos EPUB.
+ *
+ * Si el autor no pidio comprimir para Kindle, el motor corre UNA vez y saca los
+ * dos libros del mismo proyecto, como siempre. Si lo pidio, corre dos veces: la
+ * primera con las imagenes originales (de ahi sale el EPUB de Apple Books, y
+ * tambien la revision y el reporte, que tienen que hablar de las imagenes que
+ * el autor subio, no de las copias comprimidas) y la segunda con las imagenes
+ * de Kindle, de la que solo se queda su EPUB.
+ *
+ * De la segunda vuelta si se recogen los ERRORES que no estuvieran ya en la
+ * primera: son los que dicen que el paquete de Kindle ha salido roto, y eso hay
+ * que verlo aunque venga de la vuelta que casi no se mira.
+ */
 export async function generarLibros(
   p: Proyecto,
   imagenes: ReadonlyMap<string, Imagen>,
   repo: Repositorio,
   ahora: Date,
+  codificar: Codificador = conLienzo,
 ): Promise<Generado> {
   const [bytes, fuentes] = await Promise.all([bytesDelProyecto(p, repo), cargarFuentes()])
   const exportado = exportar(p, imagenes, bytes, fuentes)
   const motor = await enSuHilo({ proyecto: exportado.proyecto, ahora: ahora.getTime() })
-  return { exportado, motor, sinFuentes: fuentes.length === 0 }
+
+  const k = entregaKindle(p)
+  if (!k.comprimir || motor.bloqueado !== null) {
+    return { exportado, motor, sinFuentes: fuentes.length === 0, kindle: null }
+  }
+
+  const entrega = await paraKindle(p, imagenes, bytes, k, codificar)
+  const paraEllos = exportar(p, entrega.imagenes, entrega.bytes, fuentes)
+  const otro = await enSuHilo({ proyecto: paraEllos.proyecto, ahora: ahora.getTime() })
+  const suyo = otro.resultados.find((r) => r.tienda === 'Kindle')
+
+  return {
+    exportado,
+    motor: suyo
+      ? {
+          ...motor,
+          resultados: motor.resultados.map((r) => (r.tienda === 'Kindle' ? suyo : r)),
+          diagnosticos: {
+            ...motor.diagnosticos,
+            errores: [...motor.diagnosticos.errores, ...otro.diagnosticos.errores.filter((x) => !motor.diagnosticos.errores.includes(x))],
+          },
+        }
+      : motor,
+    sinFuentes: fuentes.length === 0,
+    kindle: { antes: entrega.antes, ahora: entrega.ahora },
+  }
 }

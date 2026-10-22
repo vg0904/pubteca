@@ -18,7 +18,7 @@ import {
   type Almacen,
   type ImagenGuardada,
 } from '../src/app/almacen'
-import { idsDeImagenes } from '../src/app/generar'
+import { idsDeImagenes } from '../src/app/modelo'
 import { DATOS_POR_DEFECTO, VERSION_PROYECTO, type Proyecto } from '../src/app/modelo'
 
 function proyecto(id: string, titulo: string, capitulos = 0): Proyecto {

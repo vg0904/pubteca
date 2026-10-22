@@ -240,6 +240,18 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
 .estado-error, .estado-sinAlmacen, .estado-conflicto { color: var(--rojo); }
 .alerta.conflicto { position: sticky; top: 3.4rem; z-index: 25; margin: 0.5rem 16px; }
 .barra-espacio { flex: 1; }
+
+/* Idioma de la interfaz. Discreto: se elige una vez y no se vuelve a tocar. */
+.selector-idioma select {
+  font-size: 0.82rem;
+  padding: 0.2rem 1.5rem 0.2rem 0.45rem;
+  border-color: var(--borde);
+  color: var(--suave);
+  background-color: transparent;
+}
+.selector-idioma select:hover { color: var(--texto); border-color: var(--acento); }
+.idioma-inicio { position: absolute; top: 1rem; right: 16px; }
+.inicio { position: relative; }
 .boton-icono { padding: 0.3rem 0.55rem; font-size: 1.05rem; }
 .copia { display: flex; align-items: center; gap: 0.5rem; }
 .deshacer-rehacer { display: inline-flex; gap: 0.3rem; }
@@ -757,3 +769,81 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .vista-marco { display: block; width: 100%; max-width: 30rem; height: min(72vh, 42rem); margin: 0 auto; border: 1px solid var(--borde-fuerte); border-radius: 14px; background: #fff; }
 .vista-marco.tema-sepia { background: #f5eddc; }
 .vista-marco.tema-oscuro { background: #121212; }
+
+/* ---------------------------------------------------------------------------
+   Ajustar una imagen
+   Se usa <dialog> del navegador: el foco atrapado, Escape y el fondo inerte
+   los trae el, y a mano se hacen mal.
+--------------------------------------------------------------------------- */
+.ajustar {
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 14px;
+  background: var(--papel);
+  color: var(--texto);
+  padding: 1.1rem 1.2rem 1.2rem;
+  max-width: 48rem;
+  width: calc(100vw - 2rem);
+  max-height: calc(100vh - 2rem);
+  box-shadow: var(--sombra);
+  font-family: var(--interfaz);
+}
+.ajustar::backdrop { background: rgba(30, 22, 14, 0.45); }
+.ajustar header { display: flex; align-items: baseline; gap: 0.6rem; }
+.ajustar header h2 { margin: 0; flex: 1; font-size: 1.35rem; }
+.ajustar header .cerrar { border: 0; background: none; font-size: 1.4rem; line-height: 1; padding: 0 0.3rem; color: var(--suave); }
+.ajustar > .ayuda { margin: 0.2rem 0 0.8rem; }
+
+.ajustar-cuerpo { display: flex; gap: 1.4rem; align-items: flex-start; flex-wrap: wrap; }
+/* El ancho lo manda el marco, no el texto de ayuda de debajo: sin el tope, la
+   frase larga estira la columna y los mandos se van abajo. */
+.ajustar-vista { flex: 0 0 auto; max-width: 320px; }
+.ajustar-mandos { flex: 1 1 18rem; min-width: 15rem; display: flex; flex-direction: column; gap: 0.7rem; }
+
+/* El marco es el hueco: dentro se arrastra el dibujo entero. */
+.encuadre {
+  overflow: hidden;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 8px;
+  /* El tablero de ajedrez deja ver la transparencia, que es justo uno de los
+     avisos que este cuadro arregla. */
+  background:
+    repeating-conic-gradient(var(--borde) 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  cursor: grab;
+  touch-action: none;
+}
+.encuadre:active { cursor: grabbing; }
+.encuadre:focus-visible { outline: 2px solid var(--acento); outline-offset: 2px; }
+.encuadre img { display: block; max-width: none; user-select: none; -webkit-user-drag: none; }
+
+.ajustar fieldset { border: 0; padding: 0; margin: 0; }
+.ajustar legend { padding: 0; font-size: 0.82rem; color: var(--suave); text-transform: uppercase; letter-spacing: 0.04em; }
+.aspectos, .formatos { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.35rem 0; }
+.boton-aspecto { font-size: 0.85rem; padding: 0.25rem 0.55rem; }
+.boton-aspecto.activo { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); }
+.medidas-ajuste, .ajustar .medidas { display: flex; align-items: flex-end; gap: 0.4rem; margin: 0.35rem 0; }
+.ajustar .medidas input[type='number'] { width: 6rem; }
+.ajustar .unidad { color: var(--suave); font-size: 0.85rem; padding-bottom: 0.35rem; }
+.ajustar .opcion { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; }
+.ajustar input[type='range'] { width: 100%; }
+.ajustar-resultado { margin: 1rem 0 0.3rem; font-weight: 600; }
+.ajustar .botones { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
+
+/* «Arreglar», dentro del propio aviso de la tarjeta. */
+.avisos-imagen .arreglar { margin-left: 0.4rem; }
+
+@media (max-width: 40rem) {
+  .ajustar { padding: 0.9rem; }
+  .ajustar-cuerpo { gap: 0.9rem; }
+}
+
+/* Las imagenes en cada tienda, en la pantalla de descarga. */
+.por-tienda { border: 1px solid var(--borde); border-radius: 12px; padding: 1rem 1.1rem; background: var(--papel); }
+.por-tienda h2 { margin-top: 0; }
+.tienda-apple { margin: 0.8rem 0; }
+.tienda-kindle { border: 0; border-top: 1px solid var(--borde); padding: 0.8rem 0 0; margin: 0.8rem 0 0; }
+.tienda-kindle legend { padding: 0; font-weight: 600; }
+.mandos-kindle { margin: 0.7rem 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; max-width: 28rem; }
+.mandos-kindle input[type='range'] { width: 100%; }
+.mandos-kindle .ayuda { margin: 0; }
+.por-tienda .estimado { margin: 0.4rem 0 0; }
+.por-tienda .alerta { margin: 0.2rem 0; }

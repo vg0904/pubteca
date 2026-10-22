@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { ui } from '../../i18n/es'
 import type { Bloque, Capitulo, Tramo } from '../modelo'
+import { useTextos } from './contexto'
 
 /** Unos tramos como elementos de React: sin innerHTML, el texto nunca se interpreta. */
 export function Tramos({ tramos }: { tramos: readonly Tramo[] }) {
@@ -17,6 +17,7 @@ export function Tramos({ tramos }: { tramos: readonly Tramo[] }) {
 }
 
 function Ilustracion({ imagenId, alt, url }: { imagenId: string; alt: string; url: (id: string) => string | undefined }) {
+  const ui = useTextos()
   const u = url(imagenId)
   return (
     <figure className="vista-ilus">

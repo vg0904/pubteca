@@ -40,10 +40,12 @@ import { exportar } from './exportar'
 import { capituloDesdeDialecto, extraDesdeDialecto } from './importar/dialecto'
 import {
   DATOS_POR_DEFECTO,
+  ENTREGA_KINDLE_POR_DEFECTO,
   VERSION_PROYECTO,
   type Bloque,
   type Capitulo,
   type DatosLibro,
+  type EntregaKindle,
   type Extra,
   type Imagen,
   type Proyecto,
@@ -534,7 +536,29 @@ function proyectoDeJson(
     extras: nombresDeExtras(ordenarExtras(extras)),
     laminas: (Array.isArray(x['laminas']) ? x['laminas'] : []).flatMap((v) => (typeof v === 'string' ? [imagenId(v)] : [])),
     portada,
+    kindle: entregaDe(x['kindle']),
     ...(descargado ? { descargado } : {}),
+  }
+}
+
+/**
+ * Como se entregan las imagenes a Kindle, tal como venga en la copia.
+ *
+ * Campo a campo, como los datos del libro: una copia de antes de que esto
+ * existiera no lo trae, y una editada a mano puede traer cualquier cosa. La
+ * calidad se recorta al rango que entiende el codificador en vez de rechazar
+ * la copia: un numero raro no puede costarle el libro al autor.
+ */
+export function entregaDe(x: unknown): EntregaKindle {
+  if (!esObjeto(x)) return ENTREGA_KINDLE_POR_DEFECTO
+  const calidad = x['calidad']
+  return {
+    comprimir: x['comprimir'] === true,
+    calidad:
+      typeof calidad === 'number' && Number.isFinite(calidad)
+        ? Math.max(1, Math.min(100, Math.round(calidad)))
+        : ENTREGA_KINDLE_POR_DEFECTO.calidad,
+    grises: x['grises'] === true,
   }
 }
 

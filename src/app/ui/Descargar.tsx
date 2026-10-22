@@ -1,18 +1,16 @@
-import { useMemo, useState } from 'react'
-import { ui } from '../../i18n/es'
+import { useEffect, useMemo, useState } from 'react'
 import { TARIFA_POR_MB } from '../../core/reporte'
 import { agrupar, cuentas, type Grupo } from '../avisos'
 import { descargar } from '../copia'
+import { ajusteKindle, entregaKindle, imagenesDeKindle, muestrasPara } from '../entrega'
 import type { Estado } from '../estado'
-import { dolares, tamano } from '../formato'
-import { generarLibros, type Generado } from '../generar'
-import type { DatosLibro, Proyecto } from '../modelo'
+import { conLienzo, generarLibros, type Generado } from '../generar'
+import { bppJpeg, bppMedido, pesoTotalEstimado } from '../imagen-ajuste'
+import { idsDeImagenes, type DatosLibro, type EntregaKindle, type Imagen, type Proyecto } from '../modelo'
+import type { Repositorio } from '../repositorio'
 import { bloquea, cambioDeIdentidad, nombresLegibles, revisar, type Problema } from '../revision'
-import { useAvisar, useDespacho, useMedios } from './contexto'
+import { useAvisar, useDespacho, useMedios, useTextos } from './contexto'
 import { VistaPrevia } from './VistaPrevia'
-
-/** Solo los idiomas en que el libro sabe escribir sus propios textos. */
-const IDIOMAS = Object.entries(ui.descargar.idiomas)
 
 type CampoTexto = Exclude<keyof DatosLibro, 'incluirContraportada'>
 
@@ -29,6 +27,7 @@ function Campo({
   tipo?: 'text' | 'date'
   requerido?: boolean
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const etiqueta = ui.descargar.campos[campo as keyof typeof ui.descargar.campos] ?? campo
   return (
@@ -50,6 +49,7 @@ function Campo({
 
 /** Un renglon de la revision, con icono Y palabra: nunca solo color. */
 function Nivel({ nivel }: { nivel: 'bloquea' | 'error' | 'aviso' | 'nota' }) {
+  const ui = useTextos()
   return (
     <span className={`nivel nivel-${nivel}`}>
       <span aria-hidden="true">{ui.niveles[nivel].icono}</span> {ui.niveles[nivel].palabra}
@@ -58,6 +58,7 @@ function Nivel({ nivel }: { nivel: 'bloquea' | 'error' | 'aviso' | 'nota' }) {
 }
 
 function Problemas({ problemas }: { problemas: readonly Problema[] }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   if (problemas.length === 0) return <p className="todo-bien">{ui.descargar.todoBien}</p>
   return (
@@ -90,6 +91,7 @@ function Problemas({ problemas }: { problemas: readonly Problema[] }) {
 }
 
 function Grupos({ grupos, nombres }: { grupos: readonly Grupo[]; nombres: ReadonlyMap<string, string> }) {
+  const ui = useTextos()
   const c = cuentas(grupos)
   return (
     <div className="grupos">
@@ -133,11 +135,176 @@ function Grupos({ grupos, nombres }: { grupos: readonly Grupo[]; nombres: Readon
 
 /** Lo que identifica el contenido del libro, sin los hechos (descargado, copia). */
 function huella(p: Proyecto): readonly unknown[] {
-  return [p.datos, p.capitulos, p.extras, p.laminas, p.portada]
+  // `kindle` entra aqui: mover el deslizador cambia el EPUB de Kindle, asi que
+  // el que ya estaba preparado queda desactualizado como con cualquier edicion.
+  return [p.datos, p.capitulos, p.extras, p.laminas, p.portada, p.kindle]
 }
 const mismaHuella = (a: readonly unknown[], b: readonly unknown[]): boolean => a.every((x, i) => x === b[i])
 
+/**
+ * Las imagenes en cada tienda.
+ *
+ * Esto va AQUI y no en el cuadro de ajustar una imagen porque es una decision
+ * de entrega: vale igual para las treinta ilustraciones del libro, y pedirsela
+ * al autor imagen por imagen seria treinta veces el mismo gesto. Lo que si se
+ * decide imagen por imagen (que trozo se ve, a que resolucion) esta alli.
+ *
+ * El peso que se ensena no es una tabla: se codifican de verdad las dos o tres
+ * imagenes mas grandes del libro con la calidad elegida y se extrapola por
+ * pixeles. Los bytes por pixel de un JPEG dependen del dibujo mucho mas que de
+ * la calidad — una acuarela y una linea plana se llevan un factor de cinco —,
+ * asi que un numero de tabla puede estar al doble del real, y un numero
+ * equivocado en la pantalla de descarga es peor que no dar ninguno.
+ */
+function ImagenesPorTienda({ p, imagenes }: { p: Proyecto; imagenes: ReadonlyMap<string, Imagen> }) {
+  const ui = useTextos()
+  const despachar = useDespacho()
+  const { repo } = useMedios()
+  const k = entregaKindle(p)
+  // Las de Kindle y TODAS: no son las mismas, y cada renglon tiene que contar
+  // las suyas. La portada y el logo van en el EPUB de Apple Books y no en el
+  // de Kindle, asi que contarlas en el renglon de Kindle enganaria con el
+  // numero que mas le importa al autor, el que paga la tarifa de Amazon.
+  const suyas = useMemo(() => imagenesDeKindle(p, imagenes), [p, imagenes])
+  const todas = useMemo(
+    () => [...idsDeImagenes(p)].flatMap((id) => (imagenes.get(id) ? [imagenes.get(id) as Imagen] : [])),
+    [p, imagenes],
+  )
+  const pesoApple = todas.reduce((n, i) => n + i.bytes, 0)
+  const pesoOriginal = suyas.reduce((n, i) => n + i.bytes, 0)
+
+  // La medida que hay, con la etiqueta de PARA QUE ajustes se tomo. Asi
+  // «estamos midiendo» se deriva al pintar (la medida es de otros ajustes) en
+  // vez de ponerse a mano dentro del efecto, que dispararia otro render.
+  const clave = `${k.calidad}|${k.grises}|${suyas.map((i) => `${i.id}:${i.bytes}`).join(',')}`
+  const [medida, setMedida] = useState<{ clave: string; bpp: number | null } | null>(null)
+  const alDia = medida?.clave === clave
+  const midiendo = k.comprimir && suyas.length > 0 && !alDia
+
+  // Se mide con retraso: el deslizador manda un valor por pixel de recorrido y
+  // codificar en todos dejaria la pagina pegada.
+  useEffect(() => {
+    if (!k.comprimir || !repo || suyas.length === 0 || alDia) return undefined
+    let vivo = true
+    const t = setTimeout(() => {
+      void (async () => {
+        const bpp = await medirKindle(suyas, repo, k)
+        if (vivo) setMedida({ clave, bpp })
+      })()
+    }, 400)
+    return () => {
+      vivo = false
+      clearTimeout(t)
+    }
+  }, [alDia, clave, k, repo, suyas])
+
+  const bpp = alDia ? medida.bpp : null
+  const noSePudo = alDia && medida.bpp === null
+  const estimado = pesoTotalEstimado(suyas, bpp ?? bppJpeg(k.calidad, k.grises))
+  // Comprimir nunca puede dar un libro mas gordo: si sale asi, se queda el
+  // original imagen por imagen (ver `paraKindle`), y eso es lo que se dice.
+  const conKindle = Math.min(estimado, pesoOriginal)
+  const cambiar = (cambios: Partial<EntregaKindle>): void =>
+    despachar({ tipo: 'entregaKindle', cambios, ahora: Date.now() })
+
+  return (
+    <section className="por-tienda">
+      <h2>{ui.descargar.imagenes.titulo}</h2>
+      <p className="ayuda">{ui.descargar.imagenes.ayuda}</p>
+      {todas.length === 0 ? (
+        <p className="ayuda">{ui.descargar.imagenes.sinImagenes}</p>
+      ) : (
+        <>
+          <p className="tienda-apple">
+            <strong>{ui.descargar.imagenes.apple}</strong>{' '}
+            <span className="ayuda">
+              {ui.descargar.imagenes.appleDetalle(todas.length, ui.formato.tamano(pesoApple))}
+            </span>
+          </p>
+          <fieldset className="tienda-kindle">
+            <legend>
+              {ui.descargar.imagenes.kindle}{' '}
+              <span className="ayuda">{ui.descargar.imagenes.kindleDetalle(suyas.length, ui.formato.tamano(pesoOriginal))}</span>
+            </legend>
+            <label className="casilla">
+              <input type="checkbox" checked={k.comprimir} onChange={(e) => cambiar({ comprimir: e.target.checked })} />
+              {ui.descargar.imagenes.comprimir}
+            </label>
+            {k.comprimir && (
+              <div className="mandos-kindle">
+                <label className="campo">
+                  <span>
+                    {ui.descargar.imagenes.calidad} · {k.calidad}
+                  </span>
+                  <input
+                    type="range"
+                    min={40}
+                    max={95}
+                    step={1}
+                    value={k.calidad}
+                    onChange={(e) => cambiar({ calidad: Number(e.target.value) })}
+                  />
+                  <small>{ui.descargar.imagenes.calidadAyuda}</small>
+                </label>
+                <label className="casilla">
+                  <input type="checkbox" checked={k.grises} onChange={(e) => cambiar({ grises: e.target.checked })} />
+                  {ui.descargar.imagenes.grises}
+                </label>
+                <p className="ayuda">{ui.descargar.imagenes.grisesAyuda}</p>
+                <p className="estimado">
+                  {midiendo ? (
+                    ui.descargar.imagenes.calculando
+                  ) : conKindle >= pesoOriginal ? (
+                    // Comprimir no siempre adelgaza: un dibujo de linea plana
+                    // lo guarda mejor el PNG. Decirlo es mas util que ensenar
+                    // «105 kB → 105 kB» y dejar al autor pensando.
+                    <span className="ayuda">{ui.descargar.imagenes.sinAhorro}</span>
+                  ) : (
+                    <>
+                      <strong>{ui.descargar.imagenes.estimado(ui.formato.tamano(conKindle))}</strong>{' '}
+                      <span className="ayuda">
+                        {ui.descargar.imagenes.ahorro(ui.formato.tamano(pesoOriginal), ui.formato.tamano(conKindle))}
+                      </span>
+                    </>
+                  )}
+                </p>
+                {noSePudo && <p className="alerta nivel-nota">{ui.descargar.imagenes.noSePudo}</p>}
+                {suyas.some((i) => i.alfa) && <p className="alerta nivel-nota">{ui.descargar.imagenes.transparencia}</p>}
+                <p className="ayuda">{ui.descargar.imagenes.soloKindle}</p>
+              </div>
+            )}
+          </fieldset>
+        </>
+      )}
+    </section>
+  )
+}
+
+/**
+ * Codifica de verdad una muestra de las imagenes y devuelve sus bytes por
+ * pixel, o `null` si el navegador no pudo con ninguna.
+ */
+async function medirKindle(
+  suyas: readonly Imagen[],
+  repo: Repositorio,
+  k: EntregaKindle,
+): Promise<number | null> {
+  const muestras: { bytes: number; pixeles: number }[] = []
+  for (const imagen of muestrasPara(suyas)) {
+    const origen = await repo.bytes(imagen.id)
+    if (!origen) continue
+    try {
+      const c = await conLienzo(origen, imagen, ajusteKindle(imagen, k))
+      muestras.push({ bytes: c.bytes.length, pixeles: c.ancho * c.alto })
+    } catch {
+      // Una imagen que el lienzo no abre no estropea la medida de las otras.
+    }
+  }
+  return bppMedido(muestras)
+}
+
 export function PantallaDescargar({ estado }: { estado: Estado }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const avisar = useAvisar()
   const { repo } = useMedios()
@@ -200,7 +367,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
               value={p.datos.idioma}
               onChange={(e) => despachar({ tipo: 'dato', campo: 'idioma', valor: e.target.value, ahora: Date.now() })}
             >
-              {IDIOMAS.map(([cod, nombre]) => (
+              {Object.entries(ui.descargar.idiomas).map(([cod, nombre]) => (
                 <option key={cod} value={cod}>
                   {nombre}
                 </option>
@@ -224,6 +391,8 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
           </p>
         )}
       </section>
+
+      <ImagenesPorTienda p={p} imagenes={estado.imagenes} />
 
       <section>
         <h2>{ui.descargar.revision}</h2>
@@ -249,18 +418,27 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
                   <button type="button" className="boton-descarga" disabled={viejo} onClick={() => bajar('Kindle')}>
                     <strong>{ui.descargar.kindle}</strong>
                     <span>
-                      {tamano(kindle.bytes.length)} · {ui.descargar.tarifa(dolares((kindle.bytes.length / 1e6) * TARIFA_POR_MB))}
+                      {ui.formato.tamano(kindle.bytes.length)} · {ui.descargar.tarifa(ui.formato.dolares((kindle.bytes.length / 1e6) * TARIFA_POR_MB))}
                     </span>
                   </button>
                 )}
                 {apple && (
                   <button type="button" className="boton-descarga" disabled={viejo} onClick={() => bajar('AppleBooks')}>
                     <strong>{ui.descargar.apple}</strong>
-                    <span>{tamano(apple.bytes.length)}</span>
+                    <span>{ui.formato.tamano(apple.bytes.length)}</span>
                   </button>
                 )}
               </div>
               <p className="ayuda">{ui.descargar.tarifaAyuda}</p>
+              {/* Lo que se ahorro DE VERDAD, no lo que se estimo antes de generar. */}
+              {generado?.g.kindle && generado.g.kindle.ahora < generado.g.kindle.antes && (
+                <p className="ayuda">
+                  {ui.descargar.imagenes.comprimidas(
+                    ui.formato.tamano(generado.g.kindle.antes),
+                    ui.formato.tamano(generado.g.kindle.ahora),
+                  )}
+                </p>
+              )}
               {generado?.g.sinFuentes && <p className="alerta nivel-nota">{ui.descargar.sinFuentes}</p>}
               {/* Desactualizada no: enseñaria un libro que ya no es el que hay. */}
               {!viejo && <VistaPrevia resultados={c.resultados} />}

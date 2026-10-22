@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { ui } from '../../i18n/es'
 import { RE_TITULO } from '../../core/parser'
-import { numero } from '../formato'
 import { pareceTitulo } from '../importar/docx'
 import {
   capitulosVacios,
@@ -14,7 +12,7 @@ import {
   type Importacion,
 } from '../importacion'
 import { textoDeTramos, type Bloque } from '../modelo'
-import { useDespacho } from './contexto'
+import { useDespacho, useTextos } from './contexto'
 import { Tramos, VistaCapitulo } from './VistaCapitulo'
 
 /** URL de las imagenes de la importacion, para la vista previa. Se sueltan al salir. */
@@ -36,6 +34,7 @@ const nombreDeCorte = (c: Corte): string => [c.etiqueta, c.titulo].filter(Boolea
 
 /** Una linea del documento, resumida. */
 function Extracto({ b, url }: { b: Bloque; url: (id: string) => string | undefined }) {
+  const ui = useTextos()
   switch (b.tipo) {
     case 'parrafo':
     case 'subtitulo':
@@ -66,6 +65,7 @@ function Extracto({ b, url }: { b: Bloque; url: (id: string) => string | undefin
 }
 
 function TarjetaDeCorte({ corte, numeroCap, bloques }: { corte: Corte; numeroCap: number; bloques: readonly Bloque[] }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const enviar = (accion: Parameters<typeof despachar>[0]): void => despachar(accion)
   const dosLineas = usaLineaSiguiente(corte)
@@ -134,6 +134,7 @@ export function PantallaImportar({
   ocupado: boolean
   alConfirmar: () => void
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const vista = useMemo(() => vistaImportacion(imp), [imp])
   const vacios = useMemo(() => capitulosVacios(imp), [imp])
@@ -156,13 +157,13 @@ export function PantallaImportar({
   }
 
   const partes = [
-    r.capitulos === 1 ? ui.importar.resumen.capitulo : ui.importar.resumen.capitulos(numero(r.capitulos)),
-    ui.importar.resumen.parrafos(numero(r.parrafos)),
-    r.enfasis > 0 && ui.importar.resumen.enfasis(numero(r.enfasis)),
-    r.escenas > 0 && ui.importar.resumen.escenas(numero(r.escenas)),
-    r.versos > 0 && ui.importar.resumen.versos(numero(r.versos)),
-    r.ilustraciones > 0 && ui.importar.resumen.ilustraciones(numero(r.ilustraciones)),
-    descartados > 0 && ui.importar.resumen.descartados(numero(descartados)),
+    r.capitulos === 1 ? ui.importar.resumen.capitulo : ui.importar.resumen.capitulos(ui.formato.numero(r.capitulos)),
+    ui.importar.resumen.parrafos(ui.formato.numero(r.parrafos)),
+    r.enfasis > 0 && ui.importar.resumen.enfasis(ui.formato.numero(r.enfasis)),
+    r.escenas > 0 && ui.importar.resumen.escenas(ui.formato.numero(r.escenas)),
+    r.versos > 0 && ui.importar.resumen.versos(ui.formato.numero(r.versos)),
+    r.ilustraciones > 0 && ui.importar.resumen.ilustraciones(ui.formato.numero(r.ilustraciones)),
+    descartados > 0 && ui.importar.resumen.descartados(ui.formato.numero(descartados)),
   ].filter(Boolean)
 
   return (
@@ -269,7 +270,7 @@ export function PantallaImportar({
               <ul>
                 {imp.descartado.map((d) => (
                   <li key={d.que}>
-                    {ui.importar.descartadoQue[d.que] ?? d.que} ({numero(d.cuantos)}): {d.porque}
+                    {ui.importar.descartadoQue[d.que] ?? d.que} ({ui.formato.numero(d.cuantos)}): {d.porque}
                   </li>
                 ))}
               </ul>
@@ -308,7 +309,7 @@ export function PantallaImportar({
                 <li key={c.id}>
                   <button type="button" className={i === viendo ? 'activo' : ''} onClick={() => ver(i)}>
                     {[c.etiqueta, textoDeTramos(c.titulo)].filter(Boolean).join(': ')}
-                    <span className="contador">{numero(c.bloques.filter((b) => b.tipo === 'parrafo').length)}</span>
+                    <span className="contador">{ui.formato.numero(c.bloques.filter((b) => b.tipo === 'parrafo').length)}</span>
                   </button>
                 </li>
               ))}

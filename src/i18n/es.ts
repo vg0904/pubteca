@@ -5,6 +5,9 @@
 import type { ClaveAvisoCopia, ErrorCopia } from '../app/abrir-copia'
 import type { ClaveGrupo } from '../app/avisos'
 import type { ClaveProblema } from '../app/revision'
+import { dolares, numero, tamano, type Separadores } from '../app/formato'
+
+const SEPARADORES: Separadores = { miles: '.', decimal: ',' }
 
 export const ui = {
   nombre: 'Pubteca',
@@ -12,6 +15,21 @@ export const ui = {
   descripcion:
     'Convierte tu manuscrito en dos EPUB listos para publicar: uno para Kindle (KDP) y otro para Apple Books. Gratis y sin instalar nada.',
   privacidad: 'Tu libro se queda en este navegador. Nunca se sube a ningún servidor.',
+
+  /** El idioma de la INTERFAZ, que no es el del libro: ver core/textos-libro.ts. */
+  idiomaUi: 'Idioma de Pubteca',
+
+
+  /**
+   * Como se leen aqui los numeros y las fechas. La mecanica esta en
+   * `app/formato.ts`; esto es la parte que cambia con el idioma.
+   */
+  formato: {
+    numero: (n: number) => numero(n, SEPARADORES),
+    tamano: (bytes: number) => tamano(bytes, SEPARADORES),
+    dolares: (x: number) => dolares(x, SEPARADORES),
+    haceDias: (dias: number) => (dias === 0 ? 'hoy' : dias === 1 ? 'ayer' : `hace ${dias} días`),
+  },
 
   inicio: {
     nuevo: 'Libro nuevo',
@@ -207,6 +225,56 @@ export const ui = {
     subiendo: 'Subiendo…',
   },
 
+  // Ajustar UNA imagen: recortarla y ponerla en la resolucion que toca. Es
+  // decision de autor (que parte del dibujo se ve), asi que va imagen por
+  // imagen. Lo que es decision de ENTREGA (comprimir para Kindle) va en la
+  // pantalla de descarga, para todas de una vez: ver `descargar.imagenes`.
+  ajustar: {
+    abrir: 'Ajustar la imagen…',
+    arreglar: 'Arreglar',
+    titulo: 'Ajustar la imagen',
+    ayuda: 'Se guarda como una imagen nueva; la que subiste no se toca, y «Deshacer» la devuelve.',
+    original: (ancho: number, alto: number, peso: string) => `Ahora: ${ancho} × ${alto} px · ${peso}`,
+    proporcion: 'Proporción',
+    proporcionAyuda: 'La de las pantallas de los lectores es alta y estrecha: 2:3 es la que mejor les cabe.',
+    aspectos: {
+      '2:3': '2:3 · la recomendada',
+      '3:4': '3:4 · algo más cuadrada',
+      '1:1': 'Cuadrada',
+      '3:2': '3:2 · horizontal',
+      '4:3': '4:3 · horizontal',
+      original: 'La de esta imagen',
+    } as Record<string, string>,
+    zoom: 'Acercar',
+    zoomAyuda: 'Acerca el marco para dejar fuera lo que no quieras.',
+    encuadre: 'Qué parte se ve',
+    encuadreAyuda: 'Arrastra el dibujo para encuadrarlo. Lo que queda fuera del marco no entra al libro.',
+    centrar: 'Centrar',
+    todo: 'La imagen entera',
+    tamano: 'Tamaño final',
+    ancho: 'Ancho',
+    alto: 'Alto',
+    px: 'px',
+    sugerido: (ancho: number, alto: number) => `Recomendado: ${ancho} × ${alto} px`,
+    usarSugerido: 'Usar el recomendado',
+    resultado: (ancho: number, alto: number, peso: string) => `Quedará en ${ancho} × ${alto} px · ${peso}`,
+    midiendo: (ancho: number, alto: number) => `Quedará en ${ancho} × ${alto} px · calculando el peso…`,
+    formato: 'Formato',
+    formatos: { png: 'PNG · sin pérdida', jpeg: 'JPEG · más ligero' } as Record<string, string>,
+    formatoAyuda:
+      'PNG guarda el dibujo exacto y es lo mejor para Apple Books. JPEG pesa mucho menos; si el libro va a Kindle, comprimir se puede hacer de golpe en «Descargar EPUB».',
+    calidad: 'Calidad del JPEG',
+    grises: 'Pasarla a blanco y negro',
+    aplicar: 'Guardar la imagen ajustada',
+    aplicando: 'Ajustando…',
+    cancelar: 'Cancelar',
+    hecho: 'Imagen ajustada.',
+    error: 'No pude ajustar esta imagen en este navegador.',
+    sinCambios: 'Así como está, no cambia nada.',
+    subira: 'El tamaño que pides es mayor que el trozo que has encuadrado: el dibujo se verá peor, no mejor.',
+    tope: 'Más de 5,6 millones de píxeles: Apple Books no lo admite. Baja el tamaño.',
+  },
+
   portada: {
     titulo: 'Portada y láminas',
     portada: 'Portada',
@@ -310,6 +378,38 @@ export const ui = {
     verDetalle: 'Ver los mensajes originales',
     afectadas: (n: number) => (n === 1 ? '1 afectada' : `${n} afectadas`),
     reporte: 'Descargar el reporte (.txt)',
+
+    // Decision de ENTREGA, no de autor: va aqui y vale para todas las imagenes
+    // del libro, para no configurarlas una por una.
+    imagenes: {
+      titulo: 'Las imágenes en cada tienda',
+      ayuda:
+        'Apple Books no cobra por el tamaño del archivo (admite hasta 2 GB), así que allí van tus imágenes tal como las subiste. Amazon cobra la entrega por MB, así que a Kindle puedes mandar una versión más ligera. Tus originales no se tocan.',
+      apple: 'Apple Books: tus imágenes, sin tocar',
+      appleDetalle: (n: number, peso: string) =>
+        n === 1 ? `1 imagen · ${peso}` : `${n} imágenes · ${peso}`,
+      kindle: 'Kindle (KDP)',
+      kindleDetalle: (n: number, peso: string) =>
+        n === 1 ? `1 imagen · ${peso}` : `${n} imágenes · ${peso}`,
+      comprimir: 'Comprimirlas en JPEG para Kindle',
+      calidad: 'Calidad',
+      calidadAyuda: 'Entre 70 y 85 casi no se nota al leer y el archivo baja mucho.',
+      grises: 'Pasarlas a blanco y negro',
+      grisesAyuda:
+        'Casi todos los Kindle son de tinta electrónica en gris: así pesan bastante menos y en esos lectores se ven igual.',
+      estimado: (peso: string) => `Las imágenes quedarán en ≈ ${peso}`,
+      ahorro: (antes: string, ahora: string) => `${antes} → ${ahora}`,
+      comprimidas: (antes: string, ahora: string) =>
+        `Las imágenes de Kindle se comprimieron: ${antes} → ${ahora}. Las de Apple Books van sin tocar.`,
+      sinAhorro:
+        'Con estas imágenes, comprimir no ahorra nada: el PNG ya las guarda mejor que el JPEG. Las que no mejoren se mandan tal cual.',
+      calculando: 'Calculando…',
+      noSePudo: 'No pude calcular el tamaño aquí. Prepara los EPUB y verás el de verdad.',
+      sinImagenes: 'Este libro no tiene imágenes, así que no hay nada que comprimir.',
+      transparencia:
+        'JPEG no guarda transparencias: lo transparente saldrá blanco. Kindle hace eso de todas formas.',
+      soloKindle: 'La portada y el logo no entran al EPUB de Kindle, así que no se comprimen.',
+    },
   },
 
   niveles: {
@@ -465,6 +565,14 @@ export const ui = {
   menu: 'Más opciones',
   cerrar: 'Cerrar',
   deshacer: 'Deshacer',
-} as const
+}
 
+/**
+ * La forma de los textos de la interfaz. Sale del español, que es el original.
+ *
+ * SIN `as const` a proposito: con el, cada cadena tendria su tipo literal y
+ * `en.ts` solo podria repetir las palabras en español. Asi `Ui` dice «aqui va
+ * un string» y el compilador exige que esten TODAS las claves, con la misma
+ * forma y la misma firma en las funciones.
+ */
 export type Ui = typeof ui

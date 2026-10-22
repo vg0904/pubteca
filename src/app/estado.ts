@@ -22,12 +22,15 @@ import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
 import {
   DATOS_POR_DEFECTO,
+  ENTREGA_KINDLE_POR_DEFECTO,
   VERSION_PROYECTO,
+  idsDeImagenes,
   textoDeTramos,
   type Bloque,
   type Capitulo,
   type DatosLibro,
   type DondeExtra,
+  type EntregaKindle,
   type Extra,
   type Imagen,
   type Proyecto,
@@ -199,6 +202,7 @@ export type Accion =
   | { readonly tipo: 'aperturaAlt'; readonly capitulo: string; readonly indice: number; readonly alt: string; readonly ahora: number }
   // imagenes, portada y laminas
   | { readonly tipo: 'registrarImagenes'; readonly imagenes: readonly Imagen[] }
+  | { readonly tipo: 'sustituirImagen'; readonly viejo: string; readonly nuevo: string }
   | { readonly tipo: 'portada'; readonly cambios: Readonly<Partial<Record<RolPortada, string | null>>> }
   | { readonly tipo: 'anadirLamina'; readonly imagenId: string }
   | { readonly tipo: 'quitarLamina'; readonly indice: number }
@@ -210,6 +214,7 @@ export type Accion =
   | { readonly tipo: 'dondeExtra'; readonly id: string; readonly donde: DondeExtra }
   // datos del libro
   | { readonly tipo: 'dato'; readonly campo: keyof DatosLibro; readonly valor: string | boolean; readonly ahora: number }
+  | { readonly tipo: 'entregaKindle'; readonly cambios: Partial<EntregaKindle>; readonly ahora: number }
   | { readonly tipo: 'descargado'; readonly uid: string; readonly cuando: number }
   | { readonly tipo: 'copiaGuardada'; readonly cuando: number }
   // historia
@@ -958,6 +963,40 @@ export function reducir(e: Estado, a: Accion): Estado {
       if (!portada.logo) delete portada.logoBlanco
       return cambiar(e, { ...p, portada })
     }
+    /**
+     * Cambia una imagen por otra en TODO el proyecto.
+     *
+     * Es lo que aplica el ajuste de una imagen (recortarla, reducirla): sale
+     * una imagen nueva, con su id, y aqui se apunta a ella en todos los sitios
+     * donde se usaba la vieja. Los bytes de la vieja siguen en el almacen, asi
+     * que «Deshacer» la devuelve entera; la limpieza de imagenes huerfanas se
+     * las lleva la proxima vez que se abre el libro, cuando ya no hay historial.
+     *
+     * Vale para TODOS los papeles de una vez (ilustracion, apertura, lamina,
+     * portada) a proposito: el autor arreglo ESA imagen, y si la estaba usando
+     * en dos sitios espera verla arreglada en los dos.
+     */
+    case 'sustituirImagen': {
+      // Sin esto, sustituir una imagen que el libro ya no usa devolveria un
+      // proyecto nuevo igual al anterior y gastaria un paso de deshacer.
+      if (a.viejo === a.nuevo || !idsDeImagenes(p).has(a.viejo)) return e
+      const cambiarId = (id: string): string => (id === a.viejo ? a.nuevo : id)
+      const enBloques = (bloques: readonly Bloque[]): readonly Bloque[] =>
+        bloques.map((b) => (b.tipo === 'ilustracion' && b.imagenId === a.viejo ? { ...b, imagenId: a.nuevo } : b))
+      const portada: Partial<Record<RolPortada, string>> = {}
+      for (const [rol, id] of Object.entries(p.portada) as [RolPortada, string][]) portada[rol] = cambiarId(id)
+      return cambiar(e, {
+        ...p,
+        capitulos: p.capitulos.map((c) => ({
+          ...c,
+          aperturas: c.aperturas.map((x) => (x.imagenId === a.viejo ? { ...x, imagenId: a.nuevo } : x)),
+          bloques: enBloques(c.bloques),
+        })),
+        extras: p.extras.map((x) => ({ ...x, bloques: enBloques(x.bloques) })),
+        laminas: p.laminas.map(cambiarId),
+        portada,
+      })
+    }
     case 'anadirLamina':
       return p.laminas.includes(a.imagenId) ? e : cambiar(e, { ...p, laminas: [...p.laminas, a.imagenId] })
     case 'quitarLamina':
@@ -1021,6 +1060,16 @@ export function reducir(e: Estado, a: Accion): Estado {
       )
 
     // -- datos ----------------------------------------------------------------
+    case 'entregaKindle': {
+      const antes = p.kindle ?? ENTREGA_KINDLE_POR_DEFECTO
+      const kindle: EntregaKindle = { ...antes, ...a.cambios }
+      if (kindle.comprimir === antes.comprimir && kindle.calidad === antes.calidad && kindle.grises === antes.grises) {
+        return e
+      }
+      // Mover el deslizador se deshace de una vez, como escribir: cada pixel
+      // de recorrido no puede ser un paso de deshacer.
+      return cambiar(e, { ...p, kindle }, { grupo: 'entregaKindle', ahora: a.ahora })
+    }
     case 'dato': {
       // libro.txt es de una linea por clave: un salto de linea en la
       // descripcion partiria el archivo.

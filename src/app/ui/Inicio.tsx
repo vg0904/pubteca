@@ -1,15 +1,17 @@
 import { useRef, useState } from 'react'
-import { ui } from '../../i18n/es'
 import type { Copia } from '../abrir-copia'
 import type { ResumenProyecto } from '../almacen'
-import { haceDias } from '../formato'
+import { diasEntre } from '../formato'
 import { ConfirmarCopia } from './AbrirCopia'
 import { esArrastreDeArchivos } from './archivos'
+import { useTextos } from './contexto'
+import { SelectorIdioma } from './SelectorIdioma'
 
 export const ACEPTA_MANUSCRITO = '.docx,.md,.markdown,.txt,image/png,image/jpeg,.zip'
 
 /** El cuadro para pegar texto: el HTML del portapapeles trae la cursiva. */
 export function PegarTexto({ alUsar, alCancelar }: { alUsar: (texto: string, html: string) => void; alCancelar: () => void }) {
+  const ui = useTextos()
   const [texto, setTexto] = useState('')
   const html = useRef<{ texto: string; html: string } | null>(null)
   return (
@@ -77,12 +79,14 @@ export function PantallaInicio({
   alConfirmarCopia: () => void
   alCancelarCopia: () => void
 }) {
+  const ui = useTextos()
   const [encima, setEncima] = useState(false)
   const [pegando, setPegando] = useState(false)
   // La hora de cuando se abrio la pantalla basta para «modificado hace N días».
   const [ahora] = useState(() => Date.now())
   return (
     <main className="inicio">
+      <SelectorIdioma className="idioma-inicio" />
       <header>
         <h1>
           <img className="logo-app" src={`${import.meta.env.BASE_URL}icono-192.png`} alt="" width={56} height={56} />
@@ -159,7 +163,7 @@ export function PantallaInicio({
                 <div>
                   <strong>{p.titulo || ui.inicio.sinTitulo}</strong>
                   <span className="ayuda">
-                    {ui.inicio.capitulos(p.capitulos)} · {ui.inicio.modificado(haceDias(p.modificado, ahora))}
+                    {ui.inicio.capitulos(p.capitulos)} · {ui.inicio.modificado(ui.formato.haceDias(diasEntre(p.modificado, ahora)))}
                   </span>
                 </div>
                 <button type="button" className="boton-principal" onClick={() => alAbrir(p.id)} disabled={ocupado !== null}>

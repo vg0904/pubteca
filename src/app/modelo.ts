@@ -101,6 +101,35 @@ export interface Imagen {
 
 export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco'
 
+/**
+ * Como se entregan las imagenes a Kindle.
+ *
+ * Es una decision de ENTREGA, no de autor: no cambia el libro, cambia el
+ * archivo que recibe una tienda. Por eso vale para TODAS las imagenes de una
+ * vez y se elige en la pantalla de descarga, no imagen por imagen (eso, el
+ * encuadre y la resolucion, si es decision de autor: ver `imagen-ajuste.ts`).
+ *
+ * Apple Books no cobra por el tamano del archivo y admite hasta 2 GB, asi que
+ * alli van las imagenes TAL CUAL las subio el autor y no hay nada que elegir.
+ * Amazon cobra la entrega por MB sobre la regalia del 70 %, asi que a Kindle
+ * se le puede mandar una version mas ligera: JPEG con la calidad que el autor
+ * elija y, si quiere, en grises (casi todos los Kindle son de tinta
+ * electronica en gris, asi que ahi no se nota y pesa bastante menos).
+ */
+export interface EntregaKindle {
+  readonly comprimir: boolean
+  /** 1..100. La que se pasa al codificador JPEG. */
+  readonly calidad: number
+  readonly grises: boolean
+}
+
+/**
+ * Comprimir NO viene puesto: cambiar el archivo que se publica sin que el
+ * autor lo haya pedido no es cosa de una herramienta de publicacion. La
+ * pantalla de descarga lo ofrece con el ahorro delante.
+ */
+export const ENTREGA_KINDLE_POR_DEFECTO: EntregaKindle = { comprimir: false, calidad: 80, grises: false }
+
 export interface DatosLibro {
   readonly titulo: string
   readonly subtitulo: string
@@ -126,6 +155,11 @@ export interface Proyecto {
   readonly laminas: readonly string[]
   /** rol -> id de imagen. */
   readonly portada: Readonly<Partial<Record<RolPortada, string>>>
+  /**
+   * Como se entregan las imagenes a Kindle. Opcional: un libro guardado antes
+   * de que esto existiera no lo trae, y entonces manda el valor por defecto.
+   */
+  readonly kindle?: EntregaKindle
   /**
    * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
    * interfaz la ensena siempre: el navegador puede borrar lo que guarda.
@@ -160,6 +194,23 @@ export const DATOS_POR_DEFECTO: DatosLibro = {
   incluirContraportada: true,
   separadorDeEscena: '* * *',
   fuente: 'Baskerville',
+}
+
+/**
+ * Todas las imagenes que el proyecto usa, por id.
+ *
+ * Un sitio olvidado aqui es una imagen que se borra del almacen estando en uso
+ * (la limpieza de huerfanas se guia por esta lista) o que no entra al libro, asi
+ * que tiene su test con un proyecto que usa una imagen en cada papel posible.
+ */
+export function idsDeImagenes(p: Proyecto): Set<string> {
+  const ids = new Set<string>([...p.laminas, ...Object.values(p.portada)])
+  for (const c of p.capitulos) {
+    for (const a of c.aperturas) ids.add(a.imagenId)
+    for (const b of c.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
+  }
+  for (const x of p.extras) for (const b of x.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
+  return ids
 }
 
 /** Texto plano de una secuencia de tramos, sin marcas. */

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { ui } from '../../i18n/es'
 import {
   capituloActual,
   extraActual,
@@ -9,16 +8,17 @@ import {
   type Estado,
   type Seccion,
 } from '../estado'
-import { diasEntre, haceDias } from '../formato'
+import { diasEntre } from '../formato'
 import { crearId } from '../ids'
 import type { Capitulo, Proyecto } from '../modelo'
 import { nombreDeCapitulo } from '../revision'
-import { useAvisar, useDespacho } from './contexto'
+import { useAvisar, useDespacho, useTextos } from './contexto'
 import { EditorCapitulo } from './EditorCapitulo'
 import { Menu } from './Menu'
 import { PantallaDescargar } from './Descargar'
 import { PantallaExtras } from './Extras'
 import { PantallaPortada } from './Portada'
+import { SelectorIdioma } from './SelectorIdioma'
 
 export type EstadoGuardado = 'guardado' | 'guardando' | 'error' | 'sinAlmacen' | 'conflicto'
 
@@ -40,6 +40,7 @@ function BarraSuperior({
   alGuardarCopia: () => void
   copia: 'lista' | 'preparando' | null
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   // La hora de cuando se abrio el libro. Una copia guardada despues cuenta
   // como «hoy» (diasEntre no baja de cero).
@@ -65,6 +66,7 @@ function BarraSuperior({
                 : ui.barra.guardado}
       </span>
       <span className="barra-espacio" />
+      <SelectorIdioma />
       <span className="deshacer-rehacer">
         <button type="button" className="boton-icono" disabled={!deshacer} title={ui.barra.deshacer} aria-label={ui.barra.deshacer} onClick={() => despachar({ tipo: 'deshacer' })}>
           ↶
@@ -78,7 +80,7 @@ function BarraSuperior({
           {copia === 'preparando' ? ui.barra.preparandoCopia : ui.barra.copia}
         </button>
         <span className="copia-cuando" title={vieja ? ui.barra.copiaVieja : undefined}>
-          {ultima === undefined ? ui.barra.copiaNunca : ui.barra.copiaHace(haceDias(ultima, ahora))}
+          {ultima === undefined ? ui.barra.copiaNunca : ui.barra.copiaHace(ui.formato.haceDias(diasEntre(ultima, ahora)))}
         </span>
       </div>
     </header>
@@ -86,6 +88,7 @@ function BarraSuperior({
 }
 
 function ListaCapitulos({ capitulos, activo, seccion }: { capitulos: readonly Capitulo[]; activo: string | null; seccion: Seccion }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const avisar = useAvisar()
   const [arrastrado, setArrastrado] = useState<string | null>(null)
@@ -178,6 +181,7 @@ export function PantallaLibro({
   copia: 'lista' | 'preparando' | null
   alImportar: () => void
 }) {
+  const ui = useTextos()
   const despachar = useDespacho()
   const p = estado.proyecto as Proyecto
   const capitulo = capituloActual(estado)
