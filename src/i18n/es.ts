@@ -33,6 +33,19 @@ export const ui = {
     cargando: 'Abriendo…',
   },
 
+  vistaPrevia: {
+    titulo: 'Vista previa',
+    ayuda:
+      'Es el EPUB de verdad, el mismo que se descarga, página a página. Cada lector lo pinta a su manera: el tamaño de la letra y los márgenes los elige quien lee.',
+    tienda: 'Tienda',
+    tema: 'Fondo',
+    temas: { claro: 'Claro', sepia: 'Sepia', oscuro: 'Oscuro' },
+    pagina: (i: number, n: number) => `Página ${i} de ${n}`,
+    anterior: '← Anterior',
+    siguiente: 'Siguiente →',
+    marco: (titulo: string) => `Vista previa: ${titulo}`,
+  },
+
   copia: {
     abrir: 'Abrir copia (.zip)',
     abrirDetalle:

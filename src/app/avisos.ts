@@ -12,7 +12,6 @@
  * en `mensajes`, para quien quiera el detalle. Un mensaje que no se reconoce
  * no se pierde: forma su propio grupo.
  */
-import type { Diagnosticos } from '../core/mensajes'
 
 export type Nivel = 'error' | 'aviso' | 'nota'
 
@@ -83,7 +82,14 @@ function elementosDe(clave: ClaveGrupo, mensaje: string): string[] {
   return i === -1 ? [] : [mensaje.slice(0, i)]
 }
 
-export function agrupar(dg: Pick<Diagnosticos, 'errores' | 'avisos' | 'notas'>): Grupo[] {
+/** Los mensajes del motor, en el hilo que sea: solo se leen. */
+export interface MensajesMotor {
+  readonly errores: readonly string[]
+  readonly avisos: readonly string[]
+  readonly notas: readonly string[]
+}
+
+export function agrupar(dg: MensajesMotor): Grupo[] {
   const grupos: { clave: ClaveGrupo; nivel: Nivel; elementos: string[]; mensajes: string[] }[] = []
   const niveles: [Nivel, readonly string[]][] = [
     ['error', dg.errores],

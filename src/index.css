@@ -744,3 +744,15 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .aviso-breve button { background: transparent; color: inherit; border-color: color-mix(in srgb, var(--fondo) 50%, transparent); padding: 0.25rem 0.6rem; }
 .aviso-breve .cerrar { border: 0; font-size: 1.1rem; }
 .aviso-error { background: var(--rojo); color: #fff; }
+
+/* Vista previa del EPUB */
+.vista-previa { margin-top: 1.6rem; }
+.vista-previa h2 { margin-bottom: 0.2rem; }
+.vista-controles { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.6rem 1rem; margin: 0.8rem 0; }
+.vista-controles label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--suave); }
+.vista-controles .vista-pagina { flex: 1 1 14rem; }
+.vista-controles .vista-pagina select { width: 100%; }
+.vista-pasos { display: flex; gap: 0.4rem; }
+.vista-marco { display: block; width: 100%; max-width: 30rem; height: min(72vh, 42rem); margin: 0 auto; border: 1px solid var(--borde-fuerte); border-radius: 14px; background: #fff; }
+.vista-marco.tema-sepia { background: #f5eddc; }
+.vista-marco.tema-oscuro { background: #121212; }

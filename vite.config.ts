@@ -13,6 +13,9 @@ export default defineConfig({
     // Suelo de navegador: Safari 16.4 (OffscreenCanvas.convertToBlob, DecompressionStream)
     target: ['es2022', 'safari16.4'],
   },
+  // El hilo del motor (src/app/motor.worker.ts) como modulo: Safari los abre
+  // desde la 15, y asi puede trocearse igual que el resto.
+  worker: { format: 'es' },
   test: {
     // El core es TS puro y sincrono: corre en node, sin navegador.
     environment: 'node',

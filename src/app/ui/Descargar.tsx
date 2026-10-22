@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ui } from '../../i18n/es'
-import { reporte, TARIFA_POR_MB } from '../../core/reporte'
+import { TARIFA_POR_MB } from '../../core/reporte'
 import { agrupar, cuentas, type Grupo } from '../avisos'
 import { descargar } from '../copia'
 import type { Estado } from '../estado'
@@ -9,6 +9,7 @@ import { generarLibros, type Generado } from '../generar'
 import type { DatosLibro, Proyecto } from '../modelo'
 import { bloquea, cambioDeIdentidad, nombresLegibles, revisar, type Problema } from '../revision'
 import { useAvisar, useDespacho, useMedios } from './contexto'
+import { VistaPrevia } from './VistaPrevia'
 
 /** Solo los idiomas en que el libro sabe escribir sus propios textos. */
 const IDIOMAS = Object.entries(ui.descargar.idiomas)
@@ -161,7 +162,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
     }
   }
 
-  const c = generado?.g.construccion
+  const c = generado?.g.motor
   const grupos = useMemo(() => (c ? agrupar(c.diagnosticos) : []), [c])
   const nombres = useMemo(
     () => (generado ? nombresLegibles(p, estado.imagenes, generado.g.exportado.nombres) : new Map<string, string>()),
@@ -261,6 +262,8 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
               </div>
               <p className="ayuda">{ui.descargar.tarifaAyuda}</p>
               {generado?.g.sinFuentes && <p className="alerta nivel-nota">{ui.descargar.sinFuentes}</p>}
+              {/* Desactualizada no: enseñaria un libro que ya no es el que hay. */}
+              {!viejo && <VistaPrevia resultados={c.resultados} />}
             </>
           )}
           {(grupos.length > 0 || (generado?.g.exportado.avisos.length ?? 0) > 0) && (
@@ -290,7 +293,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
               type="button"
               className="enlace"
               onClick={() =>
-                descargar(new TextEncoder().encode(reporte(generado.g.construccion, generado.ahora)), 'reporte.txt', 'text/plain;charset=utf-8')
+                descargar(new TextEncoder().encode(generado.g.motor.reporte), 'reporte.txt', 'text/plain;charset=utf-8')
               }
             >
               {ui.descargar.reporte}
