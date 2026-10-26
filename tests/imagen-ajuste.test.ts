@@ -11,7 +11,11 @@ import { MAX_PIXELES } from '../src/core/imagen-validacion'
 import {
   ASPECTOS,
   ASPECTO_RECOMENDADO,
+  LADO_LARGO_MINIMO,
   LADO_LARGO_RECOMENDADO,
+  ladoLargo,
+  rangoDeResolucion,
+  tamanoPorResolucion,
   bppJpeg,
   bppMedido,
   bppPng,
@@ -433,5 +437,60 @@ describe('las piezas puras del lienzo', () => {
   it('cada formato tiene su tipo MIME', () => {
     expect(mediaDe('png')).toBe('image/png')
     expect(mediaDe('jpeg')).toBe('image/jpeg')
+  })
+})
+
+/**
+ * El deslizador de resolucion. Antes la recomendacion solo se decia en texto
+ * («Recomendado: 1391 x 2087 px») y no habia forma de pedirla ni de bajar el
+ * tamaño sin escribir dos numeros a mano.
+ */
+describe('el deslizador de resolucion', () => {
+  const r = (ancho: number, alto: number) => ({ x: 0, y: 0, ancho, alto })
+
+  it('el tope es el trozo encuadrado: el deslizador no puede emborronar', () => {
+    // reparoDe marca como error pedir mas pixeles de los encuadrados, asi que
+    // el deslizador no debe poder llegar ahi.
+    expect(rangoDeResolucion(r(1600, 2400)).max).toBe(2400)
+    expect(rangoDeResolucion(r(3000, 1000)).max).toBe(3000)
+  })
+
+  it('con una imagen diminuta el rango no se da la vuelta', () => {
+    const g = rangoDeResolucion(r(120, 90))
+    expect(g.min).toBeLessThanOrEqual(g.max)
+    expect(g.max).toBe(LADO_LARGO_MINIMO)
+  })
+
+  it('mueve los dos lados a la vez, con la proporcion del encuadre', () => {
+    expect(tamanoPorResolucion(r(1600, 2400), 1200)).toEqual({ ancho: 800, alto: 1200 })
+    expect(tamanoPorResolucion(r(2400, 1600), 1200)).toEqual({ ancho: 1200, alto: 800 })
+  })
+
+  it('se queda dentro del rango aunque le pidas cualquier cosa', () => {
+    const encuadre = r(1600, 2400)
+    const { min, max } = rangoDeResolucion(encuadre)
+    for (const pedido of [-50, 0, 10, 999_999]) {
+      const m = tamanoPorResolucion(encuadre, pedido)
+      const largo = ladoLargo(m.ancho, m.alto)
+      expect(largo).toBeGreaterThanOrEqual(min)
+      expect(largo).toBeLessThanOrEqual(max)
+    }
+  })
+
+  it('nunca pasa del tope de Apple Books, ni en el maximo', () => {
+    // Un encuadre cuadrado de 2400 son 5,76 millones y Apple admite 5,6.
+    const encuadre = r(2400, 2400)
+    const m = tamanoPorResolucion(encuadre, rangoDeResolucion(encuadre).max)
+    expect(m.ancho * m.alto).toBeLessThanOrEqual(MAX_PIXELES)
+  })
+
+  it('con un recorte vacio no revienta', () => {
+    expect(tamanoPorResolucion(r(0, 0), 1200)).toEqual({ ancho: 0, alto: 0 })
+  })
+
+  it('el lado largo es el mayor, venga como venga', () => {
+    expect(ladoLargo(10, 30)).toBe(30)
+    expect(ladoLargo(30, 10)).toBe(30)
+    expect(ladoLargo(LADO_LARGO_RECOMENDADO, 10)).toBe(LADO_LARGO_RECOMENDADO)
   })
 })

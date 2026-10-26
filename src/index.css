@@ -823,6 +823,9 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
    frase larga estira la columna y los mandos se van abajo. */
 .ajustar-vista { flex: 0 0 auto; max-width: 320px; }
 .ajustar-mandos { flex: 1 1 18rem; min-width: 15rem; display: flex; flex-direction: column; gap: 0.7rem; }
+/* El panel de la pestaña que no toca. Hace falta decirlo: `display: flex` de
+   la regla de arriba le gana al `[hidden] { display: none }` del navegador. */
+.ajustar-mandos[hidden] { display: none; }
 
 /* El marco es el hueco: dentro se arrastra el dibujo entero. */
 .encuadre {
@@ -855,6 +858,29 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 
 /* «Arreglar», dentro del propio aviso de la tarjeta. */
 .avisos-imagen .arreglar { margin-left: 0.35rem; white-space: nowrap; }
+
+/* Las pestañas del cuadro de ajustar: una por tienda. El encuadre se queda
+   fuera de ellas, a la izquierda, porque vale para las dos. */
+.ajustar-pestanas { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--borde); margin: 0.6rem 0 0.9rem; }
+.ajustar-pestanas .pestana {
+  appearance: none;
+  border: 0; background: none; color: var(--suave);
+  font-family: var(--interfaz); font-size: 0.9rem; font-weight: 600;
+  padding: 0.45rem 0.8rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.ajustar-pestanas .pestana:hover { color: var(--texto); }
+.ajustar-pestanas .pestana.activa { color: var(--texto); border-bottom-color: var(--acento); }
+.pestana-marca {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  background: var(--azul-fondo); color: var(--azul);
+  border-radius: 999px; padding: 0.1rem 0.4rem;
+}
+.ajustar-sugerido { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; }
+.ajustar-sugerido .ayuda { margin: 0; }
 
 @media (max-width: 40rem) {
   .ajustar { padding: 0.9rem; }

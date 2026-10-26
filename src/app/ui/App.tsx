@@ -19,7 +19,7 @@ import { Guardador } from '../guardado'
 import { crearId } from '../ids'
 import { desdeDialecto, desdeParrafos, desdePropuesta, resultadoImportacion, type ImagenImportada } from '../importacion'
 import { importarDocx } from '../importar/docx'
-import { idsDeImagenes, type Imagen, type Proyecto } from '../modelo'
+import { ENTREGA_KINDLE_POR_DEFECTO, idsDeImagenes, type Imagen, type Proyecto } from '../modelo'
 import { lineasDeHtml, lineasDeTexto } from '../pegar'
 import { Repositorio } from '../repositorio'
 import { decodifica, inspeccionarArchivo } from '../subir'
@@ -550,6 +550,8 @@ export default function App() {
           {ajustando && (
             <AjustarImagen
               imagen={ajustando}
+              kindleGeneral={estado.proyecto?.kindle ?? ENTREGA_KINDLE_POR_DEFECTO}
+              kindlePropio={estado.proyecto?.kindlePorImagen?.[ajustando.id]}
               alHecho={(nueva) => despachar({ tipo: 'sustituirImagen', viejo: ajustando.id, nuevo: nueva.id })}
               alCerrar={() => setAjustando(null)}
             />

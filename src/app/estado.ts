@@ -20,6 +20,7 @@
 import { nombreSeguro } from '../core/texto'
 import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
+import { KINDLE_PROPIO_POR_DEFECTO, type KindlePropio } from './imagen-ajuste'
 import {
   DATOS_POR_DEFECTO,
   ENTREGA_KINDLE_POR_DEFECTO,
@@ -215,6 +216,14 @@ export type Accion =
   // datos del libro
   | { readonly tipo: 'dato'; readonly campo: keyof DatosLibro; readonly valor: string | boolean; readonly ahora: number }
   | { readonly tipo: 'entregaKindle'; readonly cambios: Partial<EntregaKindle>; readonly ahora: number }
+  // El ajuste propio de UNA imagen para Kindle. `cambios` a null lo quita y
+  // la imagen vuelve a seguir el ajuste general.
+  | {
+      readonly tipo: 'kindleDeImagen'
+      readonly imagen: string
+      readonly cambios: Partial<KindlePropio> | null
+      readonly ahora: number
+    }
   | { readonly tipo: 'descargado'; readonly uid: string; readonly cuando: number }
   | { readonly tipo: 'copiaGuardada'; readonly cuando: number }
   // historia
@@ -1069,6 +1078,23 @@ export function reducir(e: Estado, a: Accion): Estado {
       // Mover el deslizador se deshace de una vez, como escribir: cada pixel
       // de recorrido no puede ser un paso de deshacer.
       return cambiar(e, { ...p, kindle }, { grupo: 'entregaKindle', ahora: a.ahora })
+    }
+    case 'kindleDeImagen': {
+      const propios = { ...(p.kindlePorImagen ?? {}) }
+      const antes = propios[a.imagen]
+      if (a.cambios === null) {
+        if (antes === undefined) return e
+        delete propios[a.imagen]
+      } else {
+        const nuevo: KindlePropio = { ...KINDLE_PROPIO_POR_DEFECTO, ...antes, ...a.cambios }
+        if (antes && antes.calidad === nuevo.calidad && antes.grises === nuevo.grises && antes.ladoLargo === nuevo.ladoLargo) {
+          return e
+        }
+        propios[a.imagen] = nuevo
+      }
+      // Como el deslizador de la entrega general: el recorrido entero es un
+      // solo paso de deshacer, y cada imagen el suyo.
+      return cambiar(e, { ...p, kindlePorImagen: propios }, { grupo: `kindleDeImagen:${a.imagen}`, ahora: a.ahora })
     }
     case 'dato': {
       // libro.txt es de una linea por clave: un salto de linea en la
