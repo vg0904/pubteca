@@ -887,6 +887,13 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
   .ajustar-cuerpo { gap: 0.9rem; }
 }
 
+/* El recordatorio de antes de descargar. Recuerda, NO bloquea: por eso lleva
+   el mismo papel que el resto y no el rojo de un error. */
+.antes-de-descargar { border: 1px solid var(--borde); border-radius: 12px; padding: 1rem 1.1rem; background: var(--papel); }
+.antes-de-descargar h2 { margin-top: 0; }
+.antes-de-descargar .avisos-imagen { margin: 0.6rem 0 0.9rem; font-size: 0.88rem; }
+.antes-de-descargar .avisos-imagen li { margin-bottom: 0.45rem; }
+
 /* Las imagenes en cada tienda, en la pantalla de descarga. */
 .por-tienda { border: 1px solid var(--borde); border-radius: 12px; padding: 1rem 1.1rem; background: var(--papel); }
 .por-tienda h2 { margin-top: 0; }

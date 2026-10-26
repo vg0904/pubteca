@@ -397,6 +397,24 @@ export const ui = {
     afectadas: (n: number) => (n === 1 ? '1 afectada' : `${n} afectadas`),
     reporte: 'Descargar el reporte (.txt)',
 
+    // Lo que les queda a las imagenes, antes de preparar los EPUB. RECUERDA,
+    // NO BLOQUEA: el libro se descarga igual. Ver ui/Descargar.tsx.
+    antes: {
+      titulo: 'Antes de descargar',
+      ayuda:
+        'Esto es lo que les queda a tus imágenes. Los avisos están también en la tarjeta de cada una, pero ahí hay que ir capítulo por capítulo, y después de subir el libro a KDP ya no hay vuelta atrás.',
+      cuales: (n: number, lista: string) => (n === 1 ? lista : `${n}: ${lista}`),
+      conComprimir: 'Se arregla con «Comprimirlas en JPEG para Kindle», aquí arriba.',
+      arreglar: (n: number) => (n === 1 ? 'Arreglarlo (1 imagen)' : `Arreglarlas todas (${n})`),
+      soloComprimir: 'Comprimirlas en JPEG para Kindle',
+      comprimirPuesto: 'Listo: las imágenes de Kindle se comprimirán al preparar los EPUB.',
+      arreglando: 'Arreglando…',
+      hecho: (n: number) => (n === 1 ? 'Arreglada 1 imagen.' : `Arregladas ${n} imágenes.`),
+      nadaQueHacer: 'No había nada que arreglar sin recortar el dibujo.',
+      noBloquea:
+        'Puedes descargar igual: nada de esto impide publicar. Las imágenes grandes solo encarecen la entrega en Amazon y se ven peor en pantallas grandes. Lo que se arregla recortando no se toca aquí: eso se decide en cada dibujo.',
+    },
+
     // Decision de ENTREGA, no de autor: va aqui y vale para todas las imagenes
     // del libro, para no configurarlas una por una.
     imagenes: {

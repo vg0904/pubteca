@@ -16,9 +16,15 @@ import {
   bloquea,
   cambioDeIdentidad,
   etiquetaReconocida,
+  imagenesDelLote,
   nombresLegibles,
+  pendientesDeImagenes,
+  pendientesDeKindle,
   revisar,
+  rolesDeImagenes,
 } from '../src/app/revision'
+import { ARREGLABLES_EN_LOTE, ajusteEnLote } from '../src/app/imagen-ajuste'
+import { MAX_PIXELES } from '../src/core/imagen-validacion'
 import { identificador } from '../src/core/identificador'
 
 /**
@@ -222,5 +228,123 @@ describe('a que tienda le importa cada aviso', () => {
   it('sin avisos, las dos tiendas quedan vacias: la tarjeta dira «lista»', () => {
     const r = porTienda([])
     expect(r).toEqual({ apple: [], kindle: [] })
+  })
+})
+
+/**
+ * El recordatorio de antes de descargar. Los avisos de imagen ya salian en la
+ * tarjeta de cada una, pero hay que ir capitulo por capitulo a verlos, y
+ * despues de subir el libro a KDP ya no hay vuelta atras.
+ */
+describe('lo que les queda a las imagenes antes de descargar', () => {
+  it('cada imagen se revisa con su PAPEL, no todas como ilustraciones', () => {
+    // revisarImagen revisa distinto segun el papel: un logo no se mira por
+    // CMYK ni por peso, y la portada tiene sus propios minimos.
+    const { p } = libroIlustrado(1)
+    const conPortada: Proyecto = {
+      ...p,
+      laminas: ['img-lam'],
+      portada: { portada: 'img-port', contraportada: 'img-contra', logo: 'img-logo', logoBlanco: 'img-logob' },
+    }
+    const roles = rolesDeImagenes(conPortada)
+    expect(roles.get('img-port')).toBe('portada')
+    expect(roles.get('img-contra')).toBe('portada')
+    expect(roles.get('img-logo')).toBe('logo')
+    expect(roles.get('img-logob')).toBe('logo')
+    expect(roles.get('img-lam')).toBe('ilustracion')
+    expect(roles.get('img-0')).toBe('ilustracion')
+  })
+
+  it('una imagen en dos papeles se queda con el primero, como en el motor', () => {
+    const { p } = libroIlustrado(1)
+    // La misma imagen como logo Y como ilustracion de un capitulo.
+    const doble: Proyecto = { ...p, portada: { logo: 'img-0' } }
+    expect(rolesDeImagenes(doble).get('img-0')).toBe('logo')
+  })
+
+  /**
+   * Un libro cuyas imagenes traen las banderas de la inspeccion puestas: la
+   * tarjeta y este recordatorio avisan ANTES de generar, y para eso leen lo que
+   * `subir.ts` guardo al mirar los bytes, no los bytes otra vez.
+   */
+  function conBanderas(banderas: readonly Partial<Imagen>[]): { p: Proyecto; imagenes: Map<string, Imagen> } {
+    const { p } = libroIlustrado(banderas.length)
+    const imagenes = new Map<string, Imagen>(
+      banderas.map((x, i) => [
+        `img-${i}`,
+        { id: `img-${i}`, nombreOriginal: `dibujo-${i}.png`, tipo: 'png', bytes: 1000, ancho: 1600, alto: 2400, ...x },
+      ]),
+    )
+    return { p, imagenes }
+  }
+
+  it('dice que le pasa a cada imagen, agrupado y con sus nombres', () => {
+    const { p, imagenes } = conBanderas([{ alfa: true }, { p3: true }, { alfa: true }, { p3: true }])
+    const r = pendientesDeImagenes(p, imagenes)
+    expect(r.find((x) => x.clave === 'transparencia')?.imagenes).toEqual(['img-0', 'img-2'])
+    expect(r.find((x) => x.clave === 'p3')?.imagenes).toEqual(['img-1', 'img-3'])
+  })
+
+  it('cada renglon sabe a que tiendas les importa', () => {
+    const { p, imagenes } = conBanderas([{ alfa: true }, { p3: true }])
+    const r = pendientesDeImagenes(p, imagenes)
+    expect(r.find((x) => x.clave === 'transparencia')?.tiendas).toEqual(['kindle'])
+    expect(r.find((x) => x.clave === 'p3')?.tiendas).toEqual(['apple', 'kindle'])
+  })
+
+  it('sin imagenes no hay nada que recordar: la seccion no sale', () => {
+    const { p, imagenes } = libroIlustrado(0)
+    expect(pendientesDeImagenes(p, imagenes)).toEqual([])
+  })
+
+  it('una imagen que falta del almacen no cuenta ni rompe', () => {
+    const { p } = libroIlustrado(2)
+    expect(pendientesDeImagenes(p, new Map())).toEqual([])
+  })
+
+  it('el lote NO toca lo que se arregla recortando: en lote cortaria cabezas', () => {
+    // proporcion y horizontal se arreglan eligiendo que parte del dibujo se
+    // pierde, y eso lo decide el autor mirando la imagen.
+    expect(ARREGLABLES_EN_LOTE).not.toContain('proporcion')
+    expect(ARREGLABLES_EN_LOTE).not.toContain('horizontal')
+    // Ni aplana la transparencia: el fondo de un dibujo no tiene por que ser blanco.
+    expect(ARREGLABLES_EN_LOTE).not.toContain('transparencia')
+  })
+
+  it('lo que solo le pasa a Kindle es lo que contesta la casilla de comprimir', () => {
+    const { p, imagenes } = conBanderas([{ alfa: true, bytes: 3_000_000 }, { p3: true }])
+    const soloKindle = pendientesDeKindle(pendientesDeImagenes(p, imagenes))
+    // La transparencia (el JPEG no la guarda) y el peso (la tarifa es por MB).
+    expect(soloKindle.map((x) => x.clave).sort()).toEqual(['peso', 'transparencia'])
+    // El P3 NO: comprimir para Kindle no arregla el color del EPUB de Apple.
+    expect(soloKindle.map((x) => x.clave)).not.toContain('p3')
+  })
+
+  it('el lote solo lista las imagenes que de verdad va a tocar, sin repetir', () => {
+    // La 1 y la 3 estan en P3 Y pesan de mas: dos renglones, una sola imagen
+    // cada una en la lista del lote. La 0 solo tiene transparencia, que el
+    // lote no toca.
+    const { p, imagenes } = conBanderas([
+      { alfa: true },
+      { p3: true, bytes: 3_000_000 },
+      { alfa: true },
+      { p3: true, bytes: 3_000_000 },
+    ])
+    const r = pendientesDeImagenes(p, imagenes)
+    expect(r.filter((x) => x.enLote).map((x) => x.clave).sort()).toEqual(['p3', 'peso'])
+    expect(imagenesDelLote(r)).toEqual(['img-1', 'img-3'])
+  })
+
+  it('el ajuste del lote no recorta y baja del tope de Apple Books', () => {
+    const a = ajusteEnLote({ ancho: 4000, alto: 4000, tipo: 'png', alfa: false })
+    expect(a.recorte).toEqual({ x: 0, y: 0, ancho: 4000, alto: 4000 })
+    expect(a.ancho * a.alto).toBeLessThanOrEqual(MAX_PIXELES)
+    expect(a.formato).toBe('png')
+  })
+
+  it('el ajuste del lote conserva el alfa: no aplana el logo de nadie', () => {
+    expect(ajusteEnLote({ ancho: 4000, alto: 4000, tipo: 'png', alfa: true }).conservarAlfa).toBe(true)
+    // Un JPEG nunca lleva alfa, pase lo que pase.
+    expect(ajusteEnLote({ ancho: 4000, alto: 4000, tipo: 'jpeg', alfa: true }).conservarAlfa).toBe(false)
   })
 })

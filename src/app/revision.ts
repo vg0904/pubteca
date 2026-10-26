@@ -10,7 +10,8 @@
 import { identificador } from '../core/identificador'
 import { revisarImagen, type RolImagen } from '../core/imagen-validacion'
 import { Diagnosticos } from '../core/mensajes'
-import { agrupar, type Grupo } from './avisos'
+import { agrupar, tiendasDe, type Grupo, type Nivel, type Tienda } from './avisos'
+import { arreglableEnLote } from './imagen-ajuste'
 import { partirCabecera } from './importar/dialecto'
 import { capituloConTexto } from './estado'
 import { textoDeTramos, type Capitulo, type Extra, type Imagen, type Proyecto } from './modelo'
@@ -194,4 +195,113 @@ export function avisosDeImagen(imagen: Imagen, rol: RolImagen): Grupo[] {
     dg,
   )
   return agrupar(dg)
+}
+
+// ---------------------------------------------------------------------------
+// Lo que queda por hacerle a las imagenes antes de descargar
+// ---------------------------------------------------------------------------
+
+/**
+ * El papel con el que cada imagen entra al libro.
+ *
+ * Importa porque `revisarImagen` revisa distinto segun el papel: un logo no se
+ * mira por CMYK ni por peso, y una portada tiene sus propios minimos. Revisar
+ * la portada como si fuera una ilustracion le sacaria avisos que el motor no
+ * va a dar.
+ *
+ * Una imagen usada en dos papeles se queda con el PRIMERO de esta lista, que
+ * es el orden en que el motor la registra.
+ */
+export function rolesDeImagenes(p: Proyecto): Map<string, RolImagen> {
+  const r = new Map<string, RolImagen>()
+  const poner = (id: string, rol: RolImagen): void => {
+    if (!r.has(id)) r.set(id, rol)
+  }
+  if (p.portada.portada !== undefined) poner(p.portada.portada, 'portada')
+  if (p.portada.contraportada !== undefined) poner(p.portada.contraportada, 'portada')
+  if (p.portada.logo !== undefined) poner(p.portada.logo, 'logo')
+  if (p.portada.logoBlanco !== undefined) poner(p.portada.logoBlanco, 'logo')
+  for (const id of p.laminas) poner(id, 'ilustracion')
+  for (const c of p.capitulos) {
+    for (const a of c.aperturas) poner(a.imagenId, 'ilustracion')
+    for (const b of c.bloques) if (b.tipo === 'ilustracion') poner(b.imagenId, 'ilustracion')
+  }
+  for (const x of p.extras) {
+    for (const b of x.bloques) if (b.tipo === 'ilustracion') poner(b.imagenId, 'ilustracion')
+  }
+  return r
+}
+
+/** Un grupo de avisos de imagen con las imagenes que lo tienen. */
+export interface Pendiente {
+  readonly clave: Grupo['clave']
+  readonly nivel: Nivel
+  /** A que tiendas les importa. */
+  readonly tiendas: readonly Tienda[]
+  /** Los ids de las afectadas, en el orden del libro y sin repetir. */
+  readonly imagenes: readonly string[]
+  /** Si «Arreglarlas todas» puede con esto sin tocar el dibujo. */
+  readonly enLote: boolean
+}
+
+/**
+ * Lo que les queda por hacer a las imagenes del libro, agrupado.
+ *
+ * Es lo que la pantalla de descarga recuerda ANTES de preparar los EPUB. No
+ * bloquea nada: un libro con imagenes grandes se publica igual, solo que mas
+ * caro de entregar y peor de ver. Lo que no se puede es descubrirlo despues de
+ * subirlo a KDP.
+ *
+ * Es el mismo codigo que la tarjeta de cada imagen (`avisosDeImagen`, que a su
+ * vez es el del motor), solo que de todas a la vez: asi no hay dos opiniones
+ * sobre si una imagen esta bien.
+ */
+export function pendientesDeImagenes(
+  p: Proyecto,
+  imagenes: ReadonlyMap<string, Imagen>,
+): Pendiente[] {
+  const grupos = new Map<Grupo['clave'], { nivel: Nivel; imagenes: string[] }>()
+  for (const [id, rol] of rolesDeImagenes(p)) {
+    const imagen = imagenes.get(id)
+    if (!imagen) continue
+    for (const g of avisosDeImagen(imagen, rol)) {
+      // «otro» no se agrupa ni se sabe arreglar: no es de esta pantalla.
+      if (g.clave === 'otro') continue
+      const ya = grupos.get(g.clave) ?? { nivel: g.nivel, imagenes: [] }
+      if (!grupos.has(g.clave)) grupos.set(g.clave, ya)
+      if (!ya.imagenes.includes(id)) ya.imagenes.push(id)
+    }
+  }
+  return [...grupos].map(([clave, x]) => ({
+    clave,
+    nivel: x.nivel,
+    tiendas: tiendasDe(clave),
+    imagenes: x.imagenes,
+    enLote: arreglableEnLote(clave),
+  }))
+}
+
+/** Las imagenes que «Arreglarlas todas» va a tocar, sin repetir. */
+export function imagenesDelLote(pendientes: readonly Pendiente[]): string[] {
+  const ids: string[] = []
+  for (const x of pendientes) {
+    if (!x.enLote) continue
+    for (const id of x.imagenes) if (!ids.includes(id)) ids.push(id)
+  }
+  return ids
+}
+
+/**
+ * Lo que queda pendiente SOLO para Kindle.
+ *
+ * Son los que «Comprimirlas en JPEG para Kindle» contesta por si sola, y la
+ * casilla esta en esta misma pantalla: la transparencia (el JPEG no la guarda,
+ * que es lo que Kindle hace de todos modos) y el peso (la tarifa de Amazon se
+ * cobra por MB, y comprimir es justo eso).
+ *
+ * Lo que ademas le pasa a Apple Books NO esta aqui: comprimir para Kindle no
+ * arregla un color en P3 ni una imagen borrosa en el otro EPUB.
+ */
+export function pendientesDeKindle(pendientes: readonly Pendiente[]): Pendiente[] {
+  return pendientes.filter((x) => x.tiendas.length === 1 && x.tiendas[0] === 'kindle')
 }
