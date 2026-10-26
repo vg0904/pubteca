@@ -11,6 +11,7 @@
  * silencio, que es el fallo mas caro de esta herramienta: ver una cosa en la
  * app y otra en su Kindle.
  */
+import type { KindlePropio } from './imagen-ajuste'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -160,6 +161,21 @@ export interface Proyecto {
    * de que esto existiera no lo trae, y entonces manda el valor por defecto.
    */
   readonly kindle?: EntregaKindle
+  /**
+   * id de imagen -> el ajuste PROPIO que esa imagen tiene para Kindle, puesto
+   * desde la pestaña Kindle del cuadro de ajustar.
+   *
+   * Solo estan las que el autor toco: la que no aparece sigue lo que diga
+   * `kindle`, que es lo normal. Un ajuste propio manda sobre el general, aunque
+   * el general tenga comprimir apagado: si el autor entro a esta imagen y le
+   * dijo algo, es que lo queria.
+   *
+   * No guarda una segunda IMAGEN: guarda lo que hay que hacerle a la unica que
+   * hay, y la version de Kindle se codifica al generar (ver `entrega.ts`). Por
+   * eso el almacen sigue con un blob por imagen y la copia (.zip) con un
+   * archivo por imagen.
+   */
+  readonly kindlePorImagen?: Readonly<Record<string, KindlePropio>>
   /**
    * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
    * interfaz la ensena siempre: el navegador puede borrar lo que guarda.

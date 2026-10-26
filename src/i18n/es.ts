@@ -232,6 +232,24 @@ export const ui = {
   ajustar: {
     abrir: 'Ajustar la imagen…',
     arreglar: 'Arreglar',
+    pestanas: 'Para qué tienda',
+    resolucion: 'Resolución',
+    listo: 'Listo',
+    // La pestaña de Kindle no ajusta OTRA imagen: dice que hacerle a esta al
+    // entregarla. Ver la cabecera de ui/AjustarImagen.tsx.
+    kindle: {
+      marca: 'propio',
+      titulo: 'Solo para esta imagen',
+      ayuda:
+        'El encuadre es el mismo en las dos tiendas: es tu dibujo. Lo que cambia es cuánto puede pesar, porque Amazon cobra la entrega por MB y Apple Books no cobra por el tamaño del archivo.',
+      propio: 'Dar a esta imagen un ajuste propio para Kindle',
+      general: (calidad: number, grises: boolean) =>
+        `Sigue lo que pusiste en «Descargar EPUB»: JPEG de calidad ${calidad}${grises ? ', en blanco y negro' : ''}.`,
+      sinComprimir: 'Ahora mismo Kindle recibe esta imagen tal cual, como Apple Books. Se cambia para todas en «Descargar EPUB».',
+      resolucionAyuda: (ancho: number, alto: number) => `A Kindle le llegará en ${ancho} × ${alto} px.`,
+      volverAlGeneral: 'Volver al ajuste de todas',
+      cuando: 'Esto se guarda al tocarlo. La versión de Kindle se prepara al descargar los EPUB.',
+    },
     titulo: 'Ajustar la imagen',
     ayuda: 'Se guarda como una imagen nueva; la que subiste no se toca, y «Deshacer» la devuelve.',
     original: (ancho: number, alto: number, peso: string) => `Ahora: ${ancho} × ${alto} px · ${peso}`,

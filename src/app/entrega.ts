@@ -23,7 +23,7 @@
  * sobre que muestra se estima el peso. Codificar lo hace quien llame, que es
  * el unico que necesita un lienzo.
  */
-import type { Ajuste } from './imagen-ajuste'
+import { tamanoPorResolucion, type Ajuste, type KindlePropio } from './imagen-ajuste'
 import { ENTREGA_KINDLE_POR_DEFECTO, type EntregaKindle, type Imagen, type Proyecto } from './modelo'
 
 /** Lo que el libro tenga guardado, o el valor por defecto. */
@@ -66,19 +66,41 @@ export function idsParaKindle(p: Proyecto): Set<string> {
   return ids
 }
 
+/** El ajuste propio de una imagen, si el autor le dio uno. */
+export function kindlePropioDe(p: Proyecto, id: string): KindlePropio | undefined {
+  return p.kindlePorImagen?.[id]
+}
+
+/** Las imagenes de Kindle con ajuste propio, de entre las que de verdad viajan. */
+export function conAjustePropio(p: Proyecto): string[] {
+  const propios = p.kindlePorImagen
+  if (!propios) return []
+  return [...idsParaKindle(p)].filter((id) => propios[id] !== undefined)
+}
+
 /**
- * El ajuste que se le aplica a una imagen para Kindle: el mismo recorte (no
- * se recorta nada aqui, eso es cosa del autor) y el mismo tamano, solo cambia
- * el formato.
+ * El ajuste que se le aplica a una imagen para Kindle.
+ *
+ * El recorte no se toca: que trozo del dibujo se ve es decision de autor y es
+ * UNA sola para las dos tiendas. Lo que si puede cambiar por tienda es cuanto
+ * pesa, asi que de `propio` salen la calidad, el gris y el lado largo.
+ *
+ * `ladoLargo` 0 (o sin ajuste propio) deja el tamaño tal cual: el autor tiene
+ * que pedir expresamente que Kindle lleve la imagen mas pequeña.
  */
-export function ajusteKindle(imagen: Imagen, k: EntregaKindle): Ajuste {
+export function ajusteKindle(imagen: Imagen, k: EntregaKindle, propio?: KindlePropio): Ajuste {
+  const entero = { x: 0, y: 0, ancho: imagen.ancho, alto: imagen.alto }
+  const medidas =
+    propio && propio.ladoLargo > 0 && propio.ladoLargo < Math.max(imagen.ancho, imagen.alto)
+      ? tamanoPorResolucion(entero, propio.ladoLargo)
+      : { ancho: imagen.ancho, alto: imagen.alto }
   return {
-    recorte: { x: 0, y: 0, ancho: imagen.ancho, alto: imagen.alto },
-    ancho: imagen.ancho,
-    alto: imagen.alto,
+    recorte: entero,
+    ancho: medidas.ancho,
+    alto: medidas.alto,
     formato: 'jpeg',
-    calidad: k.calidad,
-    grises: k.grises,
+    calidad: propio?.calidad ?? k.calidad,
+    grises: propio?.grises ?? k.grises,
     // JPEG nunca lleva alfa: lo transparente se aplana sobre blanco, que es
     // lo que Kindle hace de todos modos.
     conservarAlfa: false,
@@ -122,15 +144,19 @@ export async function paraKindle(
   const salidaImagenes = new Map(imagenes)
   let antes = 0
   let ahora = 0
-  if (!k.comprimir) return { bytes: salidaBytes, imagenes: salidaImagenes, antes: 0, ahora: 0 }
+  const propios = p.kindlePorImagen ?? {}
+  // Con el general apagado solo se tocan las que el autor marco una por una:
+  // entrar a una imagen y darle un ajuste propio ES pedirlo.
+  const aTocar = [...idsParaKindle(p)].filter((id) => k.comprimir || propios[id] !== undefined)
+  if (aTocar.length === 0) return { bytes: salidaBytes, imagenes: salidaImagenes, antes: 0, ahora: 0 }
 
-  for (const id of idsParaKindle(p)) {
+  for (const id of aTocar) {
     const imagen = imagenes.get(id)
     const origen = bytes.get(id)
     if (!imagen || !origen) continue
     antes += origen.length
     try {
-      const c = await codificar(origen, imagen, ajusteKindle(imagen, k))
+      const c = await codificar(origen, imagen, ajusteKindle(imagen, k, propios[id]))
       // Si al comprimir sale MAS grande (pasa con un dibujo de linea plana, que
       // el PNG guarda mejor que el JPEG), se queda el original: el autor pidio
       // un libro mas ligero, no un libro distinto.

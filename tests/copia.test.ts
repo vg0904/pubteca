@@ -107,6 +107,9 @@ function libroRico(): { p: Proyecto; imagenes: Map<string, Imagen>; bytes: Map<s
     laminas: ['i-lam1', 'i-lam2'],
     portada: { portada: 'i-portada', contraportada: 'i-contra', logo: 'i-logo', logoBlanco: 'i-logob' },
     ultimaCopia: 1,
+    // Un ajuste propio para Kindle: va POR ID DE IMAGEN, y los ids se
+    // regeneran al abrir, asi que es lo que mas facil se pierde de la copia.
+    kindlePorImagen: { 'i-dibujo': { calidad: 55, grises: true, ladoLargo: 1200 } },
     descargado: { uid: 'urn:isbn:9788437604947', titulo: 'El faro de Ibar', autor: 'Ana Ruiz', cuando: 1700000000000 },
   }
   return { p, imagenes, bytes }
@@ -140,6 +143,7 @@ function sinIds(p: Proyecto, bytesDe: (id: string) => Uint8Array | undefined): u
     extras: p.extras.map((x) => ({ ...x, id: undefined, bloques: x.bloques.map(bloque) })),
     laminas: p.laminas.map(img),
     portada: Object.fromEntries(Object.entries(p.portada).map(([rol, id]) => [rol, img(id)])),
+    kindlePorImagen: Object.fromEntries(Object.entries(p.kindlePorImagen ?? {}).map(([id, v]) => [img(id), v])),
     descargado: p.descargado,
   }
 }
@@ -166,6 +170,21 @@ describe('la copia de Pubteca se abre SIN perdidas', () => {
     expect(c.proyecto.descargado).toEqual(p.descargado)
     // Y cuando se hizo la copia.
     expect(c.proyecto.ultimaCopia).toBe(Date.parse('2026-10-22T10:00:00Z'))
+  })
+
+  it('el ajuste propio de Kindle vuelve, y apuntando a la imagen NUEVA', () => {
+    // Va por id de imagen y los ids se regeneran al abrir: si no se tradujeran,
+    // el ajuste quedaria apuntando a una imagen que ya no existe y el autor
+    // perderia en silencio lo que configuro.
+    const { p, imagenes, bytes } = libroRico()
+    const c = abrir(copiaDe(p, imagenes, bytes))
+    const propios = Object.entries(c.proyecto.kindlePorImagen ?? {})
+    expect(propios).toHaveLength(1)
+    const [idNuevo, ajuste] = propios[0] as [string, unknown]
+    expect(ajuste).toEqual({ calidad: 55, grises: true, ladoLargo: 1200 })
+    // Es un id de ESTA copia, y es el del mismo dibujo.
+    expect(imagenes.has(idNuevo)).toBe(false)
+    expect(sha(bytesDeCopia(c)(idNuevo) as Uint8Array)).toBe(sha(bytes.get('i-dibujo') as Uint8Array))
   })
 
   it('es un libro NUEVO: ningun id de imagen se comparte con el original', () => {

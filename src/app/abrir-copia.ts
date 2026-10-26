@@ -38,6 +38,7 @@ import { NOMBRE_JSON } from './copia'
 import { nombresDeExtras, ordenarExtras } from './estado'
 import { exportar } from './exportar'
 import { capituloDesdeDialecto, extraDesdeDialecto } from './importar/dialecto'
+import { KINDLE_PROPIO_POR_DEFECTO, type KindlePropio } from './imagen-ajuste'
 import {
   DATOS_POR_DEFECTO,
   ENTREGA_KINDLE_POR_DEFECTO,
@@ -537,6 +538,7 @@ function proyectoDeJson(
     laminas: (Array.isArray(x['laminas']) ? x['laminas'] : []).flatMap((v) => (typeof v === 'string' ? [imagenId(v)] : [])),
     portada,
     kindle: entregaDe(x['kindle']),
+    kindlePorImagen: kindlePorImagenDe(x['kindlePorImagen'], imagenId),
     ...(descargado ? { descargado } : {}),
   }
 }
@@ -560,6 +562,35 @@ export function entregaDe(x: unknown): EntregaKindle {
         : ENTREGA_KINDLE_POR_DEFECTO.calidad,
     grises: x['grises'] === true,
   }
+}
+
+/**
+ * Los ajustes propios de Kindle, imagen por imagen, tal como vengan.
+ *
+ * Mismo criterio que `entregaDe`: nada aqui puede costarle el libro al autor,
+ * asi que una entrada que no se entiende se deja fuera y esa imagen vuelve a
+ * seguir el ajuste general. Los ids se pasan por `imagenId` como los demas,
+ * para que apunten a las imagenes de ESTA copia; una entrada cuya imagen ya no
+ * esta se queda, inofensiva: nadie la mira.
+ */
+export function kindlePorImagenDe(x: unknown, imagenId: (v: string) => string): Record<string, KindlePropio> {
+  if (!esObjeto(x)) return {}
+  const r: Record<string, KindlePropio> = {}
+  for (const [id, v] of Object.entries(x)) {
+    if (!esObjeto(v)) continue
+    const calidad = v['calidad']
+    const lado = v['ladoLargo']
+    r[imagenId(id)] = {
+      calidad:
+        typeof calidad === 'number' && Number.isFinite(calidad)
+          ? Math.max(1, Math.min(100, Math.round(calidad)))
+          : KINDLE_PROPIO_POR_DEFECTO.calidad,
+      grises: v['grises'] === true,
+      ladoLargo:
+        typeof lado === 'number' && Number.isFinite(lado) && lado > 0 ? Math.round(lado) : KINDLE_PROPIO_POR_DEFECTO.ladoLargo,
+    }
+  }
+  return r
 }
 
 /**

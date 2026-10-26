@@ -197,6 +197,46 @@ export function tamanoRecomendado(r: Recorte): { ancho: number; alto: number } {
   return limitarPixeles(Math.max(1, Math.round(r.ancho * factor)), Math.max(1, Math.round(r.alto * factor)))
 }
 
+/**
+ * Lo mas pequeño que tiene sentido ofrecer en el deslizador de resolucion.
+ *
+ * Por debajo de esto la ilustracion se ve mal hasta en un telefono, y el
+ * deslizador dejaria de ser una eleccion para ser una trampa. Quien de verdad
+ * quiera menos todavia puede escribirlo en los campos de ancho y alto.
+ */
+export const LADO_LARGO_MINIMO = 400
+
+/** El lado mayor de unas medidas. */
+export function ladoLargo(ancho: number, alto: number): number {
+  return Math.max(ancho, alto)
+}
+
+/**
+ * Hasta donde llega el deslizador de resolucion.
+ *
+ * El tope es el trozo encuadrado, NUNCA mas: pedir mas pixeles de los que hay
+ * solo emborrona, y el deslizador no debe poder llegar a un sitio que la
+ * propia pantalla marca como error (`reparoDe`). Los campos de ancho y alto
+ * siguen admitiendolo, con su aviso, para quien sepa lo que hace.
+ */
+export function rangoDeResolucion(r: Recorte): { min: number; max: number } {
+  const max = Math.max(LADO_LARGO_MINIMO, ladoLargo(r.ancho, r.alto))
+  return { min: Math.min(LADO_LARGO_MINIMO, max), max }
+}
+
+/**
+ * Las medidas que salen de pedir ese lado largo, con la proporcion del
+ * recorte y sin pasar del tope de Apple Books.
+ */
+export function tamanoPorResolucion(r: Recorte, largo: number): { ancho: number; alto: number } {
+  if (r.ancho <= 0 || r.alto <= 0) return { ancho: 0, alto: 0 }
+  const { min, max } = rangoDeResolucion(r)
+  const v = Math.max(min, Math.min(max, Math.round(largo)))
+  const lado = r.ancho >= r.alto ? 'ancho' : 'alto'
+  const m = conProporcion(r, lado, v)
+  return limitarPixeles(m.ancho, m.alto)
+}
+
 /** Las medidas con la proporcion del recorte, dado uno de los dos lados. */
 export function conProporcion(r: Recorte, lado: 'ancho' | 'alto', valor: number): { ancho: number; alto: number } {
   const v = Math.max(1, Math.round(valor))
@@ -218,6 +258,28 @@ export interface Ajuste {
   /** Si la imagen que sale lleva canal alfa. Ver `necesitaAlfa`. */
   readonly conservarAlfa: boolean
 }
+
+/**
+ * El ajuste PROPIO que una imagen puede tener para Kindle.
+ *
+ * Por que esto y no una segunda imagen guardada: el encuadre es una decision
+ * de autor y es UNA sola (el dibujo es el mismo en las dos tiendas); lo que de
+ * verdad cambia entre tiendas es cuanto puede pesar. Guardando los AJUSTES en
+ * vez de un segundo archivo, el almacen sigue teniendo un blob por imagen, la
+ * copia (.zip) sigue llevando un archivo por imagen, deshacer sigue siendo un
+ * id, y la version de Kindle se sigue codificando al generar, que es donde ya
+ * se hacia (ver `entrega.ts`).
+ *
+ * `ladoLargo` 0 significa «el mismo tamaño que para Apple Books»: asi un
+ * ajuste recien creado no encoge nada sin que el autor lo pida.
+ */
+export interface KindlePropio {
+  readonly calidad: number
+  readonly grises: boolean
+  readonly ladoLargo: number
+}
+
+export const KINDLE_PROPIO_POR_DEFECTO: KindlePropio = { calidad: 80, grises: false, ladoLargo: 0 }
 
 /**
  * Si la imagen que sale tiene que llevar canal alfa.

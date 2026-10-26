@@ -13,16 +13,18 @@
 import { describe, expect, it } from 'vitest'
 import {
   ajusteKindle,
+  conAjustePropio,
   entregaKindle,
   idsParaKindle,
   imagenesDeKindle,
+  kindlePropioDe,
   muestrasPara,
   paraKindle,
   type Codificador,
 } from '../src/app/entrega'
-import { entregaDe } from '../src/app/abrir-copia'
+import { entregaDe, kindlePorImagenDe } from '../src/app/abrir-copia'
 import { ESTADO_INICIAL, reducir, type Accion, type Estado } from '../src/app/estado'
-import { conSufijo } from '../src/app/imagen-ajuste'
+import { conSufijo, KINDLE_PROPIO_POR_DEFECTO, type KindlePropio } from '../src/app/imagen-ajuste'
 import {
   ENTREGA_KINDLE_POR_DEFECTO,
   VERSION_PROYECTO,
@@ -433,3 +435,118 @@ describe('el nombre de la imagen ajustada', () => {
 /** El tipo se usa en las aserciones de arriba; el compilador lo pide. */
 const _entrega: EntregaKindle = ENTREGA_KINDLE_POR_DEFECTO
 void _entrega
+
+/**
+ * El ajuste PROPIO de una imagen para Kindle (la pestaña Kindle del cuadro de
+ * ajustar). No guarda una segunda imagen: guarda lo que hay que hacerle a la
+ * unica que hay, y se aplica aqui, al entregar.
+ */
+describe('el ajuste propio de una imagen para Kindle', () => {
+  const propio = (x: Partial<KindlePropio> = {}): KindlePropio => ({ ...KINDLE_PROPIO_POR_DEFECTO, ...x })
+  const general: EntregaKindle = { comprimir: true, calidad: 80, grises: false }
+
+  it('manda sobre el general: su calidad y su gris', () => {
+    const a = ajusteKindle(img('i1'), general, propio({ calidad: 45, grises: true }))
+    expect(a.calidad).toBe(45)
+    expect(a.grises).toBe(true)
+  })
+
+  it('con ladoLargo 0 no encoge nada: hay que pedirlo', () => {
+    const a = ajusteKindle(img('i1', { ancho: 3000, alto: 4000 }), general, propio())
+    expect([a.ancho, a.alto]).toEqual([3000, 4000])
+  })
+
+  it('con ladoLargo encoge por el lado largo y respeta la proporcion', () => {
+    const a = ajusteKindle(img('i1', { ancho: 1500, alto: 3000 }), general, propio({ ladoLargo: 1200 }))
+    expect([a.ancho, a.alto]).toEqual([600, 1200])
+  })
+
+  it('un ladoLargo mayor que la imagen no la agranda: no hay detalle que inventar', () => {
+    const a = ajusteKindle(img('i1', { ancho: 800, alto: 600 }), general, propio({ ladoLargo: 4000 }))
+    expect([a.ancho, a.alto]).toEqual([800, 600])
+  })
+
+  it('el recorte sigue siendo el entero: el encuadre es de autor y es uno solo', () => {
+    const a = ajusteKindle(img('i1', { ancho: 1500, alto: 3000 }), general, propio({ ladoLargo: 600 }))
+    expect(a.recorte).toEqual({ x: 0, y: 0, ancho: 1500, alto: 3000 })
+  })
+
+  it('con el general APAGADO, solo se tocan las que tienen ajuste propio', async () => {
+    const apunte = { ajustes: [] as unknown[] }
+    const p = proyecto({ kindlePorImagen: { i1: propio({ calidad: 50 }) } })
+    const r = await paraKindle(
+      p,
+      imagenesDe(TODAS),
+      bytesDe(TODAS),
+      { ...ENTREGA_KINDLE_POR_DEFECTO, comprimir: false },
+      falso(0.3, apunte),
+    )
+    // Entrar a una imagen y darle un ajuste propio ES pedirlo.
+    expect((apunte.ajustes as { id: string }[]).map((x) => x.id)).toEqual(['i1'])
+    expect(r.bytes.get('i1')?.length).toBe(300_000)
+    // Las demas, intactas.
+    expect(r.bytes.get('i2')?.length).toBe(1_000_000)
+  })
+
+  it('un ajuste propio de una imagen que Kindle no recibe no hace nada', async () => {
+    const apunte = { ajustes: [] as unknown[] }
+    // i3 es la portada: no viaja a Kindle.
+    const p = proyecto({ kindlePorImagen: { i3: propio({ calidad: 50 }) } })
+    await paraKindle(p, imagenesDe(TODAS), bytesDe(TODAS), { ...ENTREGA_KINDLE_POR_DEFECTO, comprimir: false }, falso(0.3, apunte))
+    expect(apunte.ajustes).toEqual([])
+  })
+
+  it('con el general encendido, cada imagen va con lo suyo', async () => {
+    const apunte = { ajustes: [] as unknown[] }
+    const p = proyecto({ kindlePorImagen: { i1: propio({ calidad: 40, grises: true }) } })
+    await paraKindle(p, imagenesDe(TODAS), bytesDe(TODAS), general, falso(0.3, apunte))
+    const porId = new Map((apunte.ajustes as { id: string; ajuste: { calidad: number; grises: boolean } }[]).map((x) => [x.id, x.ajuste]))
+    expect(porId.get('i1')).toMatchObject({ calidad: 40, grises: true })
+    expect(porId.get('i2')).toMatchObject({ calidad: 80, grises: false })
+  })
+
+  it('conAjustePropio cuenta solo las que de verdad viajan a Kindle', () => {
+    const p = proyecto({ kindlePorImagen: { i1: propio(), i3: propio() } })
+    expect(conAjustePropio(p)).toEqual(['i1'])
+    expect(conAjustePropio(proyecto())).toEqual([])
+    expect(kindlePropioDe(p, 'i1')).toEqual(propio())
+    expect(kindlePropioDe(p, 'i2')).toBeUndefined()
+  })
+
+  it('el reductor lo pone, lo cambia y lo quita', () => {
+    const p = proyecto()
+    let e: Estado = { ...ESTADO_INICIAL, proyecto: p }
+    const despachar = (a: Accion): void => {
+      e = reducir(e, a)
+    }
+    despachar({ tipo: 'kindleDeImagen', imagen: 'i1', cambios: { calidad: 60 }, ahora: 1 })
+    expect(e.proyecto?.kindlePorImagen?.['i1']).toEqual(propio({ calidad: 60 }))
+    // Los cambios se acumulan sobre lo que ya habia.
+    despachar({ tipo: 'kindleDeImagen', imagen: 'i1', cambios: { grises: true }, ahora: 2 })
+    expect(e.proyecto?.kindlePorImagen?.['i1']).toEqual(propio({ calidad: 60, grises: true }))
+    // Volver al general lo quita del todo, no lo deja a medias.
+    despachar({ tipo: 'kindleDeImagen', imagen: 'i1', cambios: null, ahora: 3 })
+    expect(e.proyecto?.kindlePorImagen?.['i1']).toBeUndefined()
+    // Quitar lo que no estaba no cambia nada (ni gasta un paso de deshacer).
+    const antes = e
+    despachar({ tipo: 'kindleDeImagen', imagen: 'i1', cambios: null, ahora: 4 })
+    expect(e).toBe(antes)
+  })
+
+  it('la copia (.zip) lo devuelve, y lo que no entiende lo deja fuera', () => {
+    const traducir = (v: string): string => `nuevo-${v}`
+    const r = kindlePorImagenDe(
+      {
+        i1: { calidad: 55, grises: true, ladoLargo: 1200 },
+        i2: { calidad: 'mucha', grises: 'si', ladoLargo: -4 },
+        i3: 'no es un objeto',
+      },
+      traducir,
+    )
+    expect(r['nuevo-i1']).toEqual({ calidad: 55, grises: true, ladoLargo: 1200 })
+    // Un numero raro no puede costarle el libro al autor: se toma el de siempre.
+    expect(r['nuevo-i2']).toEqual(KINDLE_PROPIO_POR_DEFECTO)
+    expect(r['nuevo-i3']).toBeUndefined()
+    expect(kindlePorImagenDe(undefined, traducir)).toEqual({})
+  })
+})
