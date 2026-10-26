@@ -1,0 +1,27 @@
+# Despliegue en Netlify (las vistas previas de cada pull request).
+#
+# POR QUE ESTE ARCHIVO EXISTE: el base path de Vite decide a que URL apunta
+# cada asset del index.html, y cada sitio sirve el libro en un sitio distinto.
+# Netlify lo sirve en la RAIZ del dominio; GitHub Pages, bajo /pubteca/. Si el
+# base path no es el del sitio, el despliegue sale "con exito", el index.html
+# responde 200 y la pagina queda EN BLANCO con 404 en todos los assets: no hay
+# ningun check que lo detecte, porque Netlify solo comprueba que el build y la
+# subida salieran bien, no que la pagina cargue.
+#
+# Vivia en el panel de Netlify, donde no se versiona, nadie lo ve en una
+# revision y se pierde al recrear el sitio. Aqui va al lado del codigo, igual
+# que el de GitHub Pages va en su workflow (.github/workflows/deploy.yml, que lo
+# saca del nombre del repositorio). Cada despliegue lleva el suyo y no hay dos
+# sitios que mantener sincronizados a mano.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # El minimo del proyecto es 22.12 (package.json). Netlify coge la 22.x mas
+  # reciente, igual que `node-version: '22'` en el workflow de Pages.
+  NODE_VERSION = "22"
+  # La raiz del dominio. El valor por defecto de vite.config.ts es el de
+  # GitHub Pages, que aqui dejaria la pagina en blanco.
+  VITE_BASE = "/"
