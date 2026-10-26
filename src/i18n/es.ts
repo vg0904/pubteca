@@ -412,6 +412,15 @@ export const ui = {
     },
   },
 
+  // Las dos tiendas, como las nombra la interfaz cuando hay que separar lo
+  // que le toca a cada una (los avisos de una imagen, el recordatorio antes de
+  // descargar). El reparto esta en app/avisos.ts.
+  tiendas: {
+    apple: 'Apple Books',
+    kindle: 'Kindle',
+    lista: 'Lista',
+  },
+
   niveles: {
     bloquea: { icono: '⛔', palabra: 'Impide generar' },
     error: { icono: '✗', palabra: 'Error' },

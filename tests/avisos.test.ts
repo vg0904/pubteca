@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { construir } from '../src/core/construir'
 import { Diagnosticos } from '../src/core/mensajes'
-import { agrupar, cuentas } from '../src/app/avisos'
+import { agrupar, cuentas, porTienda, tiendasDe, TIENDAS, type ClaveGrupo } from '../src/app/avisos'
 import { exportar } from '../src/app/exportar'
 import {
   DATOS_POR_DEFECTO,
@@ -166,5 +166,61 @@ describe('revision antes de generar', () => {
       expect(etiquetaReconocida(e)).toBe(true)
     }
     for (const e of ['Parte uno', 'Libro I', '3']) expect(etiquetaReconocida(e)).toBe(false)
+  })
+})
+
+/**
+ * El reparto por tienda. La tarjeta de una imagen los enseñaba todos juntos y
+ * el autor no sabia que cada cosa era de una tienda distinta.
+ */
+describe('a que tienda le importa cada aviso', () => {
+  it('cada aviso le importa al menos a una tienda', () => {
+    const claves: ClaveGrupo[] = [
+      'noEsImagen', 'faltaImagen', 'recursoAusente', 'transparencia', 'cmyk', 'p3', 'pixeles',
+      'portadaLadoCorto', 'portadaBaja', 'resolucion', 'horizontal', 'proporcion', 'peso',
+      'logoOpaco', 'sinLogoBlanco', 'sinPortada', 'capituloVacio', 'sinDescripcion', 'otro',
+    ]
+    for (const c of claves) {
+      const t = tiendasDe(c)
+      expect(t.length, `${c} no le importa a ninguna tienda`).toBeGreaterThan(0)
+      for (const x of t) expect(TIENDAS).toContain(x)
+    }
+  })
+
+  it('la tienda sale del motivo que da el motor, no de una opinion', () => {
+    // «Kindle la convierte en blanco»: en Apple Books la transparencia se respeta.
+    expect(tiendasDe('transparencia')).toEqual(['kindle'])
+    // La tarifa de entrega por MB es de Amazon; Apple no cobra por el tamaño.
+    expect(tiendasDe('peso')).toEqual(['kindle'])
+    // Los 5,6 millones de pixeles son el limite de Apple Books.
+    expect(tiendasDe('pixeles')).toEqual(['apple'])
+    // El logo solo viaja en el EPUB de Apple: en Kindle el titulo va en texto.
+    expect(tiendasDe('logoOpaco')).toEqual(['apple'])
+    expect(tiendasDe('sinLogoBlanco')).toEqual(['apple'])
+    // Un color mal se ve igual de mal en las dos.
+    expect(tiendasDe('cmyk')).toEqual(['apple', 'kindle'])
+    expect(tiendasDe('p3')).toEqual(['apple', 'kindle'])
+  })
+
+  it('una imagen con transparencia y peso esta lista para Apple y no para Kindle', () => {
+    const dg = new Diagnosticos()
+    dg.aviso('x.png: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.')
+    dg.nota('x.png: pesa 2.5 MB; considera comprimirla (la tarifa de entrega de Kindle se cobra por MB).')
+    const r = porTienda(agrupar(dg))
+    expect(r.apple).toEqual([])
+    expect(r.kindle.map((g) => g.clave)).toEqual(['transparencia', 'peso'])
+  })
+
+  it('lo que afecta a las dos sale en las dos: cada columna contesta entera', () => {
+    const dg = new Diagnosticos()
+    dg.nota('x.png: proporción 1:1.10 (lo recomendado es 1:1.5); en algunas pantallas quedará con franjas vacías.')
+    const r = porTienda(agrupar(dg))
+    expect(r.apple.map((g) => g.clave)).toEqual(['proporcion'])
+    expect(r.kindle.map((g) => g.clave)).toEqual(['proporcion'])
+  })
+
+  it('sin avisos, las dos tiendas quedan vacias: la tarjeta dira «lista»', () => {
+    const r = porTienda([])
+    expect(r).toEqual({ apple: [], kindle: [] })
   })
 })

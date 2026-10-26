@@ -16,6 +16,9 @@
   --rojo-fondo: #fbe5df;
   --azul: #2f5d8a;
   --azul-fondo: #e6eef6;
+  /* Solo para decir que algo ya esta listo: nunca para un aviso. */
+  --verde: #2c6b4a;
+  --verde-fondo: #e2f0e7;
   --acento: #7a4a1d;
   --acento-texto: #fffdf9;
   --sombra: 0 1px 2px rgba(60, 40, 20, 0.06), 0 4px 16px rgba(60, 40, 20, 0.07);
@@ -38,6 +41,8 @@
     --rojo-fondo: #3c201a;
     --azul: #8db7e2;
     --azul-fondo: #1d2a37;
+    --verde: #86c6a0;
+    --verde-fondo: #1b2d23;
     --acento: #e0b07a;
     --acento-texto: #1b1917;
     --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.3);
@@ -470,7 +475,27 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
 .casilla { display: flex; gap: 0.45rem; align-items: flex-start; font-size: 0.9rem; }
 .casilla input { margin-top: 0.25rem; }
 .avisos-imagen { list-style: none; padding: 0; margin: 0; font-size: 0.82rem; }
-.avisos-imagen li { display: flex; gap: 0.4rem; }
+.avisos-imagen li { display: flex; gap: 0.4rem; margin-bottom: 0.25rem; }
+.avisos-imagen li > span:last-child { min-width: 0; }
+
+/* Los avisos de una imagen, separados por tienda: juntos no se entendia que
+   cada cosa es para una tienda distinta, ni que el libro sale para las dos. */
+/* auto-fit, no dos columnas fijas: la tarjeta es estrecha y en dos columnas
+   el texto se parte en cuatro renglones. Asi se ponen a lo ancho cuando caben
+   y una debajo de otra cuando no, sin depender del ancho de la ventana. */
+.avisos-tiendas { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.55rem 1.2rem; margin-top: 0.2rem; }
+.avisos-tienda { min-width: 0; }
+.avisos-tienda h4 {
+  margin: 0 0 0.25rem;
+  font-family: var(--interfaz);
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--suave);
+}
+.tienda-lista { display: flex; gap: 0.4rem; align-items: center; margin: 0; font-size: 0.82rem; color: var(--suave); }
+.tienda-lista .nivel-icono { background: var(--verde-fondo); color: var(--verde); }
+
+
 .nivel-icono {
   flex: none;
   width: 1.15rem;
@@ -829,7 +854,7 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .ajustar .botones { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.8rem; flex-wrap: wrap; }
 
 /* «Arreglar», dentro del propio aviso de la tarjeta. */
-.avisos-imagen .arreglar { margin-left: 0.4rem; }
+.avisos-imagen .arreglar { margin-left: 0.35rem; white-space: nowrap; }
 
 @media (max-width: 40rem) {
   .ajustar { padding: 0.9rem; }
