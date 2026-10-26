@@ -533,6 +533,34 @@ describe('el ajuste propio de una imagen para Kindle', () => {
     expect(e).toBe(antes)
   })
 
+  it('al ajustar la imagen, el ajuste propio se muda con ella', () => {
+    // Va por id de imagen, y ajustar una crea una imagen NUEVA con otro id
+    // (`sustituirImagen`). Sin mudarlo, el autor configuraba su imagen para
+    // Kindle, la ajustaba, y perdia lo configurado en silencio; encima la
+    // entrada vieja se quedaba apuntando a un id que ya no existe.
+    const p = proyecto({ kindlePorImagen: { i1: propio({ calidad: 45, grises: true, ladoLargo: 1200 }) } })
+    let e: Estado = { ...ESTADO_INICIAL, proyecto: p }
+    e = reducir(e, { tipo: 'sustituirImagen', viejo: 'i1', nuevo: 'i1b' })
+    expect(e.proyecto?.kindlePorImagen?.['i1b']).toEqual(propio({ calidad: 45, grises: true, ladoLargo: 1200 }))
+    expect(e.proyecto?.kindlePorImagen?.['i1']).toBeUndefined()
+    // Y la imagen nueva es la que viaja, con ese ajuste.
+    expect(conAjustePropio(e.proyecto as Proyecto)).toEqual(['i1b'])
+  })
+
+  it('si la imagen nueva ya traia el suyo, manda el suyo', () => {
+    const p = proyecto({ kindlePorImagen: { i1: propio({ calidad: 45 }), i2: propio({ calidad: 90 }) } })
+    let e: Estado = { ...ESTADO_INICIAL, proyecto: p }
+    e = reducir(e, { tipo: 'sustituirImagen', viejo: 'i1', nuevo: 'i2' })
+    expect(e.proyecto?.kindlePorImagen?.['i2']).toEqual(propio({ calidad: 90 }))
+  })
+
+  it('sustituir una imagen SIN ajuste propio no toca el mapa', () => {
+    const p = proyecto({ kindlePorImagen: { i2: propio({ calidad: 90 }) } })
+    let e: Estado = { ...ESTADO_INICIAL, proyecto: p }
+    e = reducir(e, { tipo: 'sustituirImagen', viejo: 'i1', nuevo: 'i1b' })
+    expect(e.proyecto?.kindlePorImagen).toEqual({ i2: propio({ calidad: 90 }) })
+  })
+
   it('la copia (.zip) lo devuelve, y lo que no entiende lo deja fuera', () => {
     const traducir = (v: string): string => `nuevo-${v}`
     const r = kindlePorImagenDe(

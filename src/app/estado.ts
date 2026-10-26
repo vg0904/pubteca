@@ -994,6 +994,17 @@ export function reducir(e: Estado, a: Accion): Estado {
         bloques.map((b) => (b.tipo === 'ilustracion' && b.imagenId === a.viejo ? { ...b, imagenId: a.nuevo } : b))
       const portada: Partial<Record<RolPortada, string>> = {}
       for (const [rol, id] of Object.entries(p.portada) as [RolPortada, string][]) portada[rol] = cambiarId(id)
+      // El ajuste propio de Kindle va POR ID DE IMAGEN, asi que tambien se
+      // muda: ajustar una imagen a la que el autor le habia dado uno lo perdia
+      // en silencio, y dejaba la entrada vieja apuntando a un id que ya no
+      // existe. Si la nueva ya trae el suyo, manda el suyo.
+      const propios = p.kindlePorImagen
+      const mudado = propios?.[a.viejo]
+      let kindlePorImagen = propios
+      if (propios && mudado !== undefined) {
+        kindlePorImagen = { ...propios, [a.nuevo]: propios[a.nuevo] ?? mudado }
+        delete (kindlePorImagen as Record<string, KindlePropio>)[a.viejo]
+      }
       return cambiar(e, {
         ...p,
         capitulos: p.capitulos.map((c) => ({
@@ -1004,6 +1015,7 @@ export function reducir(e: Estado, a: Accion): Estado {
         extras: p.extras.map((x) => ({ ...x, bloques: enBloques(x.bloques) })),
         laminas: p.laminas.map(cambiarId),
         portada,
+        ...(kindlePorImagen ? { kindlePorImagen } : {}),
       })
     }
     case 'anadirLamina':
