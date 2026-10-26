@@ -52,6 +52,78 @@ export const VALORES: Record<string, Map<string, DivergenciaValor>> = {
   ]),
 }
 
+/**
+ * El CSS: los trozos en que nuestra hoja se aparta de la del Python.
+ *
+ * Cada entrada es una sustitucion TEXTUAL sobre la hoja del Python. Aplicarlas
+ * todas tiene que dar exactamente nuestra hoja: asi el test de paridad sigue
+ * demostrando que no nos apartamos en ningun otro sitio, en vez de dejar de
+ * comparar el CSS entero en cuanto cambia una regla.
+ */
+export const CSS_REGLAS: readonly DivergenciaValor[] = [
+  {
+    motivo:
+      'La pagina de ilustracion abria una pagina en blanco detras. La imagen se media con ' +
+      'max-height: 95vh, es decir contra la VENTANA, pero la pagina no es la ventana: el lector ' +
+      'se reserva sus margenes, y los pone en «em», asi que crecen con el tamaño de letra. Con ' +
+      'la letra grande, imagen (95vh) + margenes del lector pasaba del alto de la pagina y el ' +
+      'motor de paginado abria una columna mas, que es la pagina en blanco. Medido en un ' +
+      'paginador por columnas como el de Apple Books: 22 combinaciones de pantalla, tamaño de ' +
+      'letra y proporcion de la imagen daban 2 o 3 paginas; con height: 100% + box-sizing, ' +
+      'ninguna. Es inconsistente porque depende de la proporcion de la imagen: cuando el ancho ' +
+      'manda, el tope de alto ni se toca. Lo mismo valia para div.portada.',
+    python: `/* Páginas de ilustración y portada */
+body.pagina-imagen { margin: 0; padding: 0; text-align: center; }
+div.ilustracion, div.portada {
+  margin: 0; padding: 0; text-align: center; text-indent: 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+div.ilustracion img, div.portada img {
+  display: block; margin: 0 auto;
+  width: auto; height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  max-height: 95vh;
+}`,
+    nuestro: `/* Páginas de ilustración y portada.
+   La imagen se mide contra la caja de la PÁGINA, nunca contra «vh»: el alto de
+   la ventana no es el de la página. El lector se reserva sus márgenes, y los
+   pone en «em», así que crecen con el tamaño de letra; con max-height: 95vh la
+   imagen los ignoraba, rebasaba la página y el lector abría una página en
+   blanco detrás. box-sizing es lo que hace que ese margen reste en vez de
+   sumar: sin él, height: 100% más el relleno del lector vuelve a desbordar. */
+body.pagina-imagen {
+  margin: 0; padding: 0; text-align: center;
+  height: 100%; box-sizing: border-box;
+}
+div.ilustracion, div.portada {
+  margin: 0; padding: 0; text-align: center; text-indent: 0;
+  height: 100%; box-sizing: border-box;
+  page-break-inside: avoid; break-inside: avoid;
+}
+div.ilustracion img, div.portada img {
+  display: block; margin: 0 auto;
+  width: auto; height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}`,
+  },
+]
+
+/**
+ * La hoja del Python con nuestras divergencias aplicadas. Es lo que el CSS de
+ * Pubteca tiene que ser, caracter a caracter: el comentario de la regla entra
+ * en la sustitucion, para que la comparacion siga siendo exacta.
+ */
+export function conDivergenciasCss(css: string): string {
+  let r = css
+  for (const d of CSS_REGLAS) {
+    if (!r.includes(d.python)) throw new Error(`La divergencia del CSS ya no encaja: ${d.motivo}`)
+    r = r.replace(d.python, d.nuestro)
+  }
+  return r
+}
+
 /** Capitulos del oraculo que ahora se parsean distinto. */
 export const CAPITULOS: Map<string, DivergenciaCapitulo> = new Map([
   [
