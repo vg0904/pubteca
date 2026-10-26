@@ -17,6 +17,9 @@
  *
  * La constante va TAL CUAL. No reformatear: los golden tests comparan el
  * archivo completo, y hay un test que la compara con la salida del Python.
+ * Donde nos apartamos del Python a proposito (hoy, la pagina de ilustracion)
+ * queda escrito en tests/divergencias.ts, y el test de paridad comprueba que
+ * no nos apartamos en ningun otro sitio.
  */
 
 /** Marcador que se sustituye por las caras @font-face. */
@@ -72,10 +75,20 @@ div.versos { margin: 1em 0 1em 1.6em; }
 div.versos p { text-indent: 0; font-style: italic; -webkit-hyphens: none; hyphens: none; }
 div.versos p.estrofa { margin-top: 0.9em; }
 
-/* Páginas de ilustración y portada */
-body.pagina-imagen { margin: 0; padding: 0; text-align: center; }
+/* Páginas de ilustración y portada.
+   La imagen se mide contra la caja de la PÁGINA, nunca contra «vh»: el alto de
+   la ventana no es el de la página. El lector se reserva sus márgenes, y los
+   pone en «em», así que crecen con el tamaño de letra; con max-height: 95vh la
+   imagen los ignoraba, rebasaba la página y el lector abría una página en
+   blanco detrás. box-sizing es lo que hace que ese margen reste en vez de
+   sumar: sin él, height: 100% más el relleno del lector vuelve a desbordar. */
+body.pagina-imagen {
+  margin: 0; padding: 0; text-align: center;
+  height: 100%; box-sizing: border-box;
+}
 div.ilustracion, div.portada {
   margin: 0; padding: 0; text-align: center; text-indent: 0;
+  height: 100%; box-sizing: border-box;
   page-break-inside: avoid; break-inside: avoid;
 }
 div.ilustracion img, div.portada img {
@@ -83,7 +96,6 @@ div.ilustracion img, div.portada img {
   width: auto; height: auto;
   max-width: 100%;
   max-height: 100%;
-  max-height: 95vh;
 }
 
 /* Portadilla (todo con alineación explícita: Apple Books no siempre la hereda) */

@@ -4,6 +4,7 @@ import { buscarFuentes } from '../src/core/fuentes'
 import { Diagnosticos } from '../src/core/mensajes'
 import { paginaImagen, xhtml } from '../src/core/plantillas'
 import { archivo } from '../src/core/proyecto'
+import { conDivergenciasCss } from './divergencias'
 import { oraculo } from './oraculo'
 
 describe(`xhtml (${oraculo.xhtml.length} casos del Python)`, () => {
@@ -45,8 +46,10 @@ describe(`paginaImagen (${oraculo.pagina_imagen.length} casos del Python)`, () =
 })
 
 describe('CSS', () => {
-  it('es identico, caracter a caracter, al del Python', () => {
-    expect(CSS).toBe(oraculo.CSS)
+  it('es el del Python, caracter a caracter, salvo las divergencias anotadas', () => {
+    // conDivergenciasCss revienta si una divergencia deja de encajar, asi que
+    // esto sigue demostrando que no nos apartamos en ningun otro sitio.
+    expect(CSS).toBe(conDivergenciasCss(oraculo.CSS))
   })
 
   // Reglas del brief que un refactor "limpio" rompe sin que se note en Chrome.
@@ -90,8 +93,37 @@ describe('CSS', () => {
   it('la ilustracion nunca se recorta y cabe en cualquier pantalla', () => {
     const img = /div\.ilustracion img, div\.portada img \{([^}]*)\}/.exec(CSS)?.[1] ?? ''
     expect(img).toContain('max-width: 100%')
-    expect(img).toContain('max-height: 100%') // respaldo si no hay vh
-    expect(img).toContain('max-height: 95vh')
+    expect(img).toContain('max-height: 100%')
+  })
+
+  it('la pagina de ilustracion no deja una pagina en blanco detras', () => {
+    // El bug: la imagen se media contra la VENTANA (max-height: 95vh), no
+    // contra la pagina. El lector pone sus margenes en «em», asi que con la
+    // letra grande imagen + margenes pasaba del alto de la pagina y el motor
+    // de paginado abria una columna mas: la pagina en blanco. Medido en un
+    // paginador por columnas, 22 combinaciones de pantalla, tamaño de letra y
+    // proporcion fallaban; con esto, ninguna.
+    const bloque = (sel: string): string =>
+      new RegExp(`${sel.replace(/[.#,]/g, '\\$&')} \\{([^}]*)\\}`).exec(CSS)?.[1] ?? ''
+
+    const SELECTORES = ['body.pagina-imagen', 'div.ilustracion, div.portada', 'div.ilustracion img, div.portada img']
+
+    // 1. La pagina y su contenedor valen justo la caja de la pagina...
+    for (const sel of SELECTORES.slice(0, 2)) {
+      expect(bloque(sel), `${sel} necesita height: 100%`).toContain('height: 100%')
+      // 2. ...y border-box es lo que hace que el margen del lector reste en
+      //    vez de sumar. Sin esto, height: 100% + su relleno vuelve a desbordar.
+      expect(bloque(sel), `${sel} necesita box-sizing: border-box`).toContain('box-sizing: border-box')
+    }
+
+    // 3. La imagen se mide contra ese contenedor, no contra nada mas.
+    expect(bloque(SELECTORES[2] as string)).toContain('max-height: 100%')
+
+    // 4. Y ninguna de las tres reglas vuelve a medir contra la ventana: `vh`
+    //    es el alto de la VENTANA, y la pagina es mas baja que la ventana.
+    for (const sel of SELECTORES) {
+      expect(bloque(sel), `${sel} no puede medir en vh`).not.toContain('vh')
+    }
   })
 
   it('el logo cambia con el modo oscuro, incluidos los temas viejos de Apple', () => {
@@ -114,7 +146,7 @@ describe(`cssLibro (${oraculo.css_libro.length} configuraciones del Python)`, ()
           ].slice(0, caso.familias.length)
         : []
       const fuentes = buscarFuentes(archivos, dg)
-      expect(cssLibro(fuentes, caso.preferida)).toBe(caso.salida)
+      expect(cssLibro(fuentes, caso.preferida)).toBe(conDivergenciasCss(caso.salida))
     })
   }
 

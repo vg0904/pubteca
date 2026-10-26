@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { construir } from '../src/core/construir'
 import { reporte } from '../src/core/reporte'
 import { leerProyecto } from '../scripts/leer-proyecto'
+import { conDivergenciasCss } from './divergencias'
 
 /**
  * El golden test: compara la salida del port con la del generar_epub.py de
@@ -50,6 +51,9 @@ interface Manifiesto {
 const manifiesto = JSON.parse(
   readFileSync(join(GOLDEN, 'manifiesto.json'), 'utf8'),
 ) as Manifiesto
+
+/** La hoja de estilo, el unico texto del golden con divergencias anotadas. */
+const CSS_DEL_LIBRO = 'OEBPS/estilos/estilo.css'
 
 const TIENDAS = [
   { carpeta: 'kindle', tienda: 'Kindle' },
@@ -161,8 +165,12 @@ describe('golden: el port contra generar_epub.py', () => {
         if (e.texto) {
           it(`${e.ruta}: texto identico`, () => {
             const nuestro = new TextDecoder('utf-8').decode(descomprimido[e.ruta])
+            // El golden es la salida REAL del Python, y se queda asi: es su
+            // razon de ser. Donde nos apartamos a proposito, la divergencia se
+            // aplica aqui, anotada en divergencias.ts, en vez de reescribir el
+            // golden y borrar la prueba de lo que el Python hacia.
             const suyo = readFileSync(join(GOLDEN, carpeta, e.ruta), 'utf8')
-            expect(nuestro).toBe(suyo)
+            expect(nuestro).toBe(e.ruta === CSS_DEL_LIBRO ? conDivergenciasCss(suyo) : suyo)
           })
         } else {
           it(`${e.ruta}: binario sin recodificar`, () => {
