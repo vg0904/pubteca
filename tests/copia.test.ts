@@ -101,6 +101,7 @@ function libroRico(): { p: Proyecto; imagenes: Map<string, Imagen>; bytes: Map<s
       derechos: '© {año} {autor}. Licencia propia.',
       incluirContraportada: false,
       separadorDeEscena: '❦',
+      portadilla: 'pagina',
     },
     capitulos,
     extras,
@@ -170,6 +171,15 @@ describe('la copia de Pubteca se abre SIN perdidas', () => {
     expect(c.proyecto.descargado).toEqual(p.descargado)
     // Y cuando se hizo la copia.
     expect(c.proyecto.ultimaCopia).toBe(Date.parse('2026-10-22T10:00:00Z'))
+  })
+
+  it('el diseño de la portadilla vuelve por los dos caminos de la copia', () => {
+    // Va en proyecto.json Y en libro.txt, y los dos tienen que decir lo mismo:
+    // si no, `coincideConSusArchivos` creeria que la copia se edito fuera.
+    const { p, imagenes, bytes } = libroRico()
+    const c = abrir(copiaDe(p, imagenes, bytes))
+    expect(c.proyecto.datos.portadilla).toBe('pagina')
+    expect(c.avisos).toEqual([])
   })
 
   it('el ajuste propio de Kindle vuelve, y apuntando a la imagen NUEVA', () => {
@@ -363,6 +373,15 @@ describe('libro.txt: lo que el motor usaria tal cual se comprueba', () => {
 
   it('un titulo que falta es un titulo vacio, no «Sin titulo»', () => {
     expect(conLibro('autor: A\n').proyecto.datos.titulo).toBe('')
+  })
+
+  it('la portadilla: solo «pagina» cuenta, lo demas es un logo', () => {
+    // Cualquier otra cosa es un logo, que es lo que se asumia antes de que esto
+    // existiera: una copia vieja no cambia de aspecto al abrirse.
+    expect(conLibro('titulo: T\nportadilla: pagina\n').proyecto.datos.portadilla).toBe('pagina')
+    expect(conLibro('titulo: T\nportadilla: logo\n').proyecto.datos.portadilla).toBe('logo')
+    expect(conLibro('titulo: T\nportadilla: lo que sea\n').proyecto.datos.portadilla).toBe('logo')
+    expect(conLibro('titulo: T\n').proyecto.datos.portadilla).toBe('logo')
   })
 
   it('sin libro.txt se abre igual, y se dice', () => {

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import type { Imagen, Proyecto, RolPortada } from '../modelo'
+import { DISENOS_PORTADILLA, type DisenoPortadilla, type Imagen, type Proyecto, type RolPortada } from '../modelo'
 import { logoEnBlanco } from '../subir'
 import { useAjustar, useAvisar, useDespacho, useMedios, useTextos } from './contexto'
 import { AvisosDeImagen } from './EditorBloques'
@@ -125,6 +125,8 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
   }
 
   const logo = p.logo ? imagenes.get(p.logo) : undefined
+  const diseno = proyecto.datos.portadilla
+  const esLogo = diseno === 'logo'
 
   return (
     <div className="pantalla pantalla-portada">
@@ -165,9 +167,34 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
         alElegir={(a) => void ponerLogo(a)}
         alQuitar={() => despachar({ tipo: 'portada', cambios: { logo: null } })}
       >
-        {logo && !logo.alfa && <p className="alerta nivel-aviso compacta">{ui.portada.logoOpaco}</p>}
-        {logo && logo.alfa && !p.logoBlanco && <p className="alerta nivel-aviso compacta">{ui.portada.sinLogoBlanco}</p>}
-        {logo && p.logoBlanco && (
+        {/* Lo que se sube aqui son DOS cosas distintas, y hasta ahora se
+            asumia la primera: la pieza del titulo, o la portadilla entera ya
+            diseñada. Lo que se elija cambia lo que Pubteca añade debajo y si
+            hace falta la version blanca del modo oscuro. */}
+        <fieldset className="diseno-portadilla">
+          <legend>{ui.portada.diseno.pregunta}</legend>
+          {DISENOS_PORTADILLA.map((d: DisenoPortadilla) => (
+            <label key={d} className="opcion">
+              <input
+                type="radio"
+                name="diseno-portadilla"
+                checked={diseno === d}
+                onChange={() => despachar({ tipo: 'dato', campo: 'portadilla', valor: d, ahora: Date.now() })}
+              />
+              {ui.portada.diseno.opciones[d]}
+            </label>
+          ))}
+          <p className="ayuda">{ui.portada.diseno.ayuda[diseno]}</p>
+        </fieldset>
+
+        {/* El modo oscuro solo cambia el LOGO: una portadilla a pagina completa
+            es una imagen normal, asi que ni necesita version blanca ni se le
+            echa de menos. Avisar ahi seria mandar a arreglar lo que no falla. */}
+        {esLogo && logo && !logo.alfa && <p className="alerta nivel-aviso compacta">{ui.portada.logoOpaco}</p>}
+        {esLogo && logo && logo.alfa && !p.logoBlanco && (
+          <p className="alerta nivel-aviso compacta">{ui.portada.sinLogoBlanco}</p>
+        )}
+        {esLogo && logo && p.logoBlanco && (
           <div className="logo-oscuro">
             <p className="rotulo">{ui.portada.logoBlanco}</p>
             <div className="ranura-imagen oscura">
@@ -175,7 +202,7 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
             </div>
           </div>
         )}
-        {logo && (
+        {esLogo && logo && (
           <button
             type="button"
             className="enlace"

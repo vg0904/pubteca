@@ -301,9 +301,20 @@ export const ui = {
     contraportada: 'Contraportada',
     contraportadaAyuda: 'Va al final del libro, como última página.',
     incluirContraportada: 'Incluir la contraportada en el libro',
-    logo: 'Logo del título',
+    logo: 'La portadilla',
     logoAyuda:
-      'Si tu título tiene logotipo, súbelo en negro sobre fondo transparente (PNG). Pubteca hace sola la versión blanca para el modo oscuro. Kindle no lo usa: allí el título va en texto, que se adapta solo.',
+      'La portadilla es la página del título, antes del primer capítulo. Kindle no usa imagen aquí: allí el título va en texto, que se adapta solo.',
+    diseno: {
+      pregunta: '¿Qué es lo que vas a subir?',
+      opciones: {
+        logo: 'Solo el logotipo del título',
+        pagina: 'La portadilla entera, ya diseñada',
+      },
+      ayuda: {
+        logo: 'Súbelo monocromático (en negro) y con fondo transparente (PNG): es lo que permite que Pubteca haga sola la versión blanca para el modo oscuro. Debajo, Pubteca pone el subtítulo, tu nombre y el sello.',
+        pagina: 'Se trata como una imagen normal y ocupa la página entera, así que Pubteca no le añade nada: el subtítulo, tu nombre y el sello tienen que ir ya en tu diseño. Tampoco hace la versión blanca para el modo oscuro, porque la imagen se respeta tal cual.',
+      },
+    },
     logoBlanco: 'Así se verá en modo oscuro',
     logoOpaco:
       'Este logo no tiene fondo transparente, así que no puedo hacer la versión blanca: en modo oscuro se verá un recuadro. Expórtalo como PNG con transparencia.',

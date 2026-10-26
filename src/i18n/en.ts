@@ -294,9 +294,20 @@ export const ui: Ui = {
     contraportada: 'Back cover',
     contraportadaAyuda: 'It goes at the end of the book, as the last page.',
     incluirContraportada: 'Include the back cover in the book',
-    logo: 'Title logo',
+    logo: 'The half-title page',
     logoAyuda:
-      'If your title has a logotype, upload it in black on a transparent background (PNG). Pubteca makes the white version for dark mode on its own. Kindle does not use it: there the title is text, which adapts by itself.',
+      'The half-title is the title page, before the first chapter. Kindle uses no image here: there the title goes as text, which adapts on its own.',
+    diseno: {
+      pregunta: 'What are you uploading?',
+      opciones: {
+        logo: 'Just the title logo',
+        pagina: 'The whole half-title, already designed',
+      },
+      ayuda: {
+        logo: 'Upload it monochrome (in black) and with a transparent background (PNG): that is what lets Pubteca make the white version for dark mode on its own. Below it, Pubteca adds the subtitle, your name and the imprint.',
+        pagina: 'It is treated as a normal image and fills the whole page, so Pubteca adds nothing to it: the subtitle, your name and the imprint have to be in your design already. It also makes no white version for dark mode, because the image is kept exactly as it is.',
+      },
+    },
     logoBlanco: 'This is how it will look in dark mode',
     logoOpaco:
       'This logo has no transparent background, so I cannot make the white version: in dark mode it will show as a box. Export it as a PNG with transparency.',

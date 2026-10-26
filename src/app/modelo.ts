@@ -131,6 +131,21 @@ export interface EntregaKindle {
  */
 export const ENTREGA_KINDLE_POR_DEFECTO: EntregaKindle = { comprimir: false, calidad: 80, grises: false }
 
+/**
+ * Que es lo que el autor subio en «Logo del título».
+ *
+ * `logo` es la pieza del titulo y Pubteca le pone debajo el subtitulo, el autor
+ * y el sello. `pagina` es un diseño de portadilla que ocupa la pagina entera y
+ * ya los trae dibujados: se trata como una imagen normal y no se le añade nada.
+ */
+export type DisenoPortadilla = 'logo' | 'pagina'
+
+export const DISENOS_PORTADILLA: readonly DisenoPortadilla[] = ['logo', 'pagina']
+
+export function disenoPortadilla(v: unknown): DisenoPortadilla {
+  return v === 'pagina' ? 'pagina' : 'logo'
+}
+
 export interface DatosLibro {
   readonly titulo: string
   readonly subtitulo: string
@@ -144,6 +159,8 @@ export interface DatosLibro {
   readonly incluirContraportada: boolean
   readonly separadorDeEscena: string
   readonly fuente: string
+  /** Si lo de «Logo del título» es un logo o la portadilla entera. */
+  readonly portadilla: DisenoPortadilla
 }
 
 export interface Proyecto {
@@ -210,6 +227,9 @@ export const DATOS_POR_DEFECTO: DatosLibro = {
   incluirContraportada: true,
   separadorDeEscena: '* * *',
   fuente: 'Baskerville',
+  // Un logo, que es lo que se asumia hasta ahora: un libro guardado antes de
+  // que esto existiera se sigue viendo igual.
+  portadilla: 'logo',
 }
 
 /**
