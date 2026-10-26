@@ -3,6 +3,7 @@ import { entrarEn, vecino } from '../editor-dom'
 import { objetivoVerso, type Donde, type Foco } from '../estado'
 import { crearId } from '../ids'
 import type { Bloque, Imagen, Tramo } from '../modelo'
+import { porTienda, TIENDAS, type Grupo, type Tienda } from '../avisos'
 import { avisosDeImagen } from '../revision'
 import {
   alternarMarcaVerso,
@@ -314,31 +315,73 @@ const BloqueVersos = memo(function BloqueVersos({
 // Ilustracion
 // ---------------------------------------------------------------------------
 
-/** Los avisos de una imagen, en una linea cada uno, con icono Y palabra. */
-export function AvisosDeImagen({ imagen, rol }: { imagen: Imagen; rol: 'ilustracion' | 'portada' | 'logo' }) {
+/** Una linea de aviso, con icono Y palabra, y su arreglo si lo tiene. */
+function LineaAviso({ grupo, imagen }: { grupo: Grupo; imagen: Imagen }) {
   const ui = useTextos()
   const ajustar = useAjustar()
-  const grupos = avisosDeImagen(imagen, rol)
-  if (grupos.length === 0) return null
   return (
-    <ul className="avisos-imagen">
-      {grupos.map((g) => (
-        <li key={g.clave + g.mensajes[0]} className={`nivel-${g.nivel}`}>
-          <span className="nivel-icono" aria-hidden="true">
-            {ui.niveles[g.nivel].icono}
-          </span>
-          <span className="sr">{ui.niveles[g.nivel].palabra}: </span>
-          {g.clave === 'otro' ? g.mensajes[0] : ui.grupos[g.clave].titulo}
-          {/* El aviso trae su arreglo: mandar al autor a otro programa es lo
-              que hacia el reporte de texto, y es lo que no se arregla nunca. */}
-          {arreglable(g.clave) && (
-            <button type="button" className="enlace arreglar" onClick={() => ajustar(imagen)}>
-              {ui.ajustar.arreglar}
-            </button>
+    <li className={`nivel-${grupo.nivel}`}>
+      <span className="nivel-icono" aria-hidden="true">
+        {ui.niveles[grupo.nivel].icono}
+      </span>
+      <span className="sr">{ui.niveles[grupo.nivel].palabra}: </span>
+      {/* El texto y su arreglo, en la MISMA caja: asi «Arreglar» va pegado a
+          su aviso y no empujado al borde de la columna, que con dos tiendas
+          lo dejaba lejisimos de lo que arregla. */}
+      <span>
+        {grupo.clave === 'otro' ? grupo.mensajes[0] : ui.grupos[grupo.clave].titulo}
+        {/* El aviso trae su arreglo: mandar al autor a otro programa es lo
+            que hacia el reporte de texto, y es lo que no se arregla nunca. */}
+        {arreglable(grupo.clave) && (
+          <button type="button" className="enlace arreglar" onClick={() => ajustar(imagen)}>
+            {ui.ajustar.arreglar}
+          </button>
+        )}
+      </span>
+    </li>
+  )
+}
+
+/**
+ * Los avisos de una imagen, SEPARADOS por tienda.
+ *
+ * Juntos no se entendian: «Kindle las pinta de blanco» y «Apple Books admite
+ * 5,6 millones de pixeles» son cosas de tiendas distintas, y en una sola lista
+ * parecen una misma pila de problemas. Separadas, el autor ve de un vistazo lo
+ * que de verdad pasa: que su libro sale para las DOS, y que una puede estar
+ * lista mientras a la otra le falta algo.
+ *
+ * Cada tienda sale siempre, tenga avisos o no: una tienda sin avisos dice
+ * «lista», que es informacion, no silencio. El reparto, en `avisos.ts`.
+ */
+export function AvisosDeImagen({ imagen, rol }: { imagen: Imagen; rol: 'ilustracion' | 'portada' | 'logo' }) {
+  const ui = useTextos()
+  const grupos = avisosDeImagen(imagen, rol)
+  const reparto = porTienda(grupos)
+  return (
+    <div className="avisos-tiendas">
+      {/* Sin clase por tienda: `tienda-apple` y `tienda-kindle` ya son de la
+          pantalla de descarga, y una clase repetida ya rompio la vista previa. */}
+      {TIENDAS.map((t: Tienda) => (
+        <section key={t} className="avisos-tienda">
+          <h4>{ui.tiendas[t]}</h4>
+          {reparto[t].length === 0 ? (
+            <p className="tienda-lista">
+              <span className="nivel-icono" aria-hidden="true">
+                ✓
+              </span>
+              {ui.tiendas.lista}
+            </p>
+          ) : (
+            <ul className="avisos-imagen">
+              {reparto[t].map((g) => (
+                <LineaAviso key={g.clave + g.mensajes[0]} grupo={g} imagen={imagen} />
+              ))}
+            </ul>
           )}
-        </li>
+        </section>
       ))}
-    </ul>
+    </div>
   )
 }
 

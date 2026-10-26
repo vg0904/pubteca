@@ -110,6 +110,87 @@ export function agrupar(dg: MensajesMotor): Grupo[] {
   return grupos
 }
 
+// ---------------------------------------------------------------------------
+// A que tienda le importa cada aviso
+// ---------------------------------------------------------------------------
+
+/**
+ * Las dos tiendas para las que Pubteca prepara el libro.
+ *
+ * No es lo mismo que `LibroGenerado['tienda']` del motor: alli es el nombre
+ * del archivo que sale, aqui es a quien le afecta un aviso.
+ */
+export type Tienda = 'apple' | 'kindle'
+
+export const TIENDAS: readonly Tienda[] = ['apple', 'kindle']
+
+const AMBAS: readonly Tienda[] = ['apple', 'kindle']
+
+/**
+ * A quien le importa cada aviso.
+ *
+ * El motivo de que esto exista: la tarjeta de una imagen los enseñaba todos
+ * juntos, y el autor no tenia forma de saber que «Kindle las pinta de blanco»
+ * y «Apple Books admite 5,6 millones de pixeles» son cosas de tiendas
+ * distintas, ni que su imagen ya esta bien para una aunque le falte algo para
+ * la otra.
+ *
+ * La tienda sale del motivo que el motor da, no de una opinion:
+ *
+ * - `transparencia`: el aviso dice «Kindle la convierte en blanco». En Apple
+ *   Books la transparencia se respeta.
+ * - `peso`: la tarifa de entrega por MB es de Amazon. Apple Books no cobra por
+ *   el tamaño del archivo (admite hasta 2 GB).
+ * - `pixeles` y `portadaLadoCorto`: los dos limites son de Apple Books.
+ * - `portadaBaja`: los 2500 px de alto los recomienda KDP.
+ * - `logoOpaco` y `sinLogoBlanco`: el logo solo viaja en el EPUB de Apple
+ *   Books; en Kindle el titulo va en texto. Ver `entrega.ts`.
+ * - `sinPortada`: la portada interna solo existe en el EPUB de Apple Books; en
+ *   KDP se sube aparte.
+ * - El resto (colores, tamaño, proporcion, descripciones, lo que no entra al
+ *   libro) se ve igual de mal en las dos.
+ */
+const TIENDAS_POR_GRUPO: Readonly<Record<ClaveGrupo, readonly Tienda[]>> = {
+  noEsImagen: AMBAS,
+  faltaImagen: AMBAS,
+  recursoAusente: AMBAS,
+  transparencia: ['kindle'],
+  cmyk: AMBAS,
+  p3: AMBAS,
+  pixeles: ['apple'],
+  portadaLadoCorto: ['apple'],
+  portadaBaja: ['kindle'],
+  resolucion: AMBAS,
+  horizontal: AMBAS,
+  proporcion: AMBAS,
+  peso: ['kindle'],
+  logoOpaco: ['apple'],
+  sinLogoBlanco: ['apple'],
+  sinPortada: ['apple'],
+  capituloVacio: AMBAS,
+  sinDescripcion: AMBAS,
+  otro: AMBAS,
+}
+
+/** A que tiendas le importa este aviso. Uno que no se reconoce afecta a las dos. */
+export function tiendasDe(clave: ClaveGrupo): readonly Tienda[] {
+  return TIENDAS_POR_GRUPO[clave] ?? AMBAS
+}
+
+/**
+ * Los avisos repartidos por tienda, en el mismo orden en que llegaron.
+ *
+ * Un aviso que afecta a las dos sale en las dos listas a proposito: cada
+ * columna tiene que contestar entera a «¿que le falta a esta tienda?». Si lo
+ * compartido se sacara a un tercer monton, el autor tendria que juntar dos
+ * sitios en la cabeza para saber si su imagen esta lista para Kindle.
+ */
+export function porTienda(grupos: readonly Grupo[]): Record<Tienda, Grupo[]> {
+  const r: Record<Tienda, Grupo[]> = { apple: [], kindle: [] }
+  for (const g of grupos) for (const t of tiendasDe(g.clave)) r[t].push(g)
+  return r
+}
+
 /** Cuantas lineas eran y cuantos grupos son. Para decirle al autor que no es tanto. */
 export function cuentas(grupos: readonly Grupo[]): { mensajes: number; grupos: number } {
   return { mensajes: grupos.reduce((n, g) => n + g.mensajes.length, 0), grupos: grupos.length }
