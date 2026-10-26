@@ -5,10 +5,20 @@ import { descargar } from '../copia'
 import { ajusteKindle, entregaKindle, imagenesDeKindle, muestrasPara } from '../entrega'
 import type { Estado } from '../estado'
 import { conLienzo, generarLibros, type Generado } from '../generar'
-import { bppJpeg, bppMedido, pesoTotalEstimado } from '../imagen-ajuste'
+import { ajusteEnLote, bppJpeg, bppMedido, conSufijo, pesoTotalEstimado, sinCambios } from '../imagen-ajuste'
+import { ajustarImagen } from '../imagen-canvas'
 import { idsDeImagenes, type DatosLibro, type EntregaKindle, type Imagen, type Proyecto } from '../modelo'
 import type { Repositorio } from '../repositorio'
-import { bloquea, cambioDeIdentidad, nombresLegibles, revisar, type Problema } from '../revision'
+import {
+  bloquea,
+  cambioDeIdentidad,
+  imagenesDelLote,
+  nombresLegibles,
+  pendientesDeImagenes,
+  pendientesDeKindle,
+  revisar,
+  type Problema,
+} from '../revision'
 import { useAvisar, useDespacho, useMedios, useTextos } from './contexto'
 import { VistaPrevia } from './VistaPrevia'
 
@@ -280,6 +290,131 @@ function ImagenesPorTienda({ p, imagenes }: { p: Proyecto; imagenes: ReadonlyMap
   )
 }
 
+/** Cuantos nombres de imagen se escriben antes de cortar la lista. */
+const MAX_NOMBRES = 6
+
+/**
+ * El recordatorio de lo que les queda a las imagenes, antes de descargar.
+ *
+ * RECUERDA, NO BLOQUEA. Un libro con las imagenes sin optimizar se publica
+ * igual: solo sale mas caro de entregar en Amazon y se ve peor en pantallas
+ * grandes. Lo que no se puede es enterarse DESPUES de subirlo a KDP, que es
+ * donde esto acababa hoy, porque los avisos solo salian en la tarjeta de cada
+ * imagen y hay que ir capitulo por capitulo a verlos.
+ *
+ * El boton arregla de una vez lo que tiene una sola respuesta correcta
+ * (reducir lo que se pasa de grande o de pesado, y de paso dejarlo en sRGB).
+ * Lo que se arregla RECORTANDO no entra: en lote cortaria cabezas. Ver
+ * `ARREGLABLES_EN_LOTE`.
+ */
+function AntesDeDescargar({ p, imagenes }: { p: Proyecto; imagenes: ReadonlyMap<string, Imagen> }) {
+  const ui = useTextos()
+  const despachar = useDespacho()
+  const avisar = useAvisar()
+  const { repo, subir } = useMedios()
+  const [ocupado, setOcupado] = useState(false)
+
+  const k = entregaKindle(p)
+  const pendientes = useMemo(() => pendientesDeImagenes(p, imagenes), [p, imagenes])
+  const paraKindle = useMemo(() => pendientesDeKindle(pendientes), [pendientes])
+  // Lo que solo le pasa a Kindle lo contesta entero la casilla de comprimir,
+  // que esta aqui mismo; con la casilla ya puesta deja de estar pendiente, y
+  // seguir diciendolo seria mandar al autor a arreglar lo que ya esta hecho.
+  const faltaComprimir = paraKindle.length > 0 && !k.comprimir
+  const visibles = useMemo(
+    () => (k.comprimir ? pendientes.filter((x) => !paraKindle.includes(x)) : pendientes),
+    [k.comprimir, paraKindle, pendientes],
+  )
+  // El lote sale de lo que SIGUE a la vista: ofrecer arreglar un renglon que ya
+  // no esta seria arreglar algo que el autor no ve.
+  const delLote = useMemo(() => imagenesDelLote(visibles), [visibles])
+
+  if (visibles.length === 0) return null
+
+  const nombre = (id: string): string => imagenes.get(id)?.nombreOriginal ?? id
+
+  /** Los nombres de las afectadas, cortando la lista: con treinta no se lee. */
+  const cuales = (ids: readonly string[]): string => {
+    const lista = ids.slice(0, MAX_NOMBRES).map(nombre).join(', ')
+    return ui.descargar.antes.cuales(ids.length, ids.length > MAX_NOMBRES ? `${lista}…` : lista)
+  }
+
+  const arreglarTodas = async (): Promise<void> => {
+    if (!repo || ocupado) return
+    setOcupado(true)
+    let hechas = 0
+    try {
+      for (const id of delLote) {
+        const imagen = imagenes.get(id)
+        const origen = imagen ? repo.blob(id) : undefined
+        if (!imagen || !origen) continue
+        const ajuste = ajusteEnLote(imagen)
+        if (sinCambios(ajuste, imagen)) continue
+        try {
+          const salida = await ajustarImagen(origen, ajuste)
+          const [nueva] = await subir([
+            new File([salida.blob], conSufijo(imagen.nombreOriginal, salida.tipo), { type: salida.blob.type }),
+          ])
+          if (!nueva) continue
+          despachar({ tipo: 'sustituirImagen', viejo: id, nuevo: nueva.id })
+          hechas++
+        } catch {
+          // Una imagen que este navegador no sabe codificar no para a las
+          // demas: se queda como estaba y sigue saliendo en el recordatorio.
+        }
+      }
+      // Y lo que solo le pasa a Kindle se resuelve con la casilla de comprimir.
+      if (faltaComprimir) despachar({ tipo: 'entregaKindle', cambios: { comprimir: true }, ahora: Date.now() })
+      // Lo que se diga tiene que ser lo que de verdad paso: tocar la casilla de
+      // comprimir no es haber arreglado ninguna imagen.
+      const dicho =
+        hechas > 0
+          ? ui.descargar.antes.hecho(hechas)
+          : faltaComprimir
+            ? ui.descargar.antes.comprimirPuesto
+            : ui.descargar.antes.nadaQueHacer
+      avisar(dicho, { deshacer: hechas > 0 || faltaComprimir })
+    } finally {
+      setOcupado(false)
+    }
+  }
+
+  // El boton dice lo que va a hacer. Sin imagenes que tocar, lo unico que hace
+  // es encender la casilla de comprimir, y llamar a eso «1 imagen» seria mentir.
+  const etiqueta = delLote.length > 0 ? ui.descargar.antes.arreglar(delLote.length) : ui.descargar.antes.soloComprimir
+  const hayAlgoQueHacer = delLote.length > 0 || faltaComprimir
+
+  return (
+    <section className="antes-de-descargar">
+      <h2>{ui.descargar.antes.titulo}</h2>
+      <p className="ayuda">{ui.descargar.antes.ayuda}</p>
+      <ul className="avisos-imagen">
+        {visibles.map((x) => (
+          <li key={x.clave} className={`nivel-${x.nivel}`}>
+            <span className="nivel-icono" aria-hidden="true">
+              {ui.niveles[x.nivel].icono}
+            </span>
+            <span className="sr">{ui.niveles[x.nivel].palabra}: </span>
+            <span>
+              <strong>{x.tiendas.map((s) => ui.tiendas[s]).join(' · ')}</strong> — {ui.grupos[x.clave].titulo}{' '}
+              <span className="ayuda">{cuales(x.imagenes)}</span>
+              {!x.enLote && (
+                <span className="ayuda"> {x.clave === 'transparencia' ? ui.descargar.antes.conComprimir : ui.grupos[x.clave].consejo}</span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {hayAlgoQueHacer && (
+        <button type="button" className="boton-secundario" disabled={ocupado || !repo} onClick={() => void arreglarTodas()}>
+          {ocupado ? ui.descargar.antes.arreglando : etiqueta}
+        </button>
+      )}
+      <p className="ayuda">{ui.descargar.antes.noBloquea}</p>
+    </section>
+  )
+}
+
 /**
  * Codifica de verdad una muestra de las imagenes y devuelve sus bytes por
  * pixel, o `null` si el navegador no pudo con ninguna.
@@ -393,6 +528,8 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
       </section>
 
       <ImagenesPorTienda p={p} imagenes={estado.imagenes} />
+
+      <AntesDeDescargar p={p} imagenes={estado.imagenes} />
 
       <section>
         <h2>{ui.descargar.revision}</h2>

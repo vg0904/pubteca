@@ -78,6 +78,28 @@ export const ARREGLABLES: readonly ClaveGrupo[] = [
 
 export const arreglable = (clave: ClaveGrupo): boolean => ARREGLABLES.includes(clave)
 
+/**
+ * Los avisos que el arreglo EN LOTE puede quitar sin tocar el dibujo.
+ *
+ * Mas corta que `ARREGLABLES`, y a proposito: en lote se arreglan treinta
+ * imagenes sin que el autor mire ninguna, asi que solo puede hacer lo que no
+ * tiene vuelta de hoja. Reducir una imagen que se pasa del tope, o que pesa de
+ * mas, es una sola respuesta correcta; volverla a codificar la deja en sRGB de
+ * paso (`p3`, `cmyk`).
+ *
+ * Lo que NO entra aunque `ARREGLABLES` lo tenga:
+ *
+ * - `proporcion` y `horizontal` se arreglan RECORTANDO, y recortar es elegir
+ *   que parte del dibujo se pierde. Eso lo decide el autor, imagen por imagen,
+ *   mirandola. En lote cortaria cabezas.
+ * - `transparencia` se arregla aplanando sobre un fondo, y el fondo de un
+ *   dibujo no tiene por que ser blanco. Para Kindle se resuelve solo con
+ *   «Comprimirlas en JPEG», que es lo que Kindle hace de todos modos.
+ */
+export const ARREGLABLES_EN_LOTE: readonly ClaveGrupo[] = ['pixeles', 'peso', 'p3', 'cmyk']
+
+export const arreglableEnLote = (clave: ClaveGrupo): boolean => ARREGLABLES_EN_LOTE.includes(clave)
+
 export type Formato = 'png' | 'jpeg'
 
 /** Un trozo de la imagen, en pixeles de la imagen original. */
@@ -298,6 +320,33 @@ export const KINDLE_PROPIO_POR_DEFECTO: KindlePropio = { calidad: 80, grises: fa
  */
 export function necesitaAlfa(formato: Formato, origenConAlfa: boolean): boolean {
   return formato === 'png' && origenConAlfa
+}
+
+/**
+ * El ajuste que aplica el arreglo EN LOTE a una imagen.
+ *
+ * La imagen ENTERA (no recorta: ver `ARREGLABLES_EN_LOTE`), al tamaño que se
+ * recomienda para su propia proporcion, en su mismo formato y conservando el
+ * alfa que tuviera. Asi lo unico que cambia es que deja de pasarse de grande,
+ * y el dibujo sigue siendo el mismo dibujo.
+ */
+export function ajusteEnLote(imagen: {
+  ancho: number
+  alto: number
+  tipo: Formato
+  alfa?: boolean
+}): Ajuste {
+  const recorte = recorteCompleto(imagen.ancho, imagen.alto)
+  const { ancho, alto } = tamanoRecomendado(recorte)
+  return {
+    recorte,
+    ancho,
+    alto,
+    formato: imagen.tipo,
+    calidad: 85,
+    grises: false,
+    conservarAlfa: necesitaAlfa(imagen.tipo, imagen.alfa ?? false),
+  }
 }
 
 /**

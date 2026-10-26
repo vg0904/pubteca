@@ -389,6 +389,23 @@ export const ui: Ui = {
     afectadas: (n: number) => (n === 1 ? '1 affected' : `${n} affected`),
     reporte: 'Download the report (.txt)',
 
+    // Lo que les queda a las imagenes, antes de preparar los EPUB. RECUERDA,
+    // NO BLOQUEA: el libro se descarga igual. Ver ui/Descargar.tsx.
+    antes: {
+      titulo: 'Before you download',
+      ayuda:
+        'This is what your images still need. The warnings are on each image\u2019s card too, but there you have to go chapter by chapter, and once the book is up on KDP there is no going back.',
+      cuales: (n: number, lista: string) => (n === 1 ? lista : `${n}: ${lista}`),
+      conComprimir: 'Fixed by \u201cCompress them as JPEG for Kindle\u201d, just above.',
+      arreglar: (n: number) => (n === 1 ? 'Fix it (1 image)' : `Fix all of them (${n})`),
+      soloComprimir: 'Compress them as JPEG for Kindle',
+      comprimirPuesto: 'Done: the Kindle images will be compressed when the EPUBs are prepared.',
+      arreglando: 'Fixing\u2026',
+      hecho: (n: number) => (n === 1 ? '1 image fixed.' : `${n} images fixed.`),
+      nadaQueHacer: 'There was nothing to fix without cropping the drawing.',
+      noBloquea:
+        'You can download anyway: none of this stops you publishing. Large images only make delivery dearer on Amazon and look worse on big screens. What has to be fixed by cropping is left alone here: that is decided on each drawing.',
+    },
     imagenes: {
       titulo: 'Images in each store',
       ayuda:
