@@ -16,7 +16,7 @@
  * obliga a serializar cadenas gigantes en cada autoguardado.
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import { VERSION_PROYECTO, type Proyecto } from './modelo'
+import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, type DatosLibro, type Proyecto } from './modelo'
 
 const NOMBRE_BD = 'pubteca'
 /** Version del ESQUEMA de IndexedDB (distinta de la version del proyecto). */
@@ -182,6 +182,13 @@ export async function guardarProyecto(
  * Si viene de una version MAS NUEVA del formato, se niega a leerlo en vez de
  * interpretarlo mal: el autor habra usado una version mas reciente de Pubteca
  * en otro navegador, y leerlo a medias le estropearia el libro.
+ *
+ * Y al reves: un libro guardado ANTES de que un campo existiera no lo trae,
+ * pero el modelo dice que esta. Los que falten toman su valor por defecto aqui,
+ * al leer, para que un `undefined` no se cuele por la interfaz (un boton de
+ * radio sin ninguna opcion marcada) ni por libro.txt (la cadena «undefined»).
+ * Esto no sube `VERSION_PROYECTO`: no cambia la forma de lo guardado, rellena
+ * lo que falta, y es lo que ya pasaba con cada campo nuevo del libro.
  */
 export async function leerProyecto(
   db: Almacen,
@@ -196,7 +203,19 @@ export async function leerProyecto(
       'versionFutura',
     )
   }
-  return p
+  const puestos = Object.fromEntries(
+    Object.entries(p.datos ?? {}).filter(([, v]) => v !== undefined),
+  ) as Partial<DatosLibro>
+  return {
+    ...p,
+    datos: {
+      ...DATOS_POR_DEFECTO,
+      ...puestos,
+      // Este ademas se COMPRUEBA, no solo se rellena: el motor lo usa para
+      // decidir que pagina construye, asi que un valor raro no puede pasar.
+      portadilla: disenoPortadilla(puestos.portadilla),
+    },
+  }
 }
 
 export async function listarProyectos(db: Almacen): Promise<ResumenProyecto[]> {

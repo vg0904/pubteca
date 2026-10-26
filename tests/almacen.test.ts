@@ -84,6 +84,29 @@ describe('proyectos', () => {
     expect(leido).toMatchObject(p)
   })
 
+  it('un libro guardado SIN un campo del modelo lo recupera con su valor por defecto', async () => {
+    // El autoguardado escribe el objeto tal cual, asi que un libro guardado
+    // antes de que un campo existiera no lo trae; el modelo dice que esta. Sin
+    // rellenarlo, la interfaz pinta un radio sin ninguna opcion marcada y
+    // libro.txt sale con la cadena «undefined».
+    const p = proyecto('viejo', 'De antes')
+    const { portadilla: _fuera, separadorDeEscena: _fuera2, ...datosViejos } = p.datos
+    await guardarProyecto(db, { ...p, datos: datosViejos as typeof p.datos }, 1000)
+    const leido = await leerProyecto(db, 'viejo')
+    expect(leido?.datos.portadilla).toBe(DATOS_POR_DEFECTO.portadilla)
+    expect(leido?.datos.separadorDeEscena).toBe(DATOS_POR_DEFECTO.separadorDeEscena)
+    // Y lo que SI estaba se respeta.
+    expect(leido?.datos.titulo).toBe('De antes')
+  })
+
+  it('un valor que el motor usa para decidir la pagina se comprueba, no solo se rellena', async () => {
+    const p = proyecto('raro', 'Raro')
+    await guardarProyecto(db, { ...p, datos: { ...p.datos, portadilla: 'cualquier cosa' as 'logo' } }, 1000)
+    expect((await leerProyecto(db, 'raro'))?.datos.portadilla).toBe('logo')
+    await guardarProyecto(db, { ...p, datos: { ...p.datos, portadilla: 'pagina' } }, 2000, 1000)
+    expect((await leerProyecto(db, 'raro'))?.datos.portadilla).toBe('pagina')
+  })
+
   it('dos pestañas con el mismo libro: la que va atrasada NO pisa a la otra', async () => {
     // Pestaña A abre el libro (modificado 1000). Pestaña B lo abre tambien,
     // escribe y guarda (2000). Cuando A guarda, lo que hay ya no es lo que

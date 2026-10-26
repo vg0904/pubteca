@@ -41,6 +41,7 @@ import { capituloDesdeDialecto, extraDesdeDialecto } from './importar/dialecto'
 import { KINDLE_PROPIO_POR_DEFECTO, type KindlePropio } from './imagen-ajuste'
 import {
   DATOS_POR_DEFECTO,
+  disenoPortadilla,
   ENTREGA_KINDLE_POR_DEFECTO,
   VERSION_PROYECTO,
   type Bloque,
@@ -219,6 +220,9 @@ function datosDeLibroTxt(texto: string | undefined, avisos: AvisoCopia[]): Datos
     incluirContraportada: si(cfg.incluir_contraportada),
     separadorDeEscena: t(cfg.separador_de_escena) || DATOS_POR_DEFECTO.separadorDeEscena,
     fuente: t(cfg.fuente) || DATOS_POR_DEFECTO.fuente,
+    // Cualquier otra cosa es un logo, que es lo que se asumia antes de que
+    // esto existiera: una copia vieja no cambia de aspecto al abrirse.
+    portadilla: disenoPortadilla(t(cfg['portadilla'] ?? '')),
   }
 }
 
@@ -514,6 +518,9 @@ function proyectoDeJson(
   ) as unknown as DatosLibro
   const idioma = idiomaConocido(datos.idioma)
   if (!idioma) avisos.push({ clave: 'idioma', detalle: datos.idioma })
+  // El bucle de arriba copia los campos de texto tal cual; este solo admite sus
+  // dos valores, como el idioma, porque el motor lo usa para decidir la pagina.
+  const portadilla = disenoPortadilla(datos.portadilla)
 
   const portada: Partial<Record<RolPortada, string>> = {}
   if (esObjeto(x['portada'])) {
@@ -532,7 +539,7 @@ function proyectoDeJson(
   return {
     id: nuevoId('libro'),
     version: VERSION_PROYECTO,
-    datos: { ...datos, idioma: idioma ?? 'es' },
+    datos: { ...datos, idioma: idioma ?? 'es', portadilla },
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),
     laminas: (Array.isArray(x['laminas']) ? x['laminas'] : []).flatMap((v) => (typeof v === 'string' ? [imagenId(v)] : [])),

@@ -226,6 +226,50 @@ describe('las diferencias Kindle / Apple Books', () => {
     expect(texto(apple, 'OEBPS/texto/portadilla.xhtml')).toContain('class="logo logo-oscuro"')
   })
 
+  it('la portadilla a pagina completa: la imagen sola en Apple, y nada añadido', () => {
+    // Un diseño de portadilla a pagina completa ya trae dibujados el titulo, el
+    // autor y el sello: ponerlos otra vez los repite, y tratarlo como un logo lo
+    // encoge al 88 % de ancho que le toca a un logo.
+    const pr = leerProyecto(FIXTURE)
+    const aPagina = construir(
+      { ...pr, libroTxt: `${pr.libroTxt ?? ''}\nportadilla: pagina\n` },
+      { ahora: new Date('2026-10-20T19:09:41Z') },
+    )
+    const zip = (tienda: string): Record<string, Uint8Array> =>
+      unzipSync(aPagina.resultados.find((r) => r.tienda === tienda)?.bytes ?? new Uint8Array())
+    const pa = texto(zip('AppleBooks'), 'OEBPS/texto/portadilla.xhtml')
+    const pk = texto(zip('Kindle'), 'OEBPS/texto/portadilla.xhtml')
+
+    // Apple: la imagen sola, en una pagina de imagen como la de una ilustracion.
+    expect(pa).toContain('class="pagina-imagen"')
+    expect(pa).toContain('<div class="ilustracion"><img src="../imagenes/logo.png"')
+    // Y NADA añadido: ni subtitulo, ni autor, ni sello.
+    expect(pa).not.toContain('subtitulo-libro')
+    expect(pa).not.toContain('autor-libro')
+    expect(pa).not.toContain('sello')
+    // Sigue siendo la portadilla para las tiendas.
+    expect(pa).toContain('epub:type="titlepage"')
+
+    // Kindle no recibe la imagen, asi que se queda con su portadilla de texto
+    // ENTERA, y su body sin la clase de pagina de imagen.
+    expect(pk).toContain('<h1 class="titulo-libro">El faro de Ibar</h1>')
+    expect(pk).toContain('autor-libro')
+    expect(pk).not.toContain('pagina-imagen')
+    expect(zip('Kindle')['OEBPS/imagenes/logo.png']).toBeUndefined()
+
+    // La version blanca no se usa ni se echa de menos: a pagina completa es una
+    // imagen normal y el modo oscuro no la cambia.
+    expect(pa).not.toContain('logo-blanco')
+    expect(aPagina.diagnosticos.notas.some((n) => n.includes('logo-blanco'))).toBe(false)
+    expect(zip('AppleBooks')['OEBPS/imagenes/logo-blanco.png']).toBeUndefined()
+  })
+
+  it('sin la clave, la portadilla es la de siempre: el Python no la conoce', () => {
+    // leerConfig conserva las claves que no son suyas, y `portadilla` no esta en
+    // CONFIG_DEFAULT: un proyecto sin ella sale exactamente como antes.
+    expect(texto(apple, 'OEBPS/texto/portadilla.xhtml')).toContain('class="logo logo-claro"')
+  })
+
   it('los logos solo entran en Apple', () => {
     expect(kindle['OEBPS/imagenes/logo.png']).toBeUndefined()
     expect(apple['OEBPS/imagenes/logo.png']).toBeDefined()

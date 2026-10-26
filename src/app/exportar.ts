@@ -67,6 +67,9 @@ function libroTxt(p: Proyecto): string {
     `incluir_contraportada: ${d.incluirContraportada ? 'si' : 'no'}`,
     `separador_de_escena: ${d.separadorDeEscena}`,
     `fuente: ${d.fuente}`,
+    // El motor solo la mira si vale «pagina»; no esta en CONFIG_DEFAULT porque
+    // el Python no la conoce, y leerConfig conserva igual lo que no es suyo.
+    `portadilla: ${d.portadilla}`,
     '',
   ].join('\n')
 }

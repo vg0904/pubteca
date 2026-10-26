@@ -263,6 +263,22 @@ export const DE_COMPORTAMIENTO = [
     donde: 'src/core/zip.ts',
   },
   {
+    nombre: 'Portadilla a pagina completa',
+    motivo:
+      'portada/logo.png se trataba SIEMPRE como un logotipo: se metia en un h1 al 88 % de ancho y ' +
+      'debajo iban el subtitulo, el autor y el sello. Pero por ese mismo sitio se sube otra cosa ' +
+      'distinta, una portadilla ya diseñada que ocupa la pagina entera y que trae esos datos ' +
+      'dibujados: salian dos veces, y el diseño encogido. Con «portadilla: pagina» en libro.txt, ' +
+      'Apple Books recibe la imagen SOLA en una pagina de imagen, como una ilustracion, y no se le ' +
+      'añade nada; tampoco se busca ni se echa de menos la version blanca, porque a pagina completa ' +
+      'es una imagen normal y el modo oscuro no la cambia. Kindle no recibe la imagen en ningun ' +
+      'caso (alli el titulo va en texto), asi que se queda con su portadilla de texto entera, y por ' +
+      'eso su body necesita otra clase que el de Apple. La clave NO esta en CONFIG_DEFAULT: el ' +
+      'Python no la conoce y leerConfig conserva igual lo que no es suyo, asi que un proyecto sin ' +
+      'ella sale byte a byte como antes, y los golden lo fijan.',
+    donde: 'src/core/libro.ts (portadilla)',
+  },
+  {
     nombre: 'n_ilus muerto',
     motivo:
       'seccion_con_titulo declaraba un n_ilus que solo contaba las ilustraciones del cuerpo, ' +

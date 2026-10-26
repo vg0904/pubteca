@@ -72,6 +72,10 @@ export class Libro {
     seccion: Seccion,
     claseBody = '',
     cuerpoKindle?: string,
+    // La portadilla a pagina completa es una IMAGEN en Apple Books y TEXTO en
+    // Kindle, asi que cada uno necesita su clase de body. Sin esto, el body de
+    // Kindle salia con `pagina-imagen` y su titulo se quedaba sin margenes.
+    claseBodyKindle = claseBody,
   ): string {
     const href = `texto/${nombre}.xhtml`
     const pagina: Pagina = {
@@ -81,7 +85,7 @@ export class Libro {
       contenido: xhtml(titulo, cuerpo, this.idioma, claseBody),
       ...(cuerpoKindle === undefined
         ? {}
-        : { contenidoKindle: xhtml(titulo, cuerpoKindle, this.idioma, claseBody) }),
+        : { contenidoKindle: xhtml(titulo, cuerpoKindle, this.idioma, claseBodyKindle) }),
     }
     this.paginas.push(pagina)
     return href
@@ -155,17 +159,37 @@ export class Libro {
     return claves.length
   }
 
+  /**
+   * Si el diseño de la portadilla OCUPA LA PAGINA ENTERA.
+   *
+   * Dos cosas distintas se subian por el mismo sitio. Un LOGOTIPO es la pieza
+   * del titulo, y Pubteca le pone debajo el subtitulo, el autor y el sello. Un
+   * diseño de portadilla a pagina completa ya los trae dibujados, asi que
+   * ponerlos otra vez los repite, y encima lo encoge al 88 % de ancho que le
+   * toca a un logo.
+   *
+   * La clave no esta en CONFIG_DEFAULT a proposito: el Python no la conoce, y
+   * `leerConfig` conserva igual las claves que no son suyas. Asi un proyecto
+   * sin ella se comporta exactamente como antes.
+   */
+  private portadillaAPagina(): boolean {
+    return (this.cfg['portadilla'] ?? '').trim().toLowerCase() === 'pagina'
+  }
+
   portadilla(): void {
     const c = this.cfg
     const alt = esc(c.titulo)
+    const aPagina = this.portadillaAPagina()
     const logo = buscarEn(this.proyecto.portada, 'logo', EXT_IMG)
     const logoB = buscarEn(this.proyecto.portada, 'logo-blanco', EXT_IMG)
 
     const img = logo
       ? this.imagenes.registrar(logo, `portada/${logo.nombre}`, { rol: 'logo', soloApple: true })
       : null
+    // A pagina completa es una imagen normal: el modo oscuro no la cambia, asi
+    // que la version blanca ni se registra ni se echa de menos.
     const imgB =
-      img && logoB
+      img && logoB && !aPagina
         ? this.imagenes.registrar(logoB, `portada/${logoB.nombre}`, { rol: 'logo', soloApple: true })
         : null
 
@@ -179,7 +203,7 @@ export class Libro {
         `<h1 class="titulo-libro con-logo">` +
         `<img class="logo logo-claro" src="../${img.href}" alt="${alt}"/>` +
         `<img class="logo logo-oscuro" src="../${imgB.href}" alt="${alt}"/></h1>`
-    } else if (img) {
+    } else if (img && !aPagina) {
       this.dg.nota(
         'No hay portada/logo-blanco.png: en Apple Books con modo oscuro el logo negro casi no se verá.',
       )
@@ -199,6 +223,22 @@ export class Libro {
       '<section epub:type="titlepage">\n<div class="portadilla">\n' +
       [tituloHtml, ...resto].join('\n') +
       '\n</div>\n</section>'
+
+    // A pagina completa, Apple Books recibe la imagen SOLA, en la misma pagina
+    // de imagen que una ilustracion: no se le añade nada porque el diseño ya lo
+    // trae. Kindle sigue con su portadilla de texto: no recibe la imagen.
+    if (aPagina && img) {
+      this.agregar(
+        'portadilla',
+        c.titulo,
+        `<section epub:type="titlepage">${paginaImagen(img.href, alt)}</section>`,
+        'inicio',
+        'pagina-imagen',
+        cuerpo(tituloKindle),
+        '',
+      )
+      return
+    }
 
     this.agregar(
       'portadilla',
