@@ -49,6 +49,17 @@ STYLES = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </w:styles>
 """
 
+# Estilos con el nombre EN ESPAÑOL, como los escribe Apple Pages (Word guarda
+# el nombre interno en ingles; Pages, no). Van aparte y solo se meten en los
+# .docx que los usan: styles.xml viaja DENTRO de cada zip, asi que anadirlos a
+# la lista de siempre cambiaria los bytes de los once fixtures y ensuciaria el
+# diff sin que ninguno de ellos los necesite.
+ESTILOS_EN_ESPANOL = {
+    "poema": "poema",
+    "Cita": "Cita",
+    "CitaDestacada": "Cita destacada",
+}
+
 
 def esc(t):
     return t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -182,6 +193,15 @@ def escribir(nombre, cuerpo, con_imagen=False, notas=None):
         info.compress_type = zipfile.ZIP_DEFLATED
         z.writestr(info, datos)
 
+    estilos = STYLES
+    extra = "".join(
+        f'<w:style w:type="paragraph" w:styleId="{sid}"><w:name w:val="{nombre}"/></w:style>'
+        for sid, nombre in ESTILOS_EN_ESPANOL.items()
+        if f'w:pStyle w:val="{sid}"' in cuerpo
+    )
+    if extra:
+        estilos = STYLES.replace("</w:styles>", extra + "</w:styles>")
+
     tipos = CONTENT_TYPES
     if notas:
         tipos = tipos.replace(
@@ -193,7 +213,7 @@ def escribir(nombre, cuerpo, con_imagen=False, notas=None):
         meter(z, "[Content_Types].xml", tipos)
         meter(z, "_rels/.rels", RELS)
         meter(z, "word/document.xml", documento(cuerpo))
-        meter(z, "word/styles.xml", STYLES)
+        meter(z, "word/styles.xml", estilos)
         meter(z, "word/_rels/document.xml.rels", rels_documento(con_imagen, bool(notas)))
         if notas:
             meter(z, "word/footnotes.xml", notas_xml(notas))
@@ -367,6 +387,38 @@ DOCUMENTOS = {
         ],
         False,
         {1: ["Un legajo es un atado de papeles."], 2: ["Desde 1931.", "Seg\u00fan el inventario."]},
+    ),
+    # Un manuscrito salido de Apple Pages, que escribe los nombres de estilo EN
+    # ESPAÑOL: mammoth solo conoce los ingleses y los poemas llegaban como
+    # prosa. Las estrofas se separan con un parrafo VACIO, que es como se
+    # escribe un poema con un parrafo por verso, y por eso la conversion pide
+    # `ignoreEmptyParagraphs: false`.
+    "poema-en-espanol.docx": (
+        [
+            parrafo([run("Cap\u00edtulo 1: El canto de la marea")], "Heading1"),
+            parrafo([run("Las voces del puerto empezaron a cantar todas a la vez.")]),
+            # Un vacio ANTES del primer verso, como lo deja Pages: no puede
+            # salir una estrofa vacia por delante
+            parrafo([], "poema"),
+            parrafo([run("Nacimos de la espuma,")], "poema"),
+            parrafo([run("de un trueno sin lluvia,")], "poema"),
+            parrafo([run("y de un nombre que nadie recuerda.")], "poema"),
+            parrafo([], "poema"),
+            parrafo([run("Guardamos lo que el agua olvida,")], "poema"),
+            parrafo([run("y olvidamos lo que el agua guarda.")], "poema"),
+            parrafo([], "poema"),
+            parrafo([run("Cuando no quede nadie que nos nombre,")], "poema"),
+            parrafo([run("seguiremos cantando.")], "poema"),
+            parrafo([run("El canto se apag\u00f3 y el puerto volvi\u00f3 a su ruido.")]),
+            # «Cita», el nombre español de Quote. Sin vacios en medio: un poema
+            # de una sola estrofa sigue siendo una sola estrofa.
+            parrafo([run("Quien escucha la marea")], "Cita"),
+            parrafo([run("no vuelve a dormir igual.")], "Cita"),
+            parrafo([run("Lo dec\u00eda su abuela, y ella no lo cre\u00eda.")]),
+            # «Cita destacada», el nombre español de Intense Quote
+            parrafo([run("Y aun as\u00ed volvi\u00f3 al muelle.")], "CitaDestacada"),
+        ],
+        False,
     ),
     # Vacio
     "vacio.docx": ([], False),

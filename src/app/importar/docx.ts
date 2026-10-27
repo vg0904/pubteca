@@ -51,11 +51,50 @@ const MARCADOR = 'pubteca-imagen:'
  * nunca con un Word real (los tests la probaban con HTML escrito a mano). Se
  * compara con el NOMBRE interno del estilo, que Word guarda en ingles aunque la
  * interfaz este en español; «Quotations» es el de LibreOffice.
+ *
+ * PERO EL MANUSCRITO NO SIEMPRE SALE DE WORD. Apple Pages escribe los nombres
+ * de estilo EN ESPAÑOL, y entonces no se traduce ninguno. Medido en un libro
+ * real de 42.000 palabras exportado desde Pages: sus estilos son «Cuerpo»,
+ * «Subtitulo», «TOC 1» y uno propio llamado «poema», y los 94 parrafos de su
+ * poema llegaban al EPUB como prosa suelta. De ahi las dos familias nuevas:
+ *
+ *   - las CITAS en español: «Cita» y «Cita destacada» son los nombres que
+ *     Word y Pages le dan a Quote e Intense Quote cuando el documento se
+ *     escribio en castellano;
+ *   - los POEMAS: «poema» no es de ninguna suite, se lo invento el autor, pero
+ *     una linea con ese nombre es verso en cualquier libro; «Poetry» y «Verse»
+ *     son el mismo invento de quien escribe en ingles.
+ *
+ * DOS COSAS QUE DICE EL CODIGO DE MAMMOTH (lib/styles/document-matchers.js), y
+ * que ahorran la mitad de las reglas:
+ *
+ *   - `[style-name='X']` compara SIN mayusculas (`first.toUpperCase() ===
+ *     second.toUpperCase()`), asi que «poema» y «Poema» son la misma regla: no
+ *     hay que escribir las dos;
+ *   - `[style-name^='X']` compara por PREFIJO, tambien sin mayusculas. Se usa
+ *     para las dos familias que cada autor amplia por su cuenta («Cita larga»,
+ *     «Poema 2»), porque enumerar las variantes es una carrera que no se gana.
+ *     Pasarse de ancho aqui se ve al instante —un parrafo de prosa que sale
+ *     como verso en la propuesta, y el autor lo corrige— mientras que quedarse
+ *     corto es justo lo que pasaba: 94 versos vueltos prosa en silencio.
+ *
+ * NO SE MAPEAN «Subtitulo» NI «Titulo 1», aunque Pages tambien los escriba en
+ * español. En ese libro las cabeceras de capitulo llevan estilo «Subtitulo» y
+ * hoy funcionan PRECISAMENTE porque llegan como parrafo y su texto dice
+ * «Capitulo N: Titulo». Mapeadas a `h2` pasan a ser bloques `subtitulo`, y
+ * `propuestaDesdeHtml` solo mira los bloques `parrafo` al buscar cabeceras:
+ * medido con el libro real, de 32 cortes se quedaba en 16, y los 16 que
+ * sobrevivian eran las lineas del indice escrito a mano. Las 16 cabeceras de
+ * capitulo de verdad desaparecian del todo.
  */
 const ESTILOS = [
   "p[style-name='Quote'] => blockquote > p:fresh",
   "p[style-name='Intense Quote'] => blockquote > p:fresh",
   "p[style-name='Quotations'] => blockquote > p:fresh",
+  "p[style-name^='Cita'] => blockquote > p:fresh",
+  "p[style-name^='Poema'] => blockquote > p:fresh",
+  "p[style-name='Poetry'] => blockquote > p:fresh",
+  "p[style-name='Verse'] => blockquote > p:fresh",
 ]
 
 export interface ImagenExtraida {
@@ -294,6 +333,28 @@ interface Trozo {
   readonly parrafos: readonly { readonly texto: string; readonly bloque: number }[]
 }
 
+/**
+ * Parte una lista en TANDAS, cortando por los elementos vacios y sin dejar
+ * tandas vacias.
+ *
+ * Es como se separan las estrofas de un poema escrito con un parrafo por
+ * verso: una linea en blanco en medio y nada mas.
+ */
+function tandas<T extends { readonly length: number }>(lista: readonly T[]): T[][] {
+  const salida: T[][] = []
+  let actual: T[] = []
+  for (const x of lista) {
+    if (x.length === 0) {
+      if (actual.length > 0) salida.push(actual)
+      actual = []
+      continue
+    }
+    actual.push(x)
+  }
+  if (actual.length > 0) salida.push(actual)
+  return salida
+}
+
 /** Un elemento de bloque del HTML de mammoth -> bloques del modelo. */
 function bloquesDeElemento(el: Element, ctx: Contexto): Trozo {
   const etiqueta = el.tagName.toLowerCase()
@@ -314,15 +375,21 @@ function bloquesDeElemento(el: Element, ctx: Contexto): Trozo {
     // Hay dos formas de escribir un poema en Word, y las dos son comunes: un
     // parrafo por verso (Intro al final de cada linea), o un parrafo por
     // estrofa con los versos separados por Mayus+Intro. Si hay saltos sueltos,
-    // cada parrafo es una estrofa; si no, es un verso y todo va en una estrofa
-    // (las lineas en blanco entre estrofas las descarta mammoth y no se pueden
-    // recuperar: el autor las pone en el editor con Intro en un verso vacio).
+    // cada parrafo es una estrofa; si no, cada parrafo es un verso y las
+    // ESTROFAS las marcan los parrafos vacios de en medio.
+    //
+    // Esos vacios llegan hasta aqui solo porque la conversion pide
+    // `ignoreEmptyParagraphs: false` (ver `importarDocx`). Con el valor por
+    // defecto mammoth los tira, y como `blockquote > p:fresh` mete en un mismo
+    // `<blockquote>` todos los parrafos seguidos, el poema entero caia en una
+    // sola estrofa: medido con un libro real, 75 versos en una estrofa en vez
+    // de las 19 de cuatro versos que escribio el autor.
     const porParrafo = Array.from(el.querySelectorAll('p')).map((p) => lineasDeElemento(p, ctx.descartes))
     const conSaltos = porParrafo.some((lineas) => lineas.length > 1)
     const comoVerso = (l: readonly Tramo[]): Tramo => ({ texto: textoDe(l), marcas: l[0]?.marcas ?? [] })
     const estrofas = conSaltos
       ? porParrafo.filter((lineas) => lineas.length > 0).map((lineas) => lineas.map(comoVerso))
-      : [porParrafo.flat().map(comoVerso)].filter((e) => e.length > 0)
+      : tandas(porParrafo).map((tanda) => tanda.flat().map(comoVerso))
     // Todos los versos son el mismo bloque, pero cada `<p>` era un `w:p`.
     for (const lineas of porParrafo) {
       if (lineas.length > 0) parrafos.push({ texto: lineas.map(textoDe).join(''), bloque: 0 })
@@ -676,6 +743,15 @@ export async function importarDocx(
     { buffer: bytes, arrayBuffer: bytes } as unknown as EntradaMammoth,
     {
       styleMap: ESTILOS,
+      // Los parrafos VACIOS se piden a proposito, y no son ruido: son las
+      // lineas en blanco que separan las estrofas de un poema. Por defecto
+      // mammoth los descarta, y entonces las 19 estrofas del poema del libro
+      // real llegaban como un solo `<blockquote>` de 75 `<p>` seguidos (ver la
+      // rama del blockquote en `bloquesDeElemento`, que es quien los usa de
+      // separador). Al resto del importador no le afecta: un `<p>` vacio no
+      // produce ningun bloque y no ocupa ranura en la alineacion de los saltos
+      // de pagina, que es lo unico que depende de contar parrafos.
+      ignoreEmptyParagraphs: false,
       // SIN esto, mammoth incrusta cada imagen como data:URI en base64 dentro
       // del HTML: decenas de MB en memoria con un libro ilustrado.
       convertImage: mammoth.images.imgElement(async (image) => {
