@@ -148,6 +148,7 @@ export function PantallaImportar({
   const capitulo = vista.capitulos[viendo]
   const r = vista.resumen
   const descartados = imp.descartado.reduce((n, d) => n + d.cuantos, 0)
+  const lineasDeIndice = imp.cortes.filter((c) => c.esIndice && !c.marcado).length
   const inservibles = imp.imagenes.filter((i) => i.info.tipo === null)
 
   const ver = (i: number): void => {
@@ -220,7 +221,7 @@ export function PantallaImportar({
                 {corte?.marcado && <TarjetaDeCorte corte={corte} numeroCap={numeroDe.get(i) ?? 0} bloques={imp.bloques} />}
                 {corte && !corte.marcado && (
                   <div className="corte sugerido" id={`corte-${i}`}>
-                    <span>{ui.importar.sugerido}</span>
+                    <span>{corte.esIndice ? ui.importar.esDelIndice : ui.importar.sugerido}</span>
                     <button
                       type="button"
                       className="boton-secundario"
@@ -252,6 +253,13 @@ export function PantallaImportar({
         <aside className="asi-queda" aria-label={ui.importar.asiQueda}>
           <h2>{ui.importar.asiQueda}</h2>
           <p className="recuento">{partes.join(' · ')}</p>
+
+          {lineasDeIndice > 0 && (
+            <div className="alerta nivel-nota">
+              <p>{ui.importar.indice(lineasDeIndice)}</p>
+              <p className="ayuda">{ui.importar.indiceAyuda}</p>
+            </div>
+          )}
 
           {vacios.length > 0 && (
             <div className="alerta nivel-aviso">

@@ -44,7 +44,7 @@ proteger. Un test que nunca falla no protege nada.
 | `estado.test.ts` | El reductor de la interfaz: Intro, Borrar, pegar, deshacer, foco, capitulos, extras e importar dentro de un libro. Es el oraculo de la interfaz, que no tiene Python contra el que compararse |
 | `tramos.test.ts` | Partir, unir, pegar y poner cursiva o negrita en un rango de una linea |
 | `versos.test.ts` | Las teclas de un bloque de versos: verso nuevo, estrofa nueva, salir, unir |
-| `importacion.test.ts` | La pantalla de importar sin pantalla: cortar, no cortar, cabecera en dos lineas, indices escritos a mano, varios `.md` con sus imagenes |
+| `importacion.test.ts` | La pantalla de importar sin pantalla: cortar, no cortar, cabecera en dos lineas, el indice escrito a mano del principio, varios `.md` con sus imagenes |
 | `importar-docx-navegador.test.ts` | El `.docx` por el camino de mammoth que usa el NAVEGADOR (otra clave de opciones y sin `Buffer`): los demas tests van por el de Node |
 | `avisos.test.ts` | Los avisos agrupados (30 ilustraciones -> 4 renglones) y la revision antes de generar |
 | `editor-dom.test.ts` | El puente `contenteditable` <-> tramos y el pegado desde Word y Google Docs |

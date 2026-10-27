@@ -20,6 +20,7 @@ import {
   type Importacion,
 } from '../src/app/importacion'
 import { textoDeTramos, type Bloque, type Marca, type Tramo } from '../src/app/modelo'
+import { lineasDeTexto } from '../src/app/pegar'
 
 /**
  * La pantalla de importar, sin la pantalla. Cada clic del autor es una accion
@@ -127,13 +128,112 @@ describe('la cabecera en dos lineas', () => {
   })
 })
 
+describe('el indice escrito a mano del principio', () => {
+  it('un .docx con su indice en la primera pagina da los capitulos UNA vez', async () => {
+    const imp = await docx('manuscrito-con-indice')
+    expect(titulos(imp)).toEqual([
+      '¡Advertencia!',
+      'Capítulo 1: Llegada',
+      'Capítulo 2: Indagación',
+      'Capítulo 3: Encuentro',
+    ])
+    // Y la advertencia es suya, no del ultimo capitulo del indice.
+    expect(vistaImportacion(imp).capitulos[0]?.bloques.map(textoDe)).toEqual([
+      'Esta versión del libro está incompleta.',
+    ])
+    expect(capitulosVacios(imp)).toEqual([])
+    // Las tres lineas del indice (con su numero de pagina detras) se quedan
+    // sin marcar, y el indice entero antes del primer capitulo.
+    expect(imp.cortes.filter((c) => c.esIndice).map((c) => c.titulo)).toEqual([
+      'Llegada\t4',
+      'Indagación\t7',
+      'Encuentro\t14',
+    ])
+    expect(vistaImportacion(imp).huerfanos.map(textoDe)).toEqual([
+      'Índice',
+      '¡Advertencia!\t2',
+      'Capítulo 1: Llegada\t4',
+      'Capítulo 2: Indagación\t7',
+      'Capítulo 3: Encuentro\t14',
+    ])
+  })
+})
+
 describe('lo que se ve siempre', () => {
-  it('un indice escrito a mano se reconoce por sus capitulos vacios, y se quita de un clic', () => {
+  it('un indice escrito a mano no sale como capitulos, ni se traga el arranque del libro', () => {
+    // El caso medido con un manuscrito real: la lista de capitulos en la
+    // primera pagina. Cada linea parece una cabecera, y la ULTIMA de la lista
+    // no sale vacia: se tragaba todo lo que va hasta el primer capitulo de
+    // verdad y lo publicaba con el titulo equivocado.
     const imp = desdeParrafos(
       [
         [t('Índice')],
         [t('Capítulo 1: El puerto')],
         [t('Capítulo 2: La tormenta')],
+        [t('Para Ana.')],
+        [t('Capítulo 1: El puerto')],
+        [t('Llovía sobre el puerto.')],
+        [t('Capítulo 2: La tormenta')],
+        [t('El viento.')],
+      ],
+      'x',
+      nuevoId,
+      false,
+    )
+    expect(titulos(imp)).toEqual(['Capítulo 1: El puerto', 'Capítulo 2: La tormenta'])
+    expect(capitulosVacios(imp)).toEqual([])
+    const vista = vistaImportacion(imp)
+    expect(vista.capitulos.map((c) => c.bloques.map(textoDe))).toEqual([
+      ['Llovía sobre el puerto.'],
+      ['El viento.'],
+    ])
+    // Y el arranque del libro queda donde se pregunta por el, no dentro de un
+    // capitulo que no es suyo.
+    expect(vista.huerfanos.map(textoDe)).toEqual([
+      'Índice',
+      'Capítulo 1: El puerto',
+      'Capítulo 2: La tormenta',
+      'Para Ana.',
+    ])
+    // Las lineas del indice siguen ahi, sin marcar y dichas como lo que son:
+    // si alguna si empezaba un capitulo, marcarla cuesta un clic.
+    expect(imp.cortes.filter((c) => c.esIndice).map((c) => c.indice)).toEqual([1, 2])
+    const con = aplicar(imp, { tipo: 'marcar', indice: 2, marcado: true })
+    expect(titulos(con)).toEqual([
+      'Capítulo 2: La tormenta',
+      'Capítulo 1: El puerto',
+      'Capítulo 2: La tormenta',
+    ])
+  })
+
+  it('un hueco a media novela no es un indice: el capitulo vacio se queda', () => {
+    // «Capitulo 9: Presa (No escrito)» es un hueco que el autor dejo a
+    // proposito. No se repite mas adelante y no esta al principio: se respeta.
+    const imp = desdeParrafos(
+      [
+        [t('Capítulo 1: El puerto')],
+        [t('Llovía.')],
+        [t('Capítulo 2: Sin escribir')],
+        [t('Capítulo 3: La tormenta')],
+        [t('El viento.')],
+      ],
+      'x',
+      nuevoId,
+      false,
+    )
+    expect(titulos(imp)).toEqual(['Capítulo 1: El puerto', 'Capítulo 2: Sin escribir', 'Capítulo 3: La tormenta'])
+    expect(imp.cortes.some((c) => c.esIndice)).toBe(false)
+    expect(capitulosVacios(imp)).toEqual([2])
+  })
+
+  it('un indice que no repite las cabeceras se reconoce por sus capitulos vacios, y se quita de un clic', () => {
+    // Si el indice no dice los titulos (solo «Capitulo 1», «Capitulo 2») no se
+    // puede emparejar con las cabeceras de verdad, y queda la via de siempre.
+    const imp = desdeParrafos(
+      [
+        [t('Índice')],
+        [t('Capítulo 1')],
+        [t('Capítulo 2')],
         [t('Capítulo 1: El puerto')],
         [t('Llovía sobre el puerto.')],
         [t('Capítulo 2: La tormenta')],
@@ -255,6 +355,33 @@ describe('varios .md: el libro de prueba, archivo por archivo', () => {
       nuevoId,
     )
     expect(titulos(imp)).toEqual(['Capítulo 1: Uno', 'Capítulo 2: Dos'])
+  })
+
+  it('un unico .txt con el libro entero no convierte su primera linea en un capitulo', () => {
+    // `parsear` consume SIEMPRE la primera linea como titulo, que es lo que
+    // hace falta cuando cada archivo es un capitulo. Con el libro entero en un
+    // .txt eso daba un capitulo de mas, con el titulo del libro por nombre, y
+    // no se preguntaba nunca que hacer con lo que va antes del primero.
+    const texto = 'Safy y el Mundo Onírico\nUna novela.\n\nCapítulo 1: Llegada\nLlovía.\n\nCapítulo 2: Indagación\nEl viento.\n'
+    const imp = desdeDialecto([{ nombre: 'libro.txt', texto }], [], nuevoId)
+    expect(titulos(imp)).toEqual(['Capítulo 1: Llegada', 'Capítulo 2: Indagación'])
+    expect(vistaImportacion(imp).huerfanos.map(textoDe)).toEqual(['Safy y el Mundo Onírico', 'Una novela.'])
+    // El mismo texto PEGADO da exactamente lo mismo: una via no puede entender
+    // el libro de una forma y la otra de otra.
+    n = 0
+    const pegado = desdeParrafos(lineasDeTexto(texto), 'Texto pegado', nuevoId, false)
+    expect(titulos(pegado)).toEqual(titulos(imp))
+    expect(vistaImportacion(pegado).huerfanos.map(textoDe)).toEqual(vistaImportacion(imp).huerfanos.map(textoDe))
+  })
+
+  it('con varios archivos la primera linea de cada uno sigue siendo su titulo', () => {
+    // Ahi no se adivina nada: cada archivo ES un capitulo, diga lo que diga su
+    // primera linea.
+    const a = { nombre: 'cap01.md', texto: 'La luz que no tocaba\nTexto.\n' }
+    const b = { nombre: 'cap02.md', texto: 'El turno\nMás texto.\n' }
+    const imp = desdeDialecto([a, b], [], nuevoId)
+    expect(titulos(imp)).toEqual(['La luz que no tocaba', 'El turno'])
+    expect(vistaImportacion(imp).huerfanos).toEqual([])
   })
 
   it('la cursiva del titulo se conserva', () => {
