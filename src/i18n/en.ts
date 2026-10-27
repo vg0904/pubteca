@@ -538,6 +538,13 @@ export const ui: Ui = {
       archivo: 'A file starts here',
     },
     sugerido: 'Does a chapter start here? There is a page break.',
+    esDelIndice: 'Does a chapter start here? It looks like a line of the table of contents, not a heading.',
+    indice: (n: number) =>
+      n === 1
+        ? 'The first line looks like the book’s table of contents: it was not broken there.'
+        : `The first ${n} lines look like the book’s table of contents, not chapters: they were not broken there.`,
+    indiceAyuda:
+      'Pubteca builds the table of contents itself, from the chapters you import. If one of those lines does start a chapter, press “Break here” on it.',
     lineaSiguiente: 'The title is the next line',
     usarLineaSiguiente: 'Use the next line as the title',
     esTexto: 'It is text, not a title',

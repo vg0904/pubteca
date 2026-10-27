@@ -41,6 +41,12 @@ export type DestinoHuerfanos = 'dedicatoria' | 'fuera'
 /** Un corte con su `marcado` siempre explicito: aqui es el estado de una casilla. */
 export interface Corte extends CorteSugerido {
   readonly marcado: boolean
+  /**
+   * Es una linea del indice escrito a mano al principio del documento, no una
+   * cabecera de verdad (ver `sinIndice`). Entra sin marcar, y la interfaz lo
+   * dice en vez de hablar de un salto de pagina que no hay.
+   */
+  readonly esIndice?: boolean
 }
 
 export interface Importacion {
@@ -118,6 +124,83 @@ function sinSolapes(cortes: readonly Corte[], bloques: readonly Bloque[]): Corte
 
 function ordenar(cortes: readonly Corte[]): Corte[] {
   return [...cortes].sort((a, b) => a.indice - b.indice)
+}
+
+/**
+ * Si una linea tiene la forma de una cabecera de capitulo («Capitulo 3: El
+ * bosque», «Prologo»). Es la misma prueba para proponer un corte por linea y
+ * para decidir si la primera linea de un archivo es un titulo: tienen que
+ * contestar lo mismo o el autor ve dos criterios distintos.
+ */
+const pareceCabecera = (texto: string): boolean =>
+  partirCabecera(texto).etiqueta !== '' || RE_TITULO.test(texto)
+
+/**
+ * Clave con la que se reconoce la MISMA cabecera en dos sitios del documento.
+ *
+ * Un indice lleva casi siempre el numero de pagina detras del titulo, separado
+ * por un tabulador o por una fila de puntos: «Capitulo 1: Llegada ..... 4». Sin
+ * quitarlo, la linea del indice y la cabecera de verdad no se reconocerian como
+ * la misma y el indice se colaria entero como capitulos.
+ */
+function claveDeCabecera(c: Corte): string {
+  const limpiar = (t: string): string =>
+    t
+      .replace(/(?:\t|[ .·…_-]{2,})\p{Nd}+$/u, '')
+      .replace(/\s+/gu, ' ')
+      .trim()
+      .toLowerCase()
+  return `${limpiar(c.etiqueta)}\u0000${limpiar(c.titulo)}`
+}
+
+/**
+ * Deja sin marcar el INDICE escrito a mano del principio del documento.
+ *
+ * Es el fallo mas visible al importar un libro entero. El autor escribe la
+ * lista de capitulos en la primera pagina —«Capitulo 1: Llegada», «Capitulo 2:
+ * Indagacion», veinte lineas— y cada una parece una cabecera. Salian veinte
+ * capitulos de mas; los vacios se podian quitar de un clic, pero el ULTIMO de
+ * la lista NO esta vacio: se tragaba todo lo que va hasta el primer capitulo de
+ * verdad (la advertencia, la carta al lector) y lo publicaba con el titulo
+ * equivocado, mientras el capitulo bueno aparecia otra vez mas abajo. Medido
+ * con un manuscrito real de dieciseis capitulos: treinta y tres capitulos, de
+ * los cuales dieciseis sobraban y uno llevaba texto ajeno.
+ *
+ * Lo que de verdad define un indice no es que sus capitulos salgan vacios, es
+ * que sus lineas son las cabeceras del libro DICHAS DOS VECES. Asi que una
+ * linea es del indice cuando cumple las dos cosas:
+ *
+ *   - esta en la tirada de cabeceras del PRINCIPIO sin texto entre ellas (la
+ *     ultima incluida: es la que se tragaba el arranque del libro), y
+ *   - su cabecera vuelve a aparecer MAS ADELANTE en otro corte.
+ *
+ * Con las dos, un hueco a media novela —«Capitulo 9: Presa (No escrito)»— no se
+ * toca, y la cabecera de verdad que va pegada al indice tampoco: esa no se
+ * repite despues. Hace falta mas de una para creerselo: una linea repetida
+ * suelta no es un indice.
+ *
+ * No se borran: se quedan sin marcar y con su motivo a la vista, porque la
+ * deteccion nunca acierta siempre y marcar uno tiene que costar un clic.
+ */
+function sinIndice(cortes: readonly Corte[], bloques: readonly Bloque[]): Corte[] {
+  const hayTexto = (desde: number, hasta: number): boolean =>
+    bloques.slice(desde, hasta).some((b) => b.tipo !== 'escena')
+  let fin = 1
+  while (
+    fin < cortes.length &&
+    !hayTexto(finDeCabecera(cortes[fin - 1] as Corte) + 1, (cortes[fin] as Corte).indice)
+  ) {
+    fin += 1
+  }
+
+  const claves = cortes.map(claveDeCabecera)
+  const ultima = new Map<string, number>()
+  claves.forEach((k, i) => ultima.set(k, i))
+  const delIndice = cortes.map(
+    (_c, i) => i < fin && (ultima.get(claves[i] as string) as number) > i,
+  )
+  if (delIndice.filter(Boolean).length < 2) return [...cortes]
+  return cortes.map((c, i) => (delIndice[i] ? { ...c, marcado: false, esIndice: true } : c))
 }
 
 /** El corte que empieza en `indice`, si lo hay. */
@@ -221,6 +304,9 @@ export function vistaImportacion(imp: Importacion): VistaImportacion {
  *
  * Es la huella de un indice escrito a mano al principio del Word: cada linea
  * «Capitulo 3: ...» parece una cabecera, y salen veinte capitulos vacios.
+ * `sinIndice` quita solo el indice que REPITE las cabeceras del libro; cuando no
+ * las repite (un indice de etiquetas sueltas, «Capitulo 1», «Capitulo 2») esta
+ * sigue siendo la via, con «Quitar esos cortes» a un clic.
  */
 export function capitulosVacios(imp: Importacion): number[] {
   const v = vistaImportacion(imp)
@@ -256,7 +342,7 @@ export function desdePropuesta(propuesta: Propuesta, nombre: string, tieneDedica
     origen: 'docx',
     nombre,
     bloques,
-    cortes: ordenar(cortes),
+    cortes: sinIndice(ordenar(cortes), bloques),
     imagenes: propuesta.imagenes.map((i) => ({
       id: i.id,
       nombreOriginal: i.nombreOriginal,
@@ -289,7 +375,7 @@ function cortesPorLinea(bloques: readonly Bloque[], desde: number, hasta: number
   let i = desde
   while (i < hasta) {
     const texto = textoDe(bloques[i])
-    if (bloques[i]?.tipo === 'parrafo' && (partirCabecera(texto).etiqueta !== '' || RE_TITULO.test(texto))) {
+    if (bloques[i]?.tipo === 'parrafo' && pareceCabecera(texto)) {
       const cabecera = cabeceraSugerida(bloques, i)
       const fin = Math.min(cabecera.finCabecera, hasta - 1)
       cortes.push({
@@ -361,27 +447,45 @@ export function desdeDialecto(
       bloques.push(p(nuevoId('b'), cap.titulo))
     }
     const finCabecera = bloques.length - 1
-    cortes.push({
-      indice,
-      finCabecera,
-      etiqueta: cap.etiqueta,
-      titulo: textoDeTramos(cap.titulo),
-      motivo: 'archivo',
-      marcado: true,
-      inicioAperturas,
-    })
     const desde = bloques.length
     for (const b of cap.bloques) {
       bloques.push(b.tipo === 'ilustracion' ? { ...b, imagenId: resolver(b.imagenId) } : b)
     }
-    cortes.push(...cortesPorLinea(bloques, desde, bloques.length))
+    const dentro = cortesPorLinea(bloques, desde, bloques.length)
+    // UN SOLO archivo con el libro entero dentro: su primera linea no es el
+    // titulo de un capitulo, es el titulo del libro, una advertencia o una
+    // carta al lector. `parsear` la consume SIEMPRE como titulo, que es lo que
+    // hace falta cuando cada archivo es un capitulo; al traerse el libro entero
+    // en un .txt daba un capitulo de mas con el titulo equivocado y no se
+    // preguntaba nunca que hacer con lo que va antes del primero. Si esa linea
+    // no tiene forma de cabecera y el archivo trae capitulos dentro, no se
+    // corta ahi: el arranque se queda como lineas normales y pasa a huerfanos,
+    // exactamente igual que al PEGAR el mismo texto. Con varios archivos no se
+    // toca, que ahi cada archivo ES un capitulo.
+    const suelta =
+      archivos.length === 1 &&
+      dentro.length > 0 &&
+      !cap.etiqueta &&
+      !pareceCabecera(textoDeTramos(cap.titulo))
+    if (!suelta) {
+      cortes.push({
+        indice,
+        finCabecera,
+        etiqueta: cap.etiqueta,
+        titulo: textoDeTramos(cap.titulo),
+        motivo: 'archivo',
+        marcado: true,
+        inicioAperturas,
+      })
+    }
+    cortes.push(...dentro)
   }
 
   return {
     origen: 'texto',
     nombre: archivos.length === 1 ? (archivos[0] as { nombre: string }).nombre : `${archivos.length} archivos`,
     bloques,
-    cortes: ordenar(cortes),
+    cortes: sinIndice(ordenar(cortes), bloques),
     imagenes,
     descartado: [],
     faltan: [...faltan],
@@ -408,7 +512,7 @@ export function desdeParrafos(
     origen: 'texto',
     nombre,
     bloques,
-    cortes: cortesPorLinea(bloques, 0, bloques.length),
+    cortes: sinIndice(cortesPorLinea(bloques, 0, bloques.length), bloques),
     imagenes: [],
     descartado: [],
     faltan: [],

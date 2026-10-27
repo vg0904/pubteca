@@ -551,6 +551,13 @@ export const ui = {
       archivo: 'Empieza un archivo',
     },
     sugerido: '¿Empieza aquí un capítulo? Hay un salto de página.',
+    esDelIndice: '¿Empieza aquí un capítulo? Parece una línea del índice, no una cabecera.',
+    indice: (n: number) =>
+      n === 1
+        ? 'La primera línea parece el índice del libro: no se cortó ahí.'
+        : `Las ${n} primeras líneas parecen el índice del libro, no capítulos: no se cortó ahí.`,
+    indiceAyuda:
+      'Pubteca hace el índice sola, con los capítulos que importes. Si alguna de esas líneas sí empieza un capítulo, pulsa «Cortar aquí» en ella.',
     lineaSiguiente: 'El título es la línea siguiente',
     usarLineaSiguiente: 'Usar la línea siguiente como título',
     esTexto: 'Es texto, no título',
