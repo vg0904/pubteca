@@ -104,6 +104,11 @@ def salto_de_pagina():
     return '<w:p><w:r><w:br w:type="page"/></w:r></w:p>'
 
 
+def tabulador():
+    """El tabulador con el que se alinea el numero de pagina en un indice."""
+    return "<w:r><w:tab/></w:r>"
+
+
 def salto_de_linea():
     """Mayus+Intro: un salto DENTRO del parrafo. Asi se escriben los poemas y
     las cartas, y a veces la cabecera en dos lineas en un solo parrafo."""
@@ -268,6 +273,35 @@ DOCUMENTOS = {
             parrafo([run("a & b < c > d")]),
             parrafo([run("C:\\Users\\ana")]),
             parrafo([run("[ilustraci\u00f3n: falsa | no soy una marca]")]),
+        ],
+        False,
+    ),
+    # EL CASO MEDIDO CON UN LIBRO DE VERDAD: un indice escrito a mano en la
+    # primera pagina, con el numero de pagina detras de cada titulo. Cada linea
+    # parece una cabecera, asi que salian el doble de capitulos; y la ULTIMA
+    # linea del indice no salia vacia, se tragaba la advertencia y la carta al
+    # lector y las publicaba con el titulo del ultimo capitulo.
+    "manuscrito-con-indice.docx": (
+        [
+            parrafo([run("Índice")]),
+            parrafo([run("¡Advertencia!"), tabulador(), run("2")]),
+            parrafo([run("Capítulo 1: Llegada"), tabulador(), run("4")]),
+            parrafo([run("Capítulo 2: Indagación"), tabulador(), run("7")]),
+            parrafo([run("Capítulo 3: Encuentro"), tabulador(), run("14")]),
+            salto_de_pagina(),
+            # El arranque del libro: esto es lo que se tragaba la ultima linea
+            # del indice.
+            parrafo([run("¡Advertencia!")]),
+            parrafo([run("Esta versión del libro está incompleta.")]),
+            salto_de_pagina(),
+            parrafo([run("Capítulo 1: Llegada")]),
+            parrafo([run("Texto del primero.")]),
+            salto_de_pagina(),
+            parrafo([run("Capítulo 2: Indagación")]),
+            parrafo([run("Texto del segundo.")]),
+            salto_de_pagina(),
+            parrafo([run("Capítulo 3: Encuentro")]),
+            parrafo([run("Texto del tercero.")]),
         ],
         False,
     ),
