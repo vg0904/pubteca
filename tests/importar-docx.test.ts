@@ -739,6 +739,65 @@ describe('saltos de linea sueltos (Mayus+Intro)', () => {
     expect(versos('<blockquote><p>uno</p><p>dos</p><p>tres</p></blockquote>')).toEqual([[['uno', 'dos', 'tres']]])
     // Mayus+Intro entre versos: cada parrafo es una estrofa.
     expect(versos('<blockquote><p>a<br/>b</p><p>c<br/>d</p></blockquote>')).toEqual([[['a', 'b'], ['c', 'd']]])
+    // Un parrafo VACIO en medio: ahi se acaba una estrofa y empieza otra.
+    expect(versos('<blockquote><p>uno</p><p></p><p>dos</p></blockquote>')).toEqual([[['uno'], ['dos']]])
+    // Y los vacios de los extremos no dejan estrofas vacias.
+    expect(versos('<blockquote><p></p><p>uno</p><p></p></blockquote>')).toEqual([[['uno']]])
+  })
+})
+
+describe('estilos con el nombre EN ESPAÑOL (un .docx salido de Apple Pages)', () => {
+  /** Las estrofas de cada bloque de versos, en orden. */
+  const poemas = (p: Propuesta): string[][][] =>
+    p.bloques.flatMap((b) => (b.tipo === 'versos' ? [b.estrofas.map((e) => e.map((v) => v.texto))] : []))
+
+  it('EL FALLO: un poema con estilo «poema» llega como versos, no como prosa', async () => {
+    // Word guarda el nombre interno del estilo en ingles aunque la interfaz
+    // este en español, pero Pages lo escribe en español: ninguno se traducia.
+    // Medido en el libro real del autor: 94 parrafos de poema que salian al
+    // EPUB como prosa suelta.
+    const p = await importar('poema-en-espanol')
+    expect(p.bloques.filter((b) => b.tipo === 'versos')).toHaveLength(3)
+  })
+
+  it('las lineas en blanco entre estrofas se conservan', async () => {
+    // Es lo que `ignoreEmptyParagraphs: false` viene a salvar. Sin eso los
+    // nueve versos caerian en una sola estrofa, que para un poema largo es
+    // peor que dejarlo en parrafos: en el libro real eran 75 versos seguidos
+    // en vez de las 19 estrofas que escribio el autor.
+    const p = await importar('poema-en-espanol')
+    expect(poemas(p)[0]).toEqual([
+      ['Nacimos de la espuma,', 'de un trueno sin lluvia,', 'y de un nombre que nadie recuerda.'],
+      ['Guardamos lo que el agua olvida,', 'y olvidamos lo que el agua guarda.'],
+      ['Cuando no quede nadie que nos nombre,', 'seguiremos cantando.'],
+    ])
+  })
+
+  it('«Cita» y «Cita destacada» tambien son versos, y sin vacios van en una estrofa', async () => {
+    const p = await importar('poema-en-espanol')
+    expect(poemas(p).slice(1)).toEqual([
+      [['Quien escucha la marea', 'no vuelve a dormir igual.']],
+      [['Y aun así volvió al muelle.']],
+    ])
+  })
+
+  it('el parrafo vacio de delante no abre una estrofa vacia', async () => {
+    // Pages deja uno antes del primer verso. Una estrofa vacia saldria en el
+    // EPUB como un hueco en blanco al principio del poema.
+    const p = await importar('poema-en-espanol')
+    expect(poemas(p).flat().filter((e) => e.length === 0)).toEqual([])
+  })
+
+  it('la prosa de alrededor sigue siendo prosa, y el capitulo se detecta igual', async () => {
+    // El riesgo de tirar de prefijo en el mapa de estilos es pasarse de ancho.
+    const p = await importar('poema-en-espanol')
+    expect(p.bloques.filter((b) => b.tipo === 'parrafo').map(textoDe)).toEqual([
+      'Capítulo 1: El canto de la marea',
+      'Las voces del puerto empezaron a cantar todas a la vez.',
+      'El canto se apagó y el puerto volvió a su ruido.',
+      'Lo decía su abuela, y ella no lo creía.',
+    ])
+    expect(p.cortes).toMatchObject([{ etiqueta: 'Capítulo 1', titulo: 'El canto de la marea' }])
   })
 })
 
