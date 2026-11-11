@@ -17,8 +17,10 @@ hilo.onmessage = (e) => {
     const r = correrMotor(e.data)
     const buffers = new Set<ArrayBuffer>()
     for (const x of r.resultados) {
-      if (x.bytes.buffer instanceof ArrayBuffer && x.bytes.byteOffset === 0 && x.bytes.byteLength === x.bytes.buffer.byteLength) {
-        buffers.add(x.bytes.buffer)
+      for (const s of x.segmentos) {
+        if (s instanceof Uint8Array && s.buffer instanceof ArrayBuffer && s.byteOffset === 0 && s.byteLength === s.buffer.byteLength) {
+          buffers.add(s.buffer)
+        }
       }
     }
     hilo.postMessage({ ok: true, respuesta: r }, [...buffers])

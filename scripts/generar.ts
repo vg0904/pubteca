@@ -38,6 +38,9 @@ function main(): number {
 
   mkdirSync(salida, { recursive: true })
   for (const res of c.resultados) {
+    // En Node los medios llegan siempre con sus bytes, asi que el EPUB entero
+    // existe. Si no, es un error de quien llamo, no del libro.
+    if (!res.bytes) throw new Error(`${res.nombreArchivo}: faltan los bytes de algún medio.`)
     writeFileSync(join(salida, res.nombreArchivo), res.bytes)
   }
   const texto = reporte(c, ahora)

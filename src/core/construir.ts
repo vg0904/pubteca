@@ -14,16 +14,41 @@ import { Libro, type Pagina } from './libro'
 import { Diagnosticos } from './mensajes'
 import { ncx } from './ncx'
 import { marcaDeTiempo, opf } from './opf'
-import type { Proyecto } from './proyecto'
+import { crc32 } from './crc32'
+import { esFicha, type Archivo, type Proyecto } from './proyecto'
 import { nombreSeguro } from './texto'
-import { CONTAINER, OPCIONES_APPLE, escribirEpub, type EntradaZip } from './zip'
+import {
+  CONTAINER,
+  OPCIONES_APPLE,
+  escribirEpub,
+  escribirEpubSegmentado,
+  esEntradaHueco,
+  tamanoDe,
+  unirSegmentos,
+  type EntradaSegmentada,
+  type EntradaZip,
+  type Segmento,
+} from './zip'
 
 export type Tienda = 'Kindle' | 'AppleBooks'
 
 export interface Resultado {
   readonly tienda: Tienda
   readonly nombreArchivo: string
-  readonly bytes: Uint8Array
+  /**
+   * El EPUB en orden: bytes ya escritos y un hueco donde va cada audio o
+   * video (ver `escribirZipSegmentado`). Sin medios, un solo trozo.
+   */
+  readonly segmentos: readonly Segmento[]
+  /** Lo que pesa el EPUB entero, medios incluidos. */
+  readonly tamano: number
+  /**
+   * El EPUB entero en memoria, si el motor tiene todos sus bytes: siempre que
+   * el libro no tenga medios, o que se los pasen con sus bytes (Node, los
+   * tests). Con medios que solo conoce por su `Ficha` (el navegador), null: el
+   * archivo lo arma quien llama con los segmentos, sin copiar los videos.
+   */
+  readonly bytes: Uint8Array | null
   readonly imagenes: readonly Registro[]
 }
 
@@ -151,7 +176,7 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
       (u) => esApple || (u !== portadaImg && !u.soloApple),
     )
 
-    const archivos: EntradaZip[] = [{ ruta: 'META-INF/container.xml', datos: utf8(CONTAINER) }]
+    const archivos: EntradaSegmentada[] = [{ ruta: 'META-INF/container.xml', datos: utf8(CONTAINER) }]
     if (esApple && fuentes.length > 0) {
       archivos.push({
         ruta: 'META-INF/com.apple.ibooks.display-options.xml',
@@ -197,8 +222,15 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
       archivos.push({ ruta: `OEBPS/${u.href}`, datos: u.origen.bytes })
     }
     if (esApple) {
+      // Los audios y videos van como HUECO: el motor solo pone su cabecera.
       for (const m of medios) {
-        archivos.push({ ruta: `OEBPS/${m.href}`, datos: m.origen.bytes })
+        const o = m.origen
+        archivos.push({
+          ruta: `OEBPS/${m.href}`,
+          hueco: esFicha(o)
+            ? { medio: o.ruta, tamano: o.tamano, crc32: o.crc32 }
+            : { medio: o.ruta, tamano: o.bytes.length, crc32: crc32(o.bytes) },
+        })
       }
       for (const f of fuentes) {
         archivos.push({ ruta: `OEBPS/${f.href}`, datos: f.origen.bytes })
@@ -207,10 +239,26 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
 
     comprobarReferencias(archivos, dg, tienda)
 
+    // Sin medios, el zip de siempre (y los golden tests lo fijan). Con medios,
+    // en segmentos; y si el motor tiene sus bytes, tambien el archivo entero.
+    let segmentos: Segmento[]
+    let bytes: Uint8Array | null
+    if (archivos.some(esEntradaHueco)) {
+      segmentos = escribirEpubSegmentado(archivos, opciones.ahora)
+      const conBytes = new Map(medios.flatMap((m) => (esFicha(m.origen) ? [] : [[m.origen.ruta, m.origen] as const])))
+      bytes =
+        conBytes.size === medios.length ? unirSegmentos(segmentos, (r) => (conBytes.get(r) as Archivo).bytes) : null
+    } else {
+      bytes = escribirEpub(archivos as EntradaZip[], opciones.ahora)
+      segmentos = [bytes]
+    }
+
     resultados.push({
       tienda,
       nombreArchivo: `${base}_${tienda}.epub`,
-      bytes: escribirEpub(archivos, opciones.ahora),
+      segmentos,
+      tamano: tamanoDe(segmentos),
+      bytes,
       imagenes: imgs,
     })
   }
@@ -234,7 +282,7 @@ function utf8(s: string): Uint8Array {
  * a ser MAS facil caer en eso, porque reutilizar una imagen sera un clic.
  */
 function comprobarReferencias(
-  archivos: readonly EntradaZip[],
+  archivos: readonly EntradaSegmentada[],
   dg: Diagnosticos,
   tienda: Tienda,
 ): void {
@@ -248,7 +296,7 @@ function comprobarReferencias(
   // Se mira todo `src` y todo `poster`, no solo los de <img>: un video trae
   // su archivo y su poster, y un audio su archivo.
   for (const a of archivos) {
-    if (!a.ruta.endsWith('.xhtml')) continue
+    if (!a.ruta.endsWith('.xhtml') || esEntradaHueco(a)) continue
     for (const m of decodificador.decode(a.datos).matchAll(/\b(?:src|poster)="\.\.\/([^"]+)"/gu)) {
       const ruta = m[1] as string
       if (!presentes.has(ruta)) faltan.add(ruta)

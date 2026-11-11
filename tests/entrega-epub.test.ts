@@ -78,7 +78,7 @@ async function libroDePrueba(): Promise<{ proyecto: Proyecto; imagenes: Map<stri
 function epub(g: Generado, tienda: 'Kindle' | 'AppleBooks') {
   const r = g.motor.resultados.find((x) => x.tienda === tienda)
   if (!r) throw new Error(`no salio el EPUB de ${tienda}`)
-  return abrirEpub(r.bytes)
+  return abrirEpub(r.segmentos)
 }
 
 /**
@@ -146,7 +146,7 @@ describe('comprimiendo para Kindle', () => {
       const r = await generarLibros(proyecto, imagenes, repo, AHORA, falso)
       return r.motor.resultados.find((x) => x.tienda === 'Kindle')
     })()
-    expect(k?.bytes.length).toBeLessThan(sin?.bytes.length ?? 0)
+    expect(k?.tamano).toBeLessThan(sin?.tamano ?? 0)
   })
 
   /**

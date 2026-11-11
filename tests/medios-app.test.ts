@@ -56,8 +56,8 @@ function libro(bloques = capitulo.bloques): { p: Proyecto; imagenes: Map<string,
   const poster = leer('cap01-v01.jpg')
   const imagenes = new Map<string, Imagen>([['i-poster', { id: 'i-poster', nombreOriginal: 'poster.jpg', tipo: 'jpeg', bytes: poster.length, ancho: 160, alto: 90 }]])
   const medios = new Map<string, Medio>([
-    ['m-video', { id: 'm-video', nombreOriginal: 'IMG_0001.mov', tipo: 'm4v', bytes: 1, segundos: 1 }],
-    ['m-audio', { id: 'm-audio', nombreOriginal: 'Nota de voz.m4a', tipo: 'm4a', bytes: 1, segundos: 1 }],
+    ['m-video', { id: 'm-video', nombreOriginal: 'IMG_0001.mov', tipo: 'm4v', bytes: 1, crc32: 0, segundos: 1 }],
+    ['m-audio', { id: 'm-audio', nombreOriginal: 'Nota de voz.m4a', tipo: 'm4a', bytes: 1, crc32: 0, segundos: 1 }],
   ])
   const bytes = new Map([
     ['i-poster', poster],

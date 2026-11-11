@@ -93,7 +93,7 @@ describe('EL EPUB DE LA APP ES EQUIVALENTE AL DEL GENERADOR, para el libro de pr
 
   for (const tienda of ['Kindle', 'AppleBooks'] as const) {
     describe(tienda, () => {
-      const a = loQueSeLee(app.resultados.find((r) => r.tienda === tienda)?.bytes as Uint8Array)
+      const a = loQueSeLee(app.resultados.find((r) => r.tienda === tienda)?.segmentos[0] as Uint8Array)
       const g = loQueSeLee(gen.resultados.find((r) => r.tienda === tienda)?.bytes as Uint8Array)
 
       it('las mismas paginas, en el mismo orden de lectura', () => {

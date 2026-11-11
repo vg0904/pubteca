@@ -15,6 +15,7 @@
  *     vigila un test), para que los temas del lector funcionen: aqui se ve.
  */
 import { unzipSync } from 'fflate'
+import { archivosDeSegmentos, type Segmento } from '../core/zip'
 
 export interface PaginaPrevia {
   /** La ruta dentro del EPUB: `OEBPS/texto/cap01.xhtml`. */
@@ -26,6 +27,12 @@ export interface EpubAbierto {
   /** En el orden de lectura (la espina del OPF). */
   readonly paginas: readonly PaginaPrevia[]
   readonly archivos: ReadonlyMap<string, Uint8Array>
+  /**
+   * Los audios y videos: ruta en el EPUB -> ruta en el proyecto del motor
+   * (`medios/cap01-v01.m4v`). Sus bytes no estan aqui: la vista previa los
+   * reproduce desde el almacen, con la URL que da quien llama.
+   */
+  readonly huecos: ReadonlyMap<string, string>
 }
 
 export type Tema = 'claro' | 'sepia' | 'oscuro'
@@ -70,9 +77,18 @@ function desescaparXml(s: string): string {
     .replace(/&amp;/gu, '&')
 }
 
-/** Abre el EPUB y saca las paginas en el orden de lectura. */
-export function abrirEpub(bytes: Uint8Array): EpubAbierto {
-  const archivos = new Map(Object.entries(unzipSync(bytes)))
+/**
+ * Abre el EPUB y saca las paginas en el orden de lectura.
+ *
+ * Acepta el archivo entero o sus segmentos: con audio o video, el EPUB no
+ * existe entero en memoria (ver `escribirZipSegmentado`), y abrirlo no puede
+ * obligar a cargar los videos.
+ */
+export function abrirEpub(epub: Uint8Array | readonly Segmento[]): EpubAbierto {
+  const { archivos, huecos } =
+    epub instanceof Uint8Array
+      ? { archivos: new Map(Object.entries(unzipSync(epub))), huecos: new Map<string, string>() }
+      : archivosDeSegmentos(epub)
   // Donde esta el OPF lo dice container.xml.
   const contenedor = utf8(archivos.get('META-INF/container.xml'))
   const rutaOpf = /full-path="([^"]+)"/u.exec(contenedor)?.[1] ?? 'OEBPS/content.opf'
@@ -90,7 +106,7 @@ export function abrirEpub(bytes: Uint8Array): EpubAbierto {
     const titulo = /<title>([\s\S]*?)<\/title>/u.exec(utf8(archivos.get(ruta)))?.[1] ?? ruta
     paginas.push({ ruta, titulo: desescaparXml(titulo).trim() })
   }
-  return { paginas, archivos }
+  return { paginas, archivos, huecos }
 }
 
 /**
@@ -107,8 +123,9 @@ export function documentoDePagina(epub: EpubAbierto, ruta: string, url: (ruta: s
     const css = utf8(epub.archivos.get(rutaCss)).replace(/url\("([^"]+)"\)/gu, (_n, f: string) => `url("${url(resolver(rutaCss, f))}")`)
     return `<style>\n${css}\n</style>`
   })
-  // Las imagenes.
-  html = html.replace(/(<img\b[^>]*\bsrc=")([^"]+)(")/gu, (_m, antes: string, src: string, despues: string) =>
+  // Las imagenes, el audio, el video y su poster: todo `src` y todo `poster`.
+  // En el texto no puede haber un `src="` suelto: las comillas van escapadas.
+  html = html.replace(/(\s(?:src|poster)=")([^"]+)(")/gu, (_m, antes: string, src: string, despues: string) =>
     /^[a-z]+:/u.test(src) ? `${antes}${src}${despues}` : `${antes}${url(resolver(ruta, src))}${despues}`,
   )
   // El tema, el ULTIMO, para que mande sobre lo demas.
@@ -119,5 +136,8 @@ export function documentoDePagina(epub: EpubAbierto, ruta: string, url: (ruta: s
 /** El tipo de un archivo del EPUB, para la URL `blob:`. */
 export function tipoDe(ruta: string): string {
   const ext = ruta.slice(ruta.lastIndexOf('.') + 1).toLowerCase()
-  return ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', ttf: 'font/ttf', otf: 'font/otf', css: 'text/css' } as Record<string, string>)[ext] ?? 'application/octet-stream'
+  return (
+    ({ png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', ttf: 'font/ttf', otf: 'font/otf', css: 'text/css', m4v: 'video/mp4', m4a: 'audio/mp4' } as Record<string, string>)[ext] ??
+    'application/octet-stream'
+  )
 }

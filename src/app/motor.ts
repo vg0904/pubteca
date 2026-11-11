@@ -17,6 +17,7 @@
 import { construir } from '../core/construir'
 import type { Proyecto as ProyectoMotor } from '../core/proyecto'
 import { reporte } from '../core/reporte'
+import { esHueco, type Segmento } from '../core/zip'
 
 export interface PedidoMotor {
   readonly proyecto: ProyectoMotor
@@ -27,7 +28,22 @@ export interface PedidoMotor {
 export interface LibroGenerado {
   readonly tienda: 'Kindle' | 'AppleBooks'
   readonly nombreArchivo: string
-  readonly bytes: Uint8Array
+  /**
+   * El EPUB en trozos, con un hueco donde va cada audio o video: sus bytes
+   * nunca pasan por el motor ni por el hilo. Ver `blobDelLibro` en generar.ts.
+   */
+  readonly segmentos: readonly Segmento[]
+  /** Lo que pesa el EPUB entero, medios incluidos. */
+  readonly tamano: number
+}
+
+/**
+ * El EPUB entero en memoria, si no tiene huecos (Kindle siempre, y Apple Books
+ * sin audio ni video). Con huecos, null: hay que armarlo con `blobDelLibro`.
+ */
+export function bytesDelLibro(l: LibroGenerado): Uint8Array | null {
+  const [unico, ...resto] = l.segmentos
+  return unico && resto.length === 0 && !esHueco(unico) ? unico : null
 }
 
 export interface RespuestaMotor {
@@ -43,7 +59,7 @@ export function correrMotor(p: PedidoMotor): RespuestaMotor {
   const ahora = new Date(p.ahora)
   const c = construir(p.proyecto, { ahora })
   return {
-    resultados: c.resultados.map((r) => ({ tienda: r.tienda, nombreArchivo: r.nombreArchivo, bytes: r.bytes })),
+    resultados: c.resultados.map((r) => ({ tienda: r.tienda, nombreArchivo: r.nombreArchivo, segmentos: r.segmentos, tamano: r.tamano })),
     uid: c.uid,
     bloqueado: c.bloqueado,
     diagnosticos: { errores: [...c.diagnosticos.errores], avisos: [...c.diagnosticos.avisos], notas: [...c.diagnosticos.notas] },

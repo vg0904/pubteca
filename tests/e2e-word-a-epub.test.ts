@@ -150,12 +150,13 @@ describe('de un .docx de Word a dos EPUB', () => {
   it('los dos EPUB cumplen las reglas del formato', async () => {
     const { construido } = await caminoCompleto()
     for (const r of construido.resultados) {
-      const dv = new DataView(r.bytes.buffer, r.bytes.byteOffset, r.bytes.byteLength)
+      const b = r.bytes as Uint8Array
+      const dv = new DataView(b.buffer, b.byteOffset, b.byteLength)
       // PKG-006: el mimetype es la primera entrada.
       expect(dv.getUint32(0, true)).toBe(0x04034b50)
       expect(dv.getUint16(8, true)).toBe(0) // STORE
       expect(dv.getUint16(28, true)).toBe(0) // PKG-005: sin campos extra
-      const nombre = new TextDecoder().decode(r.bytes.subarray(30, 38))
+      const nombre = new TextDecoder().decode(b.subarray(30, 38))
       expect(nombre).toBe('mimetype')
     }
   })
@@ -164,7 +165,7 @@ describe('de un .docx de Word a dos EPUB', () => {
     const { construido, propuesta } = await caminoCompleto()
     const original = propuesta.imagenes[0]?.bytes as Uint8Array
     for (const r of construido.resultados) {
-      const z = unzipSync(r.bytes)
+      const z = unzipSync(r.bytes as Uint8Array)
       const dentro = z['OEBPS/imagenes/cap01-01.png']
       expect(dentro).toBeDefined()
       expect(dentro).toEqual(original)

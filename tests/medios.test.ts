@@ -32,7 +32,7 @@ const sha256 = (b: Uint8Array): string => createHash('sha256').update(b).digest(
 function epub(c: Construccion, tienda: 'Kindle' | 'AppleBooks'): Map<string, Uint8Array> {
   const r = c.resultados.find((x) => x.tienda === tienda)
   if (!r) throw new Error(`no hay EPUB de ${tienda}`)
-  return new Map(Object.entries(unzipSync(r.bytes)))
+  return new Map(Object.entries(unzipSync(r.bytes as Uint8Array)))
 }
 
 /** Metodo de compresion de cada entrada, leido de las cabeceras locales. */
@@ -249,7 +249,7 @@ describe('un libro sin medios no cambia', () => {
     const sin = construir(prueba, { ahora: AHORA })
     const vacia = construir({ ...prueba, medios: [] }, { ahora: AHORA })
     for (const [i, r] of sin.resultados.entries()) {
-      expect(sha256(vacia.resultados[i]?.bytes as Uint8Array), r.tienda).toBe(sha256(r.bytes))
+      expect(sha256(vacia.resultados[i]?.bytes as Uint8Array), r.tienda).toBe(sha256(r.bytes as Uint8Array))
     }
   })
 

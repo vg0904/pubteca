@@ -14,7 +14,8 @@ import { agrupar, tiendasDe, type Grupo, type Nivel, type Tienda } from './aviso
 import { arreglableEnLote } from './imagen-ajuste'
 import { partirCabecera } from './importar/dialecto'
 import { capituloConTexto } from './estado'
-import { textoDeTramos, type Capitulo, type Extra, type Imagen, type Proyecto } from './modelo'
+import { pesoDeMedios } from './entrega'
+import { esMedio, textoDeTramos, type Capitulo, type Extra, type Imagen, type Medio, type Proyecto } from './modelo'
 
 export type ClaveProblema =
   | 'sinTitulo'
@@ -23,6 +24,12 @@ export type ClaveProblema =
   | 'paginaSinTitulo'
   | 'faltaImagen'
   | 'capituloVacio'
+  /** Un audio o un video que el libro usa y no esta en este navegador. */
+  | 'faltaMedio'
+  /** Con el audio y el video, el EPUB de Apple Books pasa de lo recomendado (500 MB). */
+  | 'mediosPesan'
+  /** ... o de lo que Apple acepta (2 GB). Bloquea: la tienda lo rechazaria. */
+  | 'mediosPasanLimite'
 
 export interface Problema {
   readonly clave: ClaveProblema
@@ -81,7 +88,11 @@ function imagenesUsadas(p: Proyecto): { id: string; ir: Problema['ir']; que: str
   return usadas
 }
 
-export function revisar(p: Proyecto, imagenes: ReadonlyMap<string, Imagen>): Problema[] {
+export function revisar(
+  p: Proyecto,
+  imagenes: ReadonlyMap<string, Imagen>,
+  medios: ReadonlyMap<string, Medio> = new Map(),
+): Problema[] {
   const r: Problema[] = []
   if (p.datos.titulo.trim() === '') r.push({ clave: 'sinTitulo', nivel: 'bloquea', que: 'El libro' })
   if (!p.capitulos.some(capituloConTexto)) r.push({ clave: 'sinTexto', nivel: 'bloquea', que: 'El libro' })
@@ -107,6 +118,16 @@ export function revisar(p: Proyecto, imagenes: ReadonlyMap<string, Imagen>): Pro
     vistas.add(clave)
     r.push({ clave: 'faltaImagen', nivel: 'error', ...(u.ir ? { ir: u.ir } : {}), que: u.que })
   }
+
+  // Audio y video: el que no esta, y lo que pesa todo junto.
+  for (const [i, c] of p.capitulos.entries()) {
+    if (c.bloques.some((b) => esMedio(b) && !medios.has(b.medioId))) {
+      r.push({ clave: 'faltaMedio', nivel: 'error', ir: { capitulo: c.id }, que: nombreDeCapitulo(c, i) })
+    }
+  }
+  const peso = pesoDeMedios(p, medios, imagenes)
+  if (peso.nivel === 'bloquea') r.push({ clave: 'mediosPasanLimite', nivel: 'bloquea', que: 'El libro' })
+  else if (peso.nivel === 'aviso') r.push({ clave: 'mediosPesan', nivel: 'aviso', que: 'El libro' })
   return r
 }
 

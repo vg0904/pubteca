@@ -69,6 +69,7 @@ export const ui: Ui = {
     titulo: 'What the backup holds',
     hecha: (fecha: string) => `Backup made on ${fecha}.`,
     deCarpetas: 'Read from its folders (libro.txt, capitulos/, ilustraciones/…), the way the generator reads them.',
+    medios: (n: number, tamano: string) => (n === 1 ? `And 1 audio or video file (${tamano}).` : `And ${n} audio or video files (${tamano} in all).`),
     resumen: (capitulos: number, extras: number, imagenes: number) =>
       [
         capitulos === 1 ? '1 chapter' : `${capitulos} chapters`,
@@ -90,6 +91,7 @@ export const ui: Ui = {
     },
     avisos: {
       faltaImagen: (d: string) => `An image is missing (${d}). The book will mark where it went so you can put it back.`,
+      faltaMedio: (d: string) => `An audio or video file is missing (${d}). Its place stays in the chapter so you can put it back.`,
       imagenIlegible: (d: string) => `${d} is not a PNG or a JPG, or it is damaged: it would not open.`,
       imagenSinUsar: (d: string) => `${d} is not used by any chapter, so it was left out (the generator did not use it either).`,
       capituloVacio: (d: string) => `${d} is empty: it was not opened.`,
@@ -427,6 +429,14 @@ export const ui: Ui = {
       noBloquea:
         'You can download anyway: none of this stops you publishing. Large images only make delivery dearer on Amazon and look worse on big screens. What has to be fixed by cropping is left alone here: that is decided on each drawing.',
     },
+    medios: {
+      titulo: 'Audio and video',
+      detalle: (videos: number, audios: number, tamano: string) =>
+        `${[videos === 1 ? '1 video' : videos > 1 ? `${videos} videos` : '', audios === 1 ? '1 audio clip' : audios > 1 ? `${audios} audio clips` : ''].filter(Boolean).join(' and ')} · ${tamano}`,
+      soloApple: 'Only in the Apple Books EPUB: Kindle does not take audio or video.',
+      estimado: (tamano: string) => `The Apple Books EPUB will weigh about ${tamano}.`,
+      limites: 'Apple recommends staying under 500 MB and does not accept more than 2 GB.',
+    },
     imagenes: {
       titulo: 'Images in each store',
       ayuda:
@@ -478,6 +488,9 @@ export const ui: Ui = {
     capituloSinTitulo: 'A chapter has no title and no label: the book would take its first paragraph as the title.',
     paginaSinTitulo: 'An extra page has no title: the book would take its first paragraph as the title.',
     faltaImagen: 'An illustration has no image: it will not reach the book.',
+    faltaMedio: 'An audio or video file is not in this browser: it will not reach the book.',
+    mediosPesan: 'With the audio and video, the Apple Books EPUB is over 500 MB, the most Apple recommends. It can be published, but it is slow to download.',
+    mediosPasanLimite: 'With the audio and video, the Apple Books EPUB would be over 2 GB, the most Apple accepts. Remove or shorten a video.',
     capituloVacio: 'A chapter is empty: it will not appear in the book.',
   },
 

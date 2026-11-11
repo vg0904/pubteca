@@ -51,11 +51,14 @@ proteger. Un test que nunca falla no protege nada.
 | `almacen.test.ts` | IndexedDB, incluido que una pestaña atrasada no pise lo guardado por otra, y la version minima con la que se guarda cada libro |
 | `medios.test.ts` | Audio y video en el EPUB de Apple Books y su ausencia en el de Kindle, sobre `fixtures/libro-medios` (lo mismo que CI pasa por EPUBCheck): `media-type`, poster, CSS, indice en orden de lectura, accesibilidad, y que un libro sin medios no cambie ni un byte |
 | `medios-app.test.ts` | Los bloques `video` y `audio` del modelo: al dialecto y de vuelta, a la carpeta `medios/` del motor y a la copia `.zip` |
+| `segmentos.test.ts` | El CRC-32, el zip en segmentos con un hueco por medio (rellenado, lo da por bueno `unzip -t`, que comprueba cada CRC) y que el EPUB armado con los medios como ficha es EXACTAMENTE el mismo que con sus bytes |
+| `medios-almacen.test.ts` | El almacen de medios en IndexedDB (y su subida de esquema), la copia `.zip` con `medios/` de ida y vuelta sin leer los videos, y el peso: aviso a 500 MB, bloqueo a 2 GB |
 
 Las mutaciones de H5 (38, todas detectadas) se corrieron con un script fuera
 del repo: cambia una linea, corre el test que la protege y comprueba que
 falla. Si anades un caso, haz lo mismo a mano. Las de M1 (audio y video): 15,
-todas detectadas.
+todas detectadas. Las de M2 (segmentos, almacen, copia, peso): 21; una no se
+detectaba porque protegia una regla que nunca se usaba, y se quito la regla.
 
 ## El libro con medios
 
@@ -66,3 +69,9 @@ Kindle le quedaria una pagina vacia. Los medios los genera
 regenerarlos: son diminutos y estan commiteados, y CI no lo necesita. A
 diferencia de `libro-prueba`, no tiene golden del Python: el Python no conoce
 el audio ni el video.
+
+`scripts/epub-grande.ts` lo vuelve a construir con un video de 300 MB que
+genera en un archivo temporal (y borra): el motor lo recibe como ficha, el
+EPUB se escribe a disco por trozos, `unzip -t` lo comprueba y la memoria del
+proceso no puede pasar de 250 MB. Va dentro de `npm run epubs`, asi que CI lo
+pasa tambien por EPUBCheck.

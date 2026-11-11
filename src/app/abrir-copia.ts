@@ -25,7 +25,9 @@
  * original sigue en este navegador, compartir ids de imagen con el le quitaria
  * sus imagenes (el almacen las guarda por id).
  */
-import { unzipSync } from 'fflate'
+import { inflateSync, unzipSync } from 'fflate'
+import { crc32 } from '../core/crc32'
+import { claseDe } from '../core/medios'
 import { CONFIG_DEFAULT, leerConfig, si } from '../core/config'
 import { inspeccionarImagen, type InfoImagen } from '../core/imagen-inspeccion'
 import { Imagenes } from '../core/imagenes'
@@ -51,6 +53,7 @@ import {
   type EntregaKindle,
   type Extra,
   type Imagen,
+  type Medio,
   type Proyecto,
   type RolPortada,
   type Tramo,
@@ -64,9 +67,33 @@ export interface ImagenDeCopia {
   readonly info: InfoImagen
 }
 
+/**
+ * Un audio o un video de la copia. Si la copia se leyo con `leerZip`, sus
+ * bytes NO se leyeron: `datos` es el trozo del .zip donde estan, y guardarlo
+ * en el almacen no lo carga en memoria.
+ */
+export interface MedioDeCopia {
+  readonly id: string
+  readonly nombreOriginal: string
+  readonly tipo: Medio['tipo']
+  readonly segundos: number
+  readonly tamano: number
+  readonly crc32: number
+  readonly datos: Blob | Uint8Array
+}
+
+/** Un audio o un video del zip que no se leyo: su trozo del archivo, y lo que dice de el el directorio central. */
+export interface GrandeDeZip {
+  readonly datos: Blob
+  readonly tamano: number
+  readonly crc32: number
+}
+
 export type ClaveAvisoCopia =
   /** Una ilustracion pide una imagen que no esta en la copia. */
   | 'faltaImagen'
+  /** Un audio o un video que el libro usa y no esta en la copia. */
+  | 'faltaMedio'
   /** Un archivo de imagen que no es PNG ni JPG, o esta roto. */
   | 'imagenIlegible'
   /** Una imagen de ilustraciones/ que ningun capitulo usa: no se sabe donde va. */
@@ -94,6 +121,7 @@ export interface Copia {
   readonly origen: 'pubteca' | 'carpetas'
   readonly proyecto: Proyecto
   readonly imagenes: readonly ImagenDeCopia[]
+  readonly medios: readonly MedioDeCopia[]
   readonly avisos: readonly AvisoCopia[]
   /** Cuando se hizo la copia, si se sabe. */
   readonly creada: number | null
@@ -126,7 +154,12 @@ export function archivosDeZip(bytes: Uint8Array): Map<string, Uint8Array> | null
   } catch {
     return null
   }
-  const entradas = Object.entries(crudo)
+  return normalizarZip(Object.entries(crudo))
+}
+
+/** Las rutas de un zip como las quiere el libro: ver `archivosDeZip`. */
+function normalizarZip<T>(crudas: readonly (readonly [string, T])[]): Map<string, T> {
+  const entradas = crudas
     .map(([ruta, datos]) => [ruta.replace(/\\/gu, '/').normalize('NFC'), datos] as const)
     .filter(([ruta]) => !ruta.endsWith('/'))
     // Fuera lo oculto: `.DS_Store`, y tambien todo `__MACOSX/`, que solo trae
@@ -140,6 +173,133 @@ export function archivosDeZip(bytes: Uint8Array): Map<string, Uint8Array> | null
   const envoltorio =
     primeros.size === 1 && unica && !(CARPETAS as readonly string[]).includes(unica.toLowerCase()) ? `${unica}/` : ''
   return new Map(entradas.map(([ruta, datos]) => [ruta.slice(envoltorio.length), datos]))
+}
+
+/** Si una entrada del zip es un audio o un video: esos no se leen, se cortan. */
+function esMedioDeZip(ruta: string): boolean {
+  const punto = ruta.lastIndexOf('.')
+  return punto > ruta.lastIndexOf('/') + 1 && claseDe({ suffix: ruta.slice(punto) }) !== null
+}
+
+/**
+ * Lee un .zip SIN cargarlo entero: el directorio central del final, cada
+ * entrada pequeña por su lado, y los audios y videos guardados sin comprimir
+ * como un trozo del archivo (`Blob.slice`), que no lee nada.
+ *
+ * Es la otra mitad de la copia en segmentos: una copia con 400 MB de video se
+ * vuelve a abrir en un iPad sin que esos 400 MB pasen por la memoria. Un zip
+ * que no se pueda leer asi (ZIP64, uno partido) se lee entero, como antes.
+ */
+export async function leerZip(
+  f: Blob,
+): Promise<{ archivos: Map<string, Uint8Array>; grandes: Map<string, GrandeDeZip> } | null> {
+  const enteroComoAntes = async (): Promise<{ archivos: Map<string, Uint8Array>; grandes: Map<string, GrandeDeZip> } | null> => {
+    const archivos = archivosDeZip(new Uint8Array(await f.arrayBuffer()))
+    return archivos ? { archivos, grandes: new Map() } : null
+  }
+  const leer = async (desde: number, hasta: number): Promise<Uint8Array> => new Uint8Array(await f.slice(desde, hasta).arrayBuffer())
+
+  const cola = await leer(Math.max(0, f.size - 65_557), f.size)
+  const dc = new DataView(cola.buffer, cola.byteOffset, cola.byteLength)
+  let e = cola.length - 22
+  while (e >= 0 && dc.getUint32(e, true) !== 0x06054b50) e -= 1
+  if (e < 0) return null
+  const total = dc.getUint16(e + 10, true)
+  const tamanoCentral = dc.getUint32(e + 12, true)
+  const inicioCentral = dc.getUint32(e + 16, true)
+  if (total === 0xffff || inicioCentral === 0xffffffff || inicioCentral + tamanoCentral > f.size) return enteroComoAntes()
+
+  const central = await leer(inicioCentral, inicioCentral + tamanoCentral)
+  const d = new DataView(central.buffer, central.byteOffset, central.byteLength)
+  const latin1 = new TextDecoder('latin1')
+  const utf8Estricto = new TextDecoder('utf-8')
+  const crudas: [string, Uint8Array | GrandeDeZip][] = []
+  let p = 0
+  try {
+    for (let k = 0; k < total; k++) {
+      if (d.getUint32(p, true) !== 0x02014b50) return enteroComoAntes()
+      const banderas = d.getUint16(p + 8, true)
+      const metodo = d.getUint16(p + 10, true)
+      const crc = d.getUint32(p + 16, true)
+      const comprimido = d.getUint32(p + 20, true)
+      const tamano = d.getUint32(p + 24, true)
+      const largoNombre = d.getUint16(p + 28, true)
+      const largoExtra = d.getUint16(p + 30, true)
+      const largoComentario = d.getUint16(p + 32, true)
+      const local = d.getUint32(p + 42, true)
+      const bytesNombre = central.subarray(p + 46, p + 46 + largoNombre)
+      // Como fflate: UTF-8 si la bandera lo dice, si no, latin-1.
+      const ruta = (banderas & 0x800 ? utf8Estricto : latin1).decode(bytesNombre)
+      p += 46 + largoNombre + largoExtra + largoComentario
+      if (ruta.endsWith('/')) continue
+      const cabecera = await leer(local, local + 30)
+      const dl = new DataView(cabecera.buffer, cabecera.byteOffset, cabecera.byteLength)
+      if (dl.getUint32(0, true) !== 0x04034b50) return enteroComoAntes()
+      const inicio = local + 30 + dl.getUint16(26, true) + dl.getUint16(28, true)
+      if (metodo === 0 && esMedioDeZip(ruta)) {
+        crudas.push([ruta, { datos: f.slice(inicio, inicio + comprimido, ruta.toLowerCase().endsWith('.m4a') ? 'audio/mp4' : 'video/mp4'), tamano, crc32: crc }])
+        continue
+      }
+      const datos = await leer(inicio, inicio + comprimido)
+      if (metodo === 0) crudas.push([ruta, datos])
+      else if (metodo === 8) crudas.push([ruta, inflateSync(datos, { out: new Uint8Array(tamano) })])
+      else return enteroComoAntes()
+    }
+  } catch {
+    return enteroComoAntes()
+  }
+  const todas = normalizarZip(crudas)
+  const archivos = new Map<string, Uint8Array>()
+  const grandes = new Map<string, GrandeDeZip>()
+  for (const [ruta, x] of todas) {
+    if (x instanceof Uint8Array) archivos.set(ruta, x)
+    else grandes.set(ruta, x)
+  }
+  return { archivos, grandes }
+}
+
+/**
+ * Los audios y videos que la copia trae, con un id nuevo cada uno. Como
+ * `Recogida` con las imagenes: el mismo archivo pedido dos veces es el mismo.
+ */
+class RecogidaMedios {
+  readonly medios: MedioDeCopia[] = []
+  private readonly porRuta = new Map<string, string>()
+  private readonly nuevoId: NuevoId
+  private readonly archivos: ReadonlyMap<string, Uint8Array>
+  private readonly grandes: ReadonlyMap<string, GrandeDeZip>
+
+  constructor(nuevoId: NuevoId, archivos: ReadonlyMap<string, Uint8Array>, grandes: ReadonlyMap<string, GrandeDeZip>) {
+    this.nuevoId = nuevoId
+    this.archivos = archivos
+    this.grandes = grandes
+  }
+
+  /** Las rutas de audio y video que hay en la copia. */
+  rutas(): string[] {
+    return [...new Set([...this.grandes.keys(), ...[...this.archivos.keys()].filter(esMedioDeZip)])]
+  }
+
+  /** El id del medio de esa ruta, o null si no esta en la copia. */
+  id(ruta: string, nombreOriginal: string, segundos: number): string | null {
+    const ya = this.porRuta.get(ruta)
+    if (ya !== undefined) return ya
+    const g = this.grandes.get(ruta)
+    const b = this.archivos.get(ruta)
+    if (!g && !b) return null
+    const id = this.nuevoId('medio')
+    this.porRuta.set(ruta, id)
+    this.medios.push({
+      id,
+      nombreOriginal,
+      tipo: ruta.toLowerCase().endsWith('.m4a') ? 'm4a' : 'm4v',
+      segundos,
+      tamano: g ? g.tamano : (b as Uint8Array).length,
+      crc32: g ? g.crc32 : crc32(b as Uint8Array),
+      datos: g ? g.datos : (b as Uint8Array),
+    })
+    return id
+  }
 }
 
 /** Los archivos directamente dentro de una carpeta del libro, como el proyecto del motor los quiere. */
@@ -280,12 +440,44 @@ function tituloDeArchivo(stem: string): string {
 interface Recuperado {
   readonly proyecto: Proyecto
   readonly imagenes: readonly ImagenDeCopia[]
+  readonly medios: readonly MedioDeCopia[]
 }
 
-function desdeCarpetas(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: NuevoId, avisos: AvisoCopia[]): Recuperado {
+function desdeCarpetas(
+  archivos: ReadonlyMap<string, Uint8Array>,
+  grandes: ReadonlyMap<string, GrandeDeZip>,
+  nuevoId: NuevoId,
+  avisos: AvisoCopia[],
+): Recuperado {
   const pm = proyectoMotorDe(archivos)
   const datos = datosDeLibroTxt(pm.libroTxt, avisos)
   const recogida = new Recogida(nuevoId, avisos)
+  const recogidaMedios = new RecogidaMedios(nuevoId, archivos, grandes)
+
+  // Audio y video de medios/, por su nombre sin extension, como los busca el
+  // motor; y el poster de cada video, la imagen con ese mismo nombre.
+  const mediosPorNombre = new Map<string, string>()
+  for (const ruta of recogidaMedios.rutas().sort()) {
+    const trozos = ruta.split('/')
+    if (trozos.length !== 2 || (trozos[0] as string).toLowerCase() !== 'medios') continue
+    const clave = (trozos[1] as string).toLowerCase().replace(/\.[^.]+$/u, '')
+    if (!mediosPorNombre.has(clave)) mediosPorNombre.set(clave, ruta)
+  }
+  const posters = carpeta(archivos, 'medios').filter((a) => EXT_IMG.includes(a.suffix.toLowerCase()))
+  const resolverMedio = (nombre: string, donde: string): string => {
+    const clave = nombre.trim().toLowerCase().replace(/\.(m4v|mp4|m4a)$/u, '')
+    const ruta = mediosPorNombre.get(clave)
+    const id = ruta ? recogidaMedios.id(ruta, ruta.slice(ruta.lastIndexOf('/') + 1), 0) : null
+    if (id) return id
+    avisos.push({ clave: 'faltaMedio', detalle: `${donde} → ${nombre}` })
+    return nuevoId('medio')
+  }
+  const resolverPoster = (nombre: string | null): string | null => {
+    if (nombre === null) return null
+    const clave = nombre.trim().toLowerCase().replace(/\.(m4v|mp4|m4a)$/u, '')
+    const a = posters.find((x) => x.stem.toLowerCase() === clave)
+    return a ? recogida.id(a) : null
+  }
 
   // Las imagenes disponibles, con las MISMAS reglas que el motor: el primero
   // en orden natural gana, y lo que no es PNG ni JPG no cuenta.
@@ -309,7 +501,13 @@ function desdeCarpetas(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nuevo
     return nuevoId('img')
   }
   const conImagenes = (b: Bloque, donde: string): Bloque =>
-    b.tipo === 'ilustracion' ? { ...b, id: nuevoId('b'), imagenId: resolver(b.imagenId, donde) } : { ...b, id: nuevoId('b') }
+    b.tipo === 'ilustracion'
+      ? { ...b, id: nuevoId('b'), imagenId: resolver(b.imagenId, donde) }
+      : b.tipo === 'video'
+        ? { ...b, id: nuevoId('b'), medioId: resolverMedio(b.medioId, donde), posterId: resolverPoster(b.posterId) }
+        : b.tipo === 'audio'
+          ? { ...b, id: nuevoId('b'), medioId: resolverMedio(b.medioId, donde) }
+          : { ...b, id: nuevoId('b') }
 
   // Capitulos: en orden natural del nombre, como el motor.
   const porNombre = new Map(pm.capitulos.filter((a) => EXT_TEXTO.includes(a.suffix.toLowerCase())).map((a) => [a.nombre, a]))
@@ -395,7 +593,7 @@ function desdeCarpetas(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nuevo
     laminas,
     portada,
   }
-  return { proyecto, imagenes: recogida.imagenes }
+  return { proyecto, imagenes: recogida.imagenes, medios: recogidaMedios.medios }
 }
 
 // ---------------------------------------------------------------------------
@@ -428,6 +626,7 @@ function proyectoDeJson(
   nuevoId: NuevoId,
   imagenId: (viejo: string) => string,
   avisos: AvisoCopia[],
+  medioId: (viejo: string) => string = (v) => v,
 ): Proyecto | null {
   if (!esObjeto(x) || !Array.isArray(x['capitulos'])) return null
   let descartados = 0
@@ -462,23 +661,22 @@ function proyectoDeJson(
       case 'ilustracion':
         if (typeof b['imagenId'] !== 'string') return null
         return { id, tipo: 'ilustracion', imagenId: imagenId(b['imagenId']), alt: texto(b['alt']), decorativa: b['decorativa'] === true }
-      // Audio y video (formato 2). Sus bytes aun no viajan en la copia: eso
-      // llega con el almacen de medios (M2). Hasta entonces se recupera el
-      // bloque entero, que es lo que el autor escribio, y el medio queda como
-      // pendiente de volver a subir en vez de perderse en silencio.
+      // Audio y video (formato 2). Si su archivo no esta en la copia, el
+      // bloque se recupera igual (es lo que el autor escribio) con un id que no
+      // apunta a nada, y se avisa: mejor que perderlo en silencio.
       case 'video':
         if (typeof b['medioId'] !== 'string') return null
         return {
           id,
           tipo: 'video',
-          medioId: b['medioId'],
+          medioId: medioId(b['medioId']),
           posterId: typeof b['posterId'] === 'string' ? imagenId(b['posterId']) : null,
           alt: texto(b['alt']),
           decorativa: b['decorativa'] === true,
         }
       case 'audio':
         if (typeof b['medioId'] !== 'string') return null
-        return { id, tipo: 'audio', medioId: b['medioId'], alt: texto(b['alt']), decorativa: b['decorativa'] === true }
+        return { id, tipo: 'audio', medioId: medioId(b['medioId']), alt: texto(b['alt']), decorativa: b['decorativa'] === true }
       default:
         return null
     }
@@ -653,10 +851,27 @@ function coincideConSusArchivos(
 function desdeJson(
   json: Record<string, unknown>,
   archivos: ReadonlyMap<string, Uint8Array>,
+  grandes: ReadonlyMap<string, GrandeDeZip>,
   nuevoId: NuevoId,
   avisos: AvisoCopia[],
 ): Recuperado | null {
   const recogida = new Recogida(nuevoId, avisos)
+  const recogidaMedios = new RecogidaMedios(nuevoId, archivos, grandes)
+  const mediosJson = esObjeto(json['medios']) ? json['medios'] : {}
+  const mapaMedios = new Map<string, string>()
+  const medioId = (viejo: string): string => {
+    const ya = mapaMedios.get(viejo)
+    if (ya) return ya
+    const info = mediosJson[viejo]
+    const ruta = esObjeto(info) && typeof info['ruta'] === 'string' ? info['ruta'] : null
+    const nombre = esObjeto(info) && typeof info['nombreOriginal'] === 'string' ? limpiarTexto(info['nombreOriginal']) : viejo
+    const segundos = esObjeto(info) && typeof info['segundos'] === 'number' && Number.isFinite(info['segundos']) ? Math.max(0, info['segundos']) : 0
+    const id = ruta ? recogidaMedios.id(ruta, nombre, segundos) : null
+    if (!id) avisos.push({ clave: 'faltaMedio', detalle: nombre })
+    const nuevo = id ?? nuevoId('medio')
+    mapaMedios.set(viejo, nuevo)
+    return nuevo
+  }
   const imagenesJson = esObjeto(json['imagenes']) ? json['imagenes'] : {}
   const mapa = new Map<string, string>()
   const imagenId = (viejo: string): string => {
@@ -675,16 +890,23 @@ function desdeJson(
     mapa.set(viejo, nuevo)
     return nuevo
   }
-  const proyecto = proyectoDeJson(json['proyecto'], nuevoId, imagenId, avisos)
-  return proyecto ? { proyecto, imagenes: recogida.imagenes } : null
+  const proyecto = proyectoDeJson(json['proyecto'], nuevoId, imagenId, avisos, medioId)
+  return proyecto ? { proyecto, imagenes: recogida.imagenes, medios: recogidaMedios.medios } : null
 }
 
 // ---------------------------------------------------------------------------
 // La entrada
 // ---------------------------------------------------------------------------
 
-/** Lee una copia ya descomprimida. Ver archivosDeZip. */
-export function leerCopia(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: NuevoId): LecturaCopia {
+/**
+ * Lee una copia ya descomprimida. Ver archivosDeZip y leerZip: con `leerZip`,
+ * los audios y videos llegan en `grandes`, sin leer.
+ */
+export function leerCopia(
+  archivos: ReadonlyMap<string, Uint8Array>,
+  nuevoId: NuevoId,
+  grandes: ReadonlyMap<string, GrandeDeZip> = new Map(),
+): LecturaCopia {
   const bytesJson = raiz(archivos, NOMBRE_JSON)
   // Cada lectura con sus avisos: si el json resulta desfasado y se leen las
   // carpetas, los avisos de haber leido el json ya no valen.
@@ -696,7 +918,7 @@ export function leerCopia(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nu
     if (leeme && utf8(leeme).startsWith('Copia de seguridad de Pubteca') && !bytesJson) {
       avisos.push({ clave: 'copiaAntigua', detalle: '' })
     }
-    const r = desdeCarpetas(archivos, nuevoId, avisos)
+    const r = desdeCarpetas(archivos, grandes, nuevoId, avisos)
     return { ok: true, copia: { origen: 'carpetas', ...r, avisos, creada: null } }
   }
 
@@ -714,9 +936,9 @@ export function leerCopia(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nu
   const creada = Number.isNaN(creadaIso) ? null : creadaIso
 
   const avisos: AvisoCopia[] = []
-  const recuperado = desdeJson(json, archivos, nuevoId, avisos)
+  const recuperado = desdeJson(json, archivos, grandes, nuevoId, avisos)
   if (!recuperado) return { ok: false, error: 'danada' }
-  const { imagenes } = recuperado
+  const { imagenes, medios } = recuperado
   const proyecto: Proyecto = { ...recuperado.proyecto, ...(creada !== null ? { ultimaCopia: creada } : {}) }
 
   if (!coincideConSusArchivos(proyecto, imagenes, archivos)) {
@@ -735,5 +957,5 @@ export function leerCopia(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nu
       },
     }
   }
-  return { ok: true, copia: { origen: 'pubteca', proyecto, imagenes, avisos, creada } }
+  return { ok: true, copia: { origen: 'pubteca', proyecto, imagenes, medios, avisos, creada } }
 }

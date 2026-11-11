@@ -58,7 +58,7 @@ export function reporte(c: Construccion, ahora: Date): string {
   r.push('')
   r.push('Archivos generados (en salida/):')
   for (const res of c.resultados) {
-    const mb = res.bytes.length / 1e6
+    const mb = res.tamano / 1e6
     let linea = `  · ${res.nombreArchivo.padEnd(40)} ${formatoFijo(mb, 2).padStart(5)} MB`
     if (res.tienda === 'Kindle') {
       linea +=

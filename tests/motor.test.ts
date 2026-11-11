@@ -66,7 +66,7 @@ describe('el motor en su hilo', () => {
     const directo = construir(LIBRO, { ahora: new Date(AHORA) })
     const r = correrMotor(pedido)
     expect(r.resultados.map((x) => x.nombreArchivo)).toEqual(directo.resultados.map((x) => x.nombreArchivo))
-    for (const [i, x] of r.resultados.entries()) expect(x.bytes).toEqual(directo.resultados[i]?.bytes)
+    for (const [i, x] of r.resultados.entries()) expect(x.segmentos).toEqual(directo.resultados[i]?.segmentos)
     expect(r.uid).toBe(directo.uid)
     expect(r.diagnosticos.avisos).toEqual(directo.diagnosticos.avisos)
     // El reporte se escribe dentro del hilo, donde esta el Libro que lo necesita.
@@ -79,7 +79,7 @@ describe('el motor en su hilo', () => {
     const r = await enSuHilo(pedido)
     expect(creados).toHaveLength(1)
     expect(r.resultados.map((x) => x.tienda)).toEqual(['Kindle', 'AppleBooks'])
-    expect(r.resultados[0]?.bytes).toEqual(correrMotor(pedido).resultados[0]?.bytes)
+    expect(r.resultados[0]?.segmentos).toEqual(correrMotor(pedido).resultados[0]?.segmentos)
   })
 
   it('el hilo se abre UNA vez y se reutiliza', async () => {
@@ -97,7 +97,7 @@ describe('el motor en su hilo', () => {
     const { Falso, creados } = workerFalso(true)
     const enSuHilo = await generarCon(Falso)
     const r = await enSuHilo(pedido)
-    expect(r.resultados[1]?.bytes).toEqual(correrMotor(pedido).resultados[1]?.bytes)
+    expect(r.resultados[1]?.segmentos).toEqual(correrMotor(pedido).resultados[1]?.segmentos)
     await enSuHilo(pedido)
     expect(creados).toHaveLength(1)
   })

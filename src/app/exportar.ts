@@ -12,7 +12,7 @@
  * archivo que no existe, y una imagen huerfana en ilustraciones/).
  */
 import { nombreSeguro } from '../core/texto'
-import { archivo, type Archivo, type Proyecto as ProyectoMotor } from '../core/proyecto'
+import { archivo, ficha, type Archivo, type Ficha, type Proyecto as ProyectoMotor } from '../core/proyecto'
 import type { Imagen, Medio, Proyecto, RolPortada } from './modelo'
 import { serializarCapitulo, serializarExtra, type Aviso } from './serializar'
 
@@ -106,7 +106,7 @@ export function exportar(
   // exporta exactamente igual que antes.
   const nombresMedios = new Map<string, string>()
   const rutasMedios = new Map<string, string>()
-  const archivosMedios: Archivo[] = []
+  const archivosMedios: (Archivo | Ficha)[] = []
 
   const registrar = (id: string, base: string): string => {
     const yaEsta = nombres.get(id)
@@ -135,18 +135,25 @@ export function exportar(
     const yaEsta = nombresMedios.get(id)
     if (yaEsta) return yaEsta
     nombresMedios.set(id, base)
-    const ext = `.${medios.get(id)?.tipo ?? (tipo === 'video' ? 'm4v' : 'm4a')}`
+    const m = medios.get(id)
+    const ext = `.${m?.tipo ?? (tipo === 'video' ? 'm4v' : 'm4a')}`
+    const ruta = `medios/${base}${ext}`
+    // Con sus bytes si estan (Node, los tests, un audio pequeño); si no, su
+    // FICHA: el motor no necesita mas, y el video no sale del almacen.
     const datos = bytes.get(id)
     if (datos) {
-      archivosMedios.push(archivo(`medios/${base}${ext}`, datos))
-      rutasMedios.set(id, `medios/${base}${ext}`)
+      archivosMedios.push(archivo(ruta, datos))
+      rutasMedios.set(id, ruta)
+    } else if (m) {
+      archivosMedios.push(ficha(ruta, m.bytes, m.crc32))
+      rutasMedios.set(id, ruta)
     }
     if (tipo === 'video' && posterId !== null) {
       const poster = bytes.get(posterId)
       if (poster) {
-        const ruta = `medios/${base}${extensionDe(imagenes, posterId)}`
-        archivosMedios.push(archivo(ruta, poster))
-        if (!rutas.has(posterId)) rutas.set(posterId, ruta)
+        const rutaPoster = `medios/${base}${extensionDe(imagenes, posterId)}`
+        archivosMedios.push(archivo(rutaPoster, poster))
+        if (!rutas.has(posterId)) rutas.set(posterId, rutaPoster)
       }
     }
     return base

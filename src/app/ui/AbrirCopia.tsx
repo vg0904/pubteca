@@ -28,6 +28,9 @@ export function ConfirmarCopia({
         {p.datos.autor && <span> · {p.datos.autor}</span>}
       </p>
       <p>{ui.copia.resumen(p.capitulos.length, p.extras.length, copia.imagenes.length)}</p>
+      {copia.medios.length > 0 && (
+        <p>{ui.copia.medios(copia.medios.length, ui.formato.tamano(copia.medios.reduce((n, m) => n + m.tamano, 0)))}</p>
+      )}
       {fecha && <p className="ayuda">{ui.copia.hecha(fecha)}</p>}
       {copia.origen === 'carpetas' && <p className="ayuda">{ui.copia.deCarpetas}</p>}
       {copia.avisos.length > 0 && (

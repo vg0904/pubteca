@@ -49,6 +49,20 @@ EPUB», vive en `datos.idioma` y decide los textos que van DENTRO del EPUB
   treinta ilustraciones del libro, asi que pedirla una por una serian treinta
   veces el mismo gesto. Ahi el peso se estima midiendo una muestra.
 
+## El audio y el video no pasan por memoria
+
+Un video del iPhone son cientos de MB, y en un iPad eso mata la pestaña. Por eso
+ni el motor ni la pagina tienen nunca un video entero:
+
+- `repositorio.ts` lo guarda en IndexedDB y se queda con el Blob que devuelve,
+  que vive en disco. Su CRC-32 se saca una vez, leyendolo por trozos.
+- `exportar.ts` se lo pasa al motor como FICHA (tamaño y CRC). El motor escribe
+  el EPUB en segmentos, con un hueco donde va cada medio (`core/zip.ts`).
+- `generar.ts` arma el archivo con `new Blob([trozo, video, trozo...])`, que no
+  copia: el navegador apunta a los Blob del almacen.
+- La copia `.zip` va igual, y al abrirla `leerZip` (abrir-copia.ts) lee el
+  directorio central y CORTA el archivo donde esta cada medio, sin leerlo.
+
 Para que las dos tiendas lleven imagenes distintas, el motor se corre DOS veces
 (`generar.ts`), cada una con los bytes de una, y de cada vuelta se guarda un
 libro. El core no se entera: sigue construyendo los dos EPUB de un solo

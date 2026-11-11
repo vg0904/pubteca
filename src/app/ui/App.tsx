@@ -5,21 +5,22 @@ import {
   guardarProyecto,
   leerProyecto,
   limpiarImagenes,
+  limpiarMedios,
   listarProyectos,
   pedirPersistencia,
   type Almacen,
   type ResumenProyecto,
 } from '../almacen'
-import { archivosDeZip, leerCopia, type Copia } from '../abrir-copia'
-import { descargar, nombreDeCopia, zipDeCopia } from '../copia'
+import { leerCopia, leerZip, type Copia } from '../abrir-copia'
+import { descargar, nombreDeCopia, segmentosDeCopia } from '../copia'
 import { ESTADO_INICIAL, reducir } from '../estado'
 import { exportar } from '../exportar'
-import { bytesDelProyecto, cargarFuentes } from '../generar'
+import { blobDeSegmentos, blobsDeHuecos, bytesDelProyecto, cargarFuentes } from '../generar'
 import { Guardador } from '../guardado'
 import { crearId } from '../ids'
 import { desdeDialecto, desdeParrafos, desdePropuesta, resultadoImportacion, type ImagenImportada } from '../importacion'
 import { importarDocx } from '../importar/docx'
-import { ENTREGA_KINDLE_POR_DEFECTO, idsDeImagenes, type Imagen, type Proyecto } from '../modelo'
+import { ENTREGA_KINDLE_POR_DEFECTO, idsDeImagenes, idsDeMedios, type Imagen, type Proyecto } from '../modelo'
 import { lineasDeHtml, lineasDeTexto } from '../pegar'
 import { Repositorio } from '../repositorio'
 import { decodifica, inspeccionarArchivo } from '../subir'
@@ -52,7 +53,7 @@ export default function App() {
   const [ocupado, setOcupado] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
   const [copia, setCopia] = useState<'preparando' | 'lista' | null>(null)
-  const copiaLista = useRef<{ bytes: Uint8Array; nombre: string } | null>(null)
+  const copiaLista = useRef<{ datos: Blob; nombre: string } | null>(null)
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const siguienteAviso = useRef(0)
 
@@ -247,6 +248,7 @@ export default function App() {
         // que nada puede devolver una imagen que el libro ya no usa.
         // Si falla, el libro se abre igual: es limpieza, no puede costar el libro.
         if (db) await limpiarImagenes(db, id, idsDeImagenes(p), Date.now()).catch(() => 0)
+        if (db) await limpiarMedios(db, id, idsDeMedios(p), Date.now()).catch(() => 0)
         const { repo: r, imagenes } = await Repositorio.abrir(db, id)
         cambiarRepo(r)
         // Recien leido de IndexedDB: no hay nada que volver a guardar.
@@ -280,12 +282,14 @@ export default function App() {
     async (f: File) => {
       setOcupado(ui.copia.leyendo)
       try {
-        const archivos = archivosDeZip(new Uint8Array(await f.arrayBuffer()))
-        if (!archivos) {
+        // Sin cargar el .zip entero: los audios y videos de la copia se quedan
+        // en el archivo hasta que se guardan en el almacen.
+        const z = await leerZip(f)
+        if (!z) {
           avisar(ui.copia.errores.noEsZip, { tipo: 'error' })
           return
         }
-        const r = leerCopia(archivos, crearId)
+        const r = leerCopia(z.archivos, crearId, z.grandes)
         if (!r.ok) avisar(ui.copia.errores[r.error], { tipo: 'error' })
         else setCopiaPendiente(r.copia)
       } catch (e) {
@@ -313,6 +317,10 @@ export default function App() {
       for (const i of c.imagenes) {
         if (i.info.tipo === null) continue
         imagenes.push(await destino.anadir(i.id, i.nombreOriginal, new Blob([i.bytes as Uint8Array<ArrayBuffer>]), i.info, i.info.tipo))
+      }
+      for (const m of c.medios) {
+        const datos = m.datos instanceof Blob ? m.datos : new Blob([m.datos as Uint8Array<ArrayBuffer>])
+        await destino.anadirMedio(m.id, m.nombreOriginal, datos, { tipo: m.tipo, segundos: m.segundos, crc32: m.crc32 }, Date.now())
       }
       void pedirPersistencia()
       // Nada guardado aun: el autoguardado lo escribe en cuanto se abre.
@@ -427,7 +435,7 @@ export default function App() {
     // Si la copia ya estaba hecha y el autor pulsa para bajarla, se baja YA,
     // dentro de este clic.
     if (copia === 'lista' && copiaLista.current) {
-      descargar(copiaLista.current.bytes, copiaLista.current.nombre, 'application/zip')
+      descargar(copiaLista.current.datos, copiaLista.current.nombre, 'application/zip')
       copiaLista.current = null
       setCopia(null)
       despachar({ tipo: 'copiaGuardada', cuando: Date.now() })
@@ -437,7 +445,15 @@ export default function App() {
     const empezo = performance.now()
     try {
       const [bytes, fuentes] = await Promise.all([bytesDelProyecto(p, repo), cargarFuentes()])
-      const zip = zipDeCopia(exportar(p, estado.imagenes, bytes, fuentes), p, estado.imagenes, new Date())
+      // Los audios y videos van como hueco y se rellenan con su Blob del
+      // almacen: la copia de un libro con video no pasa por la memoria.
+      const medios = repo.medios()
+      const e = exportar(p, estado.imagenes, bytes, fuentes, medios)
+      const zip = blobDeSegmentos(
+        segmentosDeCopia(e, p, estado.imagenes, new Date(), medios),
+        blobsDeHuecos(e.rutasMedios, (id) => repo.blobMedio(id)),
+        'application/zip',
+      )
       const nombre = nombreDeCopia(p.datos.titulo, new Date())
       if (performance.now() - empezo < ESPERA_COPIA) {
         descargar(zip, nombre, 'application/zip')
@@ -445,7 +461,7 @@ export default function App() {
         despachar({ tipo: 'copiaGuardada', cuando: Date.now() })
       } else {
         // Safari ya no deja descargar sin otro clic: se deja lista.
-        copiaLista.current = { bytes: zip, nombre }
+        copiaLista.current = { datos: zip, nombre }
         setCopia('lista')
         avisar(ui.barra.copiaLista)
       }

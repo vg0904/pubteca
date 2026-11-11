@@ -24,7 +24,58 @@
  * el unico que necesita un lienzo.
  */
 import { tamanoPorResolucion, type Ajuste, type KindlePropio } from './imagen-ajuste'
-import { ENTREGA_KINDLE_POR_DEFECTO, type EntregaKindle, type Imagen, type Proyecto } from './modelo'
+import { ENTREGA_KINDLE_POR_DEFECTO, esMedio, idsDeImagenes, type EntregaKindle, type Imagen, type Medio, type Proyecto } from './modelo'
+
+/**
+ * Lo que admite Apple Books (Asset Guide 5.3.1): el .zip que se le entrega no
+ * puede pasar de 2 GB, y recomienda no pasar de 500 MB. En decimal, que es
+ * lo prudente: 2 GiB serian 2.147 millones de bytes.
+ */
+export const LIMITE_APPLE = 2_000_000_000
+export const RECOMENDADO_APPLE = 500_000_000
+
+export interface PesoDeMedios {
+  readonly videos: number
+  readonly audios: number
+  /** Lo que suman el audio y el video que el libro usa. */
+  readonly medios: number
+  /** Lo que pesara el EPUB de Apple Books, a falta del texto: medios mas imagenes, tal cual. */
+  readonly estimado: number
+  readonly nivel: 'ok' | 'aviso' | 'bloquea'
+}
+
+/**
+ * Cuanto pesa el audio y el video del libro, y si el EPUB de Apple Books pasa
+ * de lo recomendado o de lo que Apple acepta.
+ *
+ * Se estima ANTES de generar, con lo que ya se sabe: los medios y las
+ * imagenes van tal cual en Apple Books, y el texto no llega a 1 MB. Despues de
+ * generar, la pantalla enseña el tamaño exacto.
+ */
+export function pesoDeMedios(
+  p: Proyecto,
+  medios: ReadonlyMap<string, Medio>,
+  imagenes: ReadonlyMap<string, Imagen>,
+): PesoDeMedios {
+  const vistos = new Set<string>()
+  let videos = 0
+  let audios = 0
+  let bytes = 0
+  for (const c of [...p.capitulos, ...p.extras]) {
+    for (const b of c.bloques) {
+      if (!esMedio(b) || vistos.has(b.medioId)) continue
+      vistos.add(b.medioId)
+      if (b.tipo === 'video') videos += 1
+      else audios += 1
+      bytes += medios.get(b.medioId)?.bytes ?? 0
+    }
+  }
+  let deImagenes = 0
+  for (const id of idsDeImagenes(p)) deImagenes += imagenes.get(id)?.bytes ?? 0
+  const estimado = bytes + deImagenes
+  const nivel = vistos.size === 0 ? 'ok' : estimado > LIMITE_APPLE ? 'bloquea' : estimado > RECOMENDADO_APPLE ? 'aviso' : 'ok'
+  return { videos, audios, medios: bytes, estimado, nivel }
+}
 
 /** Lo que el libro tenga guardado, o el valor por defecto. */
 export function entregaKindle(p: Proyecto): EntregaKindle {

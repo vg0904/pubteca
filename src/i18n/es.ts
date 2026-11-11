@@ -72,6 +72,7 @@ export const ui = {
     titulo: 'Esto trae la copia',
     hecha: (fecha: string) => `Copia hecha el ${fecha}.`,
     deCarpetas: 'Se leyó desde sus carpetas (libro.txt, capitulos/, ilustraciones/…), como las lee el generador.',
+    medios: (n: number, tamano: string) => (n === 1 ? `Y 1 audio o video (${tamano}).` : `Y ${n} audios o videos (${tamano} en total).`),
     resumen: (capitulos: number, extras: number, imagenes: number) =>
       [
         capitulos === 1 ? '1 capítulo' : `${capitulos} capítulos`,
@@ -93,6 +94,7 @@ export const ui = {
     } satisfies Record<ErrorCopia, string>,
     avisos: {
       faltaImagen: (d: string) => `Falta una imagen (${d}). Donde iba, el libro te lo marcará para que la vuelvas a poner.`,
+      faltaMedio: (d: string) => `Falta un audio o un video (${d}). Su sitio se queda en el capítulo para que lo vuelvas a poner.`,
       imagenIlegible: (d: string) => `${d} no es PNG ni JPG, o está dañada: no se abrió.`,
       imagenSinUsar: (d: string) => `${d} no la usa ningún capítulo, así que se quedó fuera (el generador tampoco la usaba).`,
       capituloVacio: (d: string) => `${d} está vacío: no se abrió.`,
@@ -440,6 +442,16 @@ export const ui = {
 
     // Decision de ENTREGA, no de autor: va aqui y vale para todas las imagenes
     // del libro, para no configurarlas una por una.
+    // Audio y video: cuanto suman, y si el EPUB de Apple Books pasa de lo que
+    // Apple recomienda o acepta.
+    medios: {
+      titulo: 'Audio y video',
+      detalle: (videos: number, audios: number, tamano: string) =>
+        `${[videos === 1 ? '1 video' : videos > 1 ? `${videos} videos` : '', audios === 1 ? '1 audio' : audios > 1 ? `${audios} audios` : ''].filter(Boolean).join(' y ')} · ${tamano}`,
+      soloApple: 'Solo van en el EPUB de Apple Books: Kindle no admite audio ni video.',
+      estimado: (tamano: string) => `El EPUB de Apple Books pesará unos ${tamano}.`,
+      limites: 'Apple recomienda no pasar de 500 MB y no acepta más de 2 GB.',
+    },
     imagenes: {
       titulo: 'Las imágenes en cada tienda',
       ayuda:
@@ -494,6 +506,9 @@ export const ui = {
     paginaSinTitulo: 'Una página extra no tiene título: el libro tomaría su primer párrafo como título.',
     faltaImagen: 'Una ilustración no tiene imagen: no entrará al libro.',
     capituloVacio: 'Un capítulo está vacío: no saldrá en el libro.',
+    faltaMedio: 'Un audio o un video no está en este navegador: no entrará al libro.',
+    mediosPesan: 'Con el audio y el video, el EPUB de Apple Books pasa de 500 MB, lo máximo que Apple recomienda. Se puede publicar, pero tarda en bajar.',
+    mediosPasanLimite: 'Con el audio y el video, el EPUB de Apple Books pasaría de 2 GB, lo máximo que Apple acepta. Quita o acorta algún video.',
   } satisfies Record<ClaveProblema, string>,
 
   // Cada grupo de avisos dice la CONSECUENCIA para el lector, no el tecnicismo.

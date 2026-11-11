@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { TARIFA_POR_MB } from '../../core/reporte'
 import { agrupar, cuentas, type Grupo } from '../avisos'
 import { descargar } from '../copia'
-import { ajusteKindle, entregaKindle, imagenesDeKindle, muestrasPara } from '../entrega'
+import { ajusteKindle, entregaKindle, imagenesDeKindle, muestrasPara, pesoDeMedios } from '../entrega'
 import type { Estado } from '../estado'
-import { conLienzo, generarLibros, type Generado } from '../generar'
+import { blobDelLibro, conLienzo, generarLibros, type Generado } from '../generar'
 import { ajusteEnLote, bppJpeg, bppMedido, conSufijo, pesoTotalEstimado, sinCambios } from '../imagen-ajuste'
 import { ajustarImagen } from '../imagen-canvas'
 import { idsDeImagenes, type DatosLibro, type EntregaKindle, type Imagen, type Proyecto } from '../modelo'
@@ -166,6 +166,32 @@ const mismaHuella = (a: readonly unknown[], b: readonly unknown[]): boolean => a
  * asi que un numero de tabla puede estar al doble del real, y un numero
  * equivocado en la pantalla de descarga es peor que no dar ninguno.
  */
+/**
+ * Cuanto suman el audio y el video, y si el EPUB de Apple Books pasa de lo
+ * que Apple recomienda (500 MB) o acepta (2 GB). Lo que bloquea lo dice ademas
+ * la revision, que es la que no deja generar.
+ */
+function MediosDelLibro({ p, imagenes }: { p: Proyecto; imagenes: ReadonlyMap<string, Imagen> }) {
+  const ui = useTextos()
+  const { repo } = useMedios()
+  const peso = pesoDeMedios(p, repo?.medios() ?? new Map(), imagenes)
+  if (peso.videos + peso.audios === 0) return null
+  const clase = peso.nivel === 'bloquea' ? 'nivel-bloquea' : peso.nivel === 'aviso' ? 'nivel-aviso' : ''
+  return (
+    <section className="por-tienda medios-del-libro">
+      <h2>{ui.descargar.medios.titulo}</h2>
+      <p className="tienda-apple">
+        <strong>{ui.descargar.medios.detalle(peso.videos, peso.audios, ui.formato.tamano(peso.medios))}</strong>{' '}
+        <span className="ayuda">{ui.descargar.medios.soloApple}</span>
+      </p>
+      <p className={clase ? `alerta ${clase}` : 'ayuda'}>
+        {clase && <Nivel nivel={peso.nivel === 'bloquea' ? 'bloquea' : 'aviso'} />} {ui.descargar.medios.estimado(ui.formato.tamano(peso.estimado))}{' '}
+        {ui.descargar.medios.limites}
+      </p>
+    </section>
+  )
+}
+
 function ImagenesPorTienda({ p, imagenes }: { p: Proyecto; imagenes: ReadonlyMap<string, Imagen> }) {
   const ui = useTextos()
   const despachar = useDespacho()
@@ -446,7 +472,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
   const p = estado.proyecto as Proyecto
   const [generado, setGenerado] = useState<{ g: Generado; huella: readonly unknown[]; ahora: Date } | null>(null)
   const [ocupado, setOcupado] = useState(false)
-  const problemas = useMemo(() => revisar(p, estado.imagenes), [p, estado.imagenes])
+  const problemas = useMemo(() => revisar(p, estado.imagenes, repo?.medios() ?? new Map()), [p, estado.imagenes, repo])
   const identidad = cambioDeIdentidad(p)
   const viejo = generado !== null && !mismaHuella(generado.huella, huella(p))
 
@@ -473,11 +499,27 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
 
   const bajar = (tienda: 'Kindle' | 'AppleBooks'): void => {
     const r = c?.resultados.find((x) => x.tienda === tienda)
-    if (!r || !c) return
+    if (!r || !c || !generado || !repo) return
     // Dentro del clic: Safari descarta las descargas sin activacion del usuario.
-    descargar(r.bytes, r.nombreArchivo, 'application/epub+zip')
+    // Armar el Blob es sincrono y no copia los videos, asi que cabe aqui.
+    try {
+      descargar(blobDelLibro(r, generado.g.exportado, repo), r.nombreArchivo, 'application/epub+zip')
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : String(e), { tipo: 'error' })
+      return
+    }
     despachar({ tipo: 'descargado', uid: c.uid, cuando: Date.now() })
   }
+
+  // La vista previa reproduce cada audio o video desde el almacen.
+  const urlDeMedio = useCallback(
+    (ruta: string): string | undefined => {
+      if (!generado || !repo) return undefined
+      for (const [id, r] of generado.g.exportado.rutasMedios) if (r === ruta) return repo.urlMedio(id)
+      return undefined
+    },
+    [generado, repo],
+  )
 
   const kindle = c?.resultados.find((r) => r.tienda === 'Kindle')
   const apple = c?.resultados.find((r) => r.tienda === 'AppleBooks')
@@ -527,6 +569,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
         )}
       </section>
 
+      <MediosDelLibro p={p} imagenes={estado.imagenes} />
       <ImagenesPorTienda p={p} imagenes={estado.imagenes} />
 
       <AntesDeDescargar p={p} imagenes={estado.imagenes} />
@@ -555,14 +598,14 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
                   <button type="button" className="boton-descarga" disabled={viejo} onClick={() => bajar('Kindle')}>
                     <strong>{ui.descargar.kindle}</strong>
                     <span>
-                      {ui.formato.tamano(kindle.bytes.length)} · {ui.descargar.tarifa(ui.formato.dolares((kindle.bytes.length / 1e6) * TARIFA_POR_MB))}
+                      {ui.formato.tamano(kindle.tamano)} · {ui.descargar.tarifa(ui.formato.dolares((kindle.tamano / 1e6) * TARIFA_POR_MB))}
                     </span>
                   </button>
                 )}
                 {apple && (
                   <button type="button" className="boton-descarga" disabled={viejo} onClick={() => bajar('AppleBooks')}>
                     <strong>{ui.descargar.apple}</strong>
-                    <span>{ui.formato.tamano(apple.bytes.length)}</span>
+                    <span>{ui.formato.tamano(apple.tamano)}</span>
                   </button>
                 )}
               </div>
@@ -578,7 +621,7 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
               )}
               {generado?.g.sinFuentes && <p className="alerta nivel-nota">{ui.descargar.sinFuentes}</p>}
               {/* Desactualizada no: enseñaria un libro que ya no es el que hay. */}
-              {!viejo && <VistaPrevia resultados={c.resultados} />}
+              {!viejo && <VistaPrevia resultados={c.resultados} medio={urlDeMedio} />}
             </>
           )}
           {(grupos.length > 0 || (generado?.g.exportado.avisos.length ?? 0) > 0) && (

@@ -37,8 +37,36 @@ export interface Proyecto {
    * Audios, videos y los posters de los videos. Opcional: es de Pubteca (el
    * Python no tiene esta carpeta), y un proyecto sin ella se construye
    * exactamente igual que antes.
+   *
+   * Un audio o un video puede llegar como `Ficha`, sin sus bytes: en el
+   * navegador un video de 400 MB no se carga en memoria (en un iPad mataria
+   * la pestaña). El motor solo necesita saber cuanto pesa y su CRC-32 para
+   * escribir las cabeceras del zip, y deja un hueco donde iran sus bytes (ver
+   * `zip.ts`). Los posters siempre llegan con sus bytes: son imagenes.
    */
-  readonly medios?: readonly Archivo[]
+  readonly medios?: readonly (Archivo | Ficha)[]
+}
+
+/**
+ * Un archivo que el motor NO carga: solo sabe como se llama, cuanto pesa y su
+ * CRC-32. Lo calcula quien tiene los bytes, por trozos, con `crc32`.
+ */
+export interface Ficha {
+  readonly ruta: string
+  readonly nombre: string
+  readonly stem: string
+  readonly suffix: string
+  readonly tamano: number
+  readonly crc32: number
+}
+
+export function ficha(ruta: string, tamano: number, crc32: number): Ficha {
+  const { nombre, stem, suffix } = archivo(ruta, new Uint8Array(0))
+  return { ruta, nombre, stem, suffix, tamano, crc32 }
+}
+
+export function esFicha(a: Archivo | Ficha): a is Ficha {
+  return !('bytes' in a)
 }
 
 /**

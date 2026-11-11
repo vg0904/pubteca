@@ -12,8 +12,8 @@ import { leerProyecto } from '../scripts/leer-proyecto'
  */
 
 const r = correrMotor({ proyecto: leerProyecto(`${import.meta.dirname}/fixtures/libro-prueba`), ahora: Date.parse('2026-01-01T12:00:00Z') })
-const kindle = r.resultados.find((x) => x.tienda === 'Kindle')?.bytes as Uint8Array
-const apple = r.resultados.find((x) => x.tienda === 'AppleBooks')?.bytes as Uint8Array
+const kindle = r.resultados.find((x) => x.tienda === 'Kindle')?.segmentos[0] as Uint8Array
+const apple = r.resultados.find((x) => x.tienda === 'AppleBooks')?.segmentos[0] as Uint8Array
 const url = (ruta: string): string => `blob:prueba/${ruta}`
 
 describe('abrir el EPUB', () => {

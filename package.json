@@ -14,7 +14,7 @@
     "generar": "tsx scripts/generar.ts",
     "oraculo": "python3 -I scripts/exportar-casos-texto.py",
     "golden": "tsx scripts/generar.ts tests/fixtures/libro-prueba tmp/epubs",
-    "epubs": "npm run golden && tsx scripts/generar.ts tests/fixtures/libro-medios tmp/epubs",
+    "epubs": "npm run golden && tsx scripts/generar.ts tests/fixtures/libro-medios tmp/epubs && tsx scripts/epub-grande.ts tmp/epubs",
     "imagenes": "python3 -I scripts/imagenes-prueba.py",
     "medios": "python3 -I scripts/medios-prueba.py",
     "iconos": "python3 -I scripts/iconos.py"

@@ -23,7 +23,7 @@
 import type { ClaseMedio } from './parser'
 import type { Imagenes, Registro } from './imagenes'
 import type { Diagnosticos } from './mensajes'
-import type { Archivo } from './proyecto'
+import { esFicha, type Archivo, type Ficha } from './proyecto'
 import { nombreSeguro, ordenarNatural } from './texto'
 
 export const EXT_VIDEO = ['.m4v', '.mp4']
@@ -39,19 +39,20 @@ export interface RegistroMedio {
   readonly href: string
   readonly media: string
   readonly clase: ClaseMedio
-  readonly origen: Archivo
+  /** Con sus bytes, o solo su ficha: ver `Proyecto.medios`. */
+  readonly origen: Archivo | Ficha
   /** Solo los videos. null si falta: ya se dio el error. */
   readonly poster: Registro | null
 }
 
-export function claseDe(archivo: Archivo): ClaseMedio | null {
+export function claseDe(archivo: Pick<Archivo, 'suffix'>): ClaseMedio | null {
   const ext = archivo.suffix.toLowerCase()
   return EXT_VIDEO.includes(ext) ? 'video' : EXT_AUDIO.includes(ext) ? 'audio' : null
 }
 
 export class Medios {
   /** stem en minusculas -> archivo de audio o video. El primero gana. */
-  readonly disponibles = new Map<string, Archivo>()
+  readonly disponibles = new Map<string, Archivo | Ficha>()
   /** stem en minusculas -> imagen de `medios/`: el poster del video del mismo nombre. */
   readonly posters = new Map<string, Archivo>()
   /** ruta -> registro. Es tambien el orden del manifiesto. */
@@ -60,15 +61,15 @@ export class Medios {
 
   readonly dg: Diagnosticos
 
-  constructor(archivos: readonly Archivo[], dg: Diagnosticos) {
+  constructor(archivos: readonly (Archivo | Ficha)[], dg: Diagnosticos) {
     this.dg = dg
     const porNombre = new Map(archivos.map((a) => [a.nombre, a]))
     for (const nombre of ordenarNatural([...porNombre.keys()])) {
-      const p = porNombre.get(nombre) as Archivo
+      const p = porNombre.get(nombre) as Archivo | Ficha
       const clave = p.stem.toLowerCase()
       if (claseDe(p)) {
         if (!this.disponibles.has(clave)) this.disponibles.set(clave, p)
-      } else if (EXT_POSTER.includes(p.suffix.toLowerCase())) {
+      } else if (EXT_POSTER.includes(p.suffix.toLowerCase()) && !esFicha(p)) {
         if (!this.posters.has(clave)) this.posters.set(clave, p)
       } else if (!p.nombre.startsWith('.')) {
         this.dg.aviso(

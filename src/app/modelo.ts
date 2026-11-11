@@ -147,6 +147,12 @@ export interface Medio {
   readonly nombreOriginal: string
   readonly tipo: 'm4v' | 'm4a'
   readonly bytes: number
+  /**
+   * El CRC-32 de sus bytes, calculado una vez al guardarlo y leyendolo por
+   * trozos. El motor lo necesita para la cabecera del zip y asi nunca tiene
+   * que recibir el video (ver `Ficha` en core/proyecto.ts).
+   */
+  readonly crc32: number
   readonly segundos: number
 }
 

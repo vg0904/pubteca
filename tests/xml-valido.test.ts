@@ -81,12 +81,13 @@ describe('ningun caracter que XML no admite llega al EPUB', () => {
     const c = construir(ex.proyecto, { ahora: new Date('2026-01-01T12:00:00Z') })
     expect(c.bloqueado).toBeNull()
     for (const r of c.resultados) {
-      expect(sucias(r.bytes), r.tienda).toEqual([])
+      const bytes = r.bytes as Uint8Array
+      expect(sucias(bytes), r.tienda).toEqual([])
       // Y el texto del autor sigue ahi, sin los caracteres, y el U+001E no
       // parte el parrafo en dos: es un espacio.
-      const cap = new TextDecoder().decode(unzipSync(r.bytes)['OEBPS/texto/cap01.xhtml'])
+      const cap = new TextDecoder().decode(unzipSync(bytes)['OEBPS/texto/cap01.xhtml'])
       expect(cap).toContain('Parrafo abcd e</p>')
-      const lamina = new TextDecoder().decode(unzipSync(r.bytes)['OEBPS/texto/cap01-ilus01.xhtml'])
+      const lamina = new TextDecoder().decode(unzipSync(bytes)['OEBPS/texto/cap01-ilus01.xhtml'])
       expect(lamina).toContain('alt="dibujo abcd e"')
     }
   })

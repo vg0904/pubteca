@@ -11,11 +11,12 @@
  * navegador no puede abrir el hilo, corre aqui; el resultado es el mismo.
  */
 import { archivo, type Archivo } from '../core/proyecto'
+import { esHueco, type Segmento } from '../core/zip'
 import { entregaKindle, paraKindle, type Codificador } from './entrega'
 import { exportar, type Exportado } from './exportar'
 import { ajustarImagen } from './imagen-canvas'
 import { idsDeImagenes, type Imagen, type Proyecto } from './modelo'
-import type { PedidoMotor, RespuestaMotor } from './motor'
+import type { LibroGenerado, PedidoMotor, RespuestaMotor } from './motor'
 import type { Repositorio } from './repositorio'
 
 /** Las fuentes que van dentro del EPUB de Apple Books. OFL, en public/fuentes. */
@@ -146,7 +147,9 @@ export async function generarLibros(
   codificar: Codificador = conLienzo,
 ): Promise<Generado> {
   const [bytes, fuentes] = await Promise.all([bytesDelProyecto(p, repo), cargarFuentes()])
-  const exportado = exportar(p, imagenes, bytes, fuentes)
+  // Los audios y videos van como FICHA (tamaño y CRC): el motor nunca recibe
+  // sus bytes. Ver blobDelLibro.
+  const exportado = exportar(p, imagenes, bytes, fuentes, repo.medios())
   const motor = await enSuHilo({ proyecto: exportado.proyecto, ahora: ahora.getTime() })
 
   const k = entregaKindle(p)
@@ -155,7 +158,7 @@ export async function generarLibros(
   }
 
   const entrega = await paraKindle(p, imagenes, bytes, k, codificar)
-  const paraEllos = exportar(p, entrega.imagenes, entrega.bytes, fuentes)
+  const paraEllos = exportar(p, entrega.imagenes, entrega.bytes, fuentes, repo.medios())
   const otro = await enSuHilo({ proyecto: paraEllos.proyecto, ahora: ahora.getTime() })
   const suyo = otro.resultados.find((r) => r.tienda === 'Kindle')
 
@@ -174,4 +177,52 @@ export async function generarLibros(
     sinFuentes: fuentes.length === 0,
     kindle: { antes: entrega.antes, ahora: entrega.ahora },
   }
+}
+
+/**
+ * Los Blob de cada hueco del EPUB, por la ruta que el motor les dio
+ * (`medios/cap01-v01.m4v`). La exportacion sabe que medio va en cada ruta.
+ */
+export function blobsDeHuecos(
+  rutasMedios: ReadonlyMap<string, string>,
+  blobMedio: (id: string) => Blob | undefined,
+): (ruta: string) => Blob | undefined {
+  const porRuta = new Map([...rutasMedios].map(([id, ruta]) => [ruta, id]))
+  return (ruta) => {
+    const id = porRuta.get(ruta)
+    return id === undefined ? undefined : blobMedio(id)
+  }
+}
+
+/**
+ * Arma un archivo a partir de sus segmentos: los trozos que escribio el motor
+ * y, en cada hueco, el Blob del medio.
+ *
+ * `new Blob([...])` con Blobs dentro NO copia sus bytes: el navegador apunta a
+ * ellos, y los del almacen viven en disco. Un EPUB con 400 MB de video se
+ * descarga sin que esos 400 MB pasen por la memoria de la pagina, que es lo
+ * que en un iPad mataria la pestaña.
+ *
+ * Si un medio falta o no mide lo que el motor puso en la cabecera, se lanza
+ * un error: un zip con un tamaño equivocado es un EPUB roto que Apple
+ * rechazaria, y mas vale no darlo.
+ */
+export function blobDeSegmentos(
+  segmentos: readonly Segmento[],
+  medio: (ruta: string) => Blob | undefined,
+  tipo: string,
+): Blob {
+  const partes: BlobPart[] = segmentos.map((s) => {
+    if (!esHueco(s)) return s as Uint8Array<ArrayBuffer>
+    const b = medio(s.medio)
+    if (!b) throw new Error(`${s.medio}: el archivo no está en este navegador.`)
+    if (b.size !== s.tamano) throw new Error(`${s.medio}: mide ${b.size} bytes y el EPUB espera ${s.tamano}.`)
+    return b
+  })
+  return new Blob(partes, { type: tipo })
+}
+
+/** El EPUB listo para descargar. */
+export function blobDelLibro(libro: LibroGenerado, exportado: Exportado, repo: Pick<Repositorio, 'blobMedio'>): Blob {
+  return blobDeSegmentos(libro.segmentos, blobsDeHuecos(exportado.rutasMedios, (id) => repo.blobMedio(id)), 'application/epub+zip')
 }

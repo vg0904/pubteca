@@ -19,8 +19,13 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, versionNecesaria, type DatosLibro, type Proyecto } from './modelo'
 
 const NOMBRE_BD = 'pubteca'
-/** Version del ESQUEMA de IndexedDB (distinta de la version del proyecto). */
-const VERSION_BD = 1
+/**
+ * Version del ESQUEMA de IndexedDB (distinta de la version del proyecto).
+ *
+ * 2 · el almacen `medios` (audio y video). Subir de 1 a 2 solo crea el almacen
+ *     nuevo: no toca los proyectos ni las imagenes que ya hay.
+ */
+const VERSION_BD = 2
 
 export interface ImagenGuardada {
   readonly id: string
@@ -39,6 +44,23 @@ export interface ImagenGuardada {
   readonly creada?: number
 }
 
+/**
+ * Un audio o un video guardado. Como las imagenes, el Blob va tal cual, y en
+ * IndexedDB vive en disco: leer el Blob de vuelta NO carga el video en
+ * memoria, y con eso se arma el EPUB sin copiarlo.
+ */
+export interface MedioGuardado {
+  readonly id: string
+  readonly proyectoId: string
+  readonly nombreOriginal: string
+  readonly tipo: 'm4v' | 'm4a'
+  readonly tamano: number
+  readonly crc32: number
+  readonly segundos: number
+  readonly datos: Blob
+  readonly creada: number
+}
+
 export interface ResumenProyecto {
   readonly id: string
   readonly titulo: string
@@ -54,6 +76,11 @@ interface Esquema extends DBSchema {
   imagenes: {
     key: string
     value: ImagenGuardada
+    indexes: { porProyecto: string }
+  }
+  medios: {
+    key: string
+    value: MedioGuardado
     indexes: { porProyecto: string }
   }
 }
@@ -84,6 +111,10 @@ export async function abrirAlmacen(): Promise<Almacen> {
         }
         if (!db.objectStoreNames.contains('imagenes')) {
           const s = db.createObjectStore('imagenes', { keyPath: 'id' })
+          s.createIndex('porProyecto', 'proyectoId')
+        }
+        if (!db.objectStoreNames.contains('medios')) {
+          const s = db.createObjectStore('medios', { keyPath: 'id' })
           s.createIndex('porProyecto', 'proyectoId')
         }
       },
@@ -237,13 +268,17 @@ export async function listarProyectos(db: Almacen): Promise<ResumenProyecto[]> {
     .sort((a, b) => b.modificado - a.modificado)
 }
 
-/** Borra el proyecto Y sus imagenes: si no, las huerfanas se acumulan. */
+/** Borra el proyecto Y sus imagenes y medios: si no, los huerfanos se acumulan. */
 export async function borrarProyecto(db: Almacen, id: string): Promise<void> {
-  const tx = db.transaction(['proyectos', 'imagenes'], 'readwrite')
+  const tx = db.transaction(['proyectos', 'imagenes', 'medios'], 'readwrite')
   await tx.objectStore('proyectos').delete(id)
   const indice = tx.objectStore('imagenes').index('porProyecto')
   for (const imagen of await indice.getAllKeys(id)) {
     await tx.objectStore('imagenes').delete(imagen)
+  }
+  const medios = tx.objectStore('medios').index('porProyecto')
+  for (const medio of await medios.getAllKeys(id)) {
+    await tx.objectStore('medios').delete(medio)
   }
   await tx.done
 }
@@ -284,6 +319,50 @@ export async function limpiarImagenes(
   }
   await tx.done
   return borradas
+}
+
+/**
+ * Lo mismo que `limpiarImagenes`, para el audio y el video, con la misma
+ * gracia. Aqui importa mas: un video que ya no se usa son cientos de MB.
+ */
+export async function limpiarMedios(
+  db: Almacen,
+  proyectoId: string,
+  usados: ReadonlySet<string>,
+  ahora: number,
+): Promise<number> {
+  const tx = db.transaction('medios', 'readwrite')
+  let borrados = 0
+  for (const m of await tx.store.index('porProyecto').getAll(proyectoId)) {
+    if (usados.has(m.id) || ahora - m.creada < GRACIA_IMAGEN) continue
+    await tx.store.delete(m.id)
+    borrados += 1
+  }
+  await tx.done
+  return borrados
+}
+
+export async function guardarMedio(db: Almacen, medio: MedioGuardado): Promise<void> {
+  try {
+    await db.put('medios', medio)
+  } catch (e) {
+    if (esFaltaDeEspacio(e)) {
+      throw new ErrorAlmacen(
+        `No cabe «${medio.nombreOriginal}» en este navegador. Guarda una copia (.zip) y libera espacio ` +
+          'antes de añadir más audio o video.',
+        'sinEspacio',
+      )
+    }
+    throw e
+  }
+}
+
+export async function leerMedio(db: Almacen, id: string): Promise<MedioGuardado | null> {
+  return (await db.get('medios', id)) ?? null
+}
+
+export async function mediosDelProyecto(db: Almacen, proyectoId: string): Promise<MedioGuardado[]> {
+  return db.getAllFromIndex('medios', 'porProyecto', proyectoId)
 }
 
 export async function guardarImagen(db: Almacen, imagen: ImagenGuardada): Promise<void> {

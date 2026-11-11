@@ -11,14 +11,21 @@ import { useTextos } from './contexto'
  * solo hace falta para que pueda cargar las imagenes y las fuentes por sus URL
  * `blob:`, que son de esta pagina.
  */
-export function VistaPrevia({ resultados }: { resultados: readonly LibroGenerado[] }) {
+export function VistaPrevia({
+  resultados,
+  medio,
+}: {
+  resultados: readonly LibroGenerado[]
+  /** La URL de un audio o video, por su ruta en el proyecto del motor. Las da el almacen. */
+  medio: (ruta: string) => string | undefined
+}) {
   const ui = useTextos()
   const [tienda, setTienda] = useState<LibroGenerado['tienda']>('AppleBooks')
   const [tema, setTema] = useState<Tema>('claro')
   const [indice, setIndice] = useState(0)
 
-  const bytes = resultados.find((r) => r.tienda === tienda)?.bytes
-  const epub = useMemo(() => (bytes ? abrirEpub(bytes) : null), [bytes])
+  const segmentos = resultados.find((r) => r.tienda === tienda)?.segmentos
+  const epub = useMemo(() => (segmentos ? abrirEpub(segmentos) : null), [segmentos])
   const total = epub?.paginas.length ?? 0
   const i = Math.min(indice, Math.max(0, total - 1))
   const pagina = epub?.paginas[i]
@@ -30,6 +37,9 @@ export function VistaPrevia({ resultados }: { resultados: readonly LibroGenerado
     if (!epub || !pagina) return null
     const creadas = new Map<string, string>()
     const url = (ruta: string): string => {
+      // Un audio o un video: su URL es del almacen, y el almacen la suelta.
+      const hueco = epub.huecos.get(ruta)
+      if (hueco !== undefined) return medio(hueco) ?? ''
       const ya = creadas.get(ruta)
       if (ya) return ya
       const datos = epub.archivos.get(ruta)
@@ -38,7 +48,7 @@ export function VistaPrevia({ resultados }: { resultados: readonly LibroGenerado
       return u
     }
     return { documento: documentoDePagina(epub, pagina.ruta, url, tema), urls: [...creadas.values()] }
-  }, [epub, pagina, tema])
+  }, [epub, pagina, tema, medio])
   useEffect(
     () => () => {
       for (const u of previa?.urls ?? []) if (u) URL.revokeObjectURL(u)
