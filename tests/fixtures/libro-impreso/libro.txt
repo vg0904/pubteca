@@ -1,0 +1,11 @@
+# Libro de prueba INVENTADO para el PDF de imprenta. Ni una linea sale de un
+# libro real. Existe para que CI genere el PDF interior y lo pase por qpdf,
+# pdffonts y nuestra lista de PDF/X-1a, y para el golden del PDF. Ver
+# tests/README.md.
+
+titulo: El faro de las mareas quietas
+autor: Lucía Ferrer Ondarra
+sello: Ediciones Pubteca
+idioma: es
+
+separador_de_escena: * * *

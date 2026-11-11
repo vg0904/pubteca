@@ -105,7 +105,8 @@ export class Fuente {
     this.alturaMayusculas = v2 ? dv.getInt16(os2.off + 88) : Math.round(this.upm * 0.7)
     this.anguloCursiva = tablas.has('post') ? dv.getInt32(t('post').off + 4) / 65536 : 0
     this.nombre = this.nombrePostScript()
-    this.leerCmap(t('cmap').off)
+    // Sin cmap (un subconjunto incrustado no la lleva) no hay caracteres, pero si glifos.
+    if (tablas.has('cmap')) this.leerCmap(t('cmap').off)
     if (tablas.has('GPOS')) this.leerGpos(t('GPOS').off)
     if (tablas.has('GSUB')) this.leerGsub(t('GSUB').off)
   }

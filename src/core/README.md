@@ -32,3 +32,8 @@ no carga nada.
 - `tipos.ts`: lo que sale es una LISTA DE OPERACIONES por pagina (glifos
   colocados, imagenes). La pintan el PDF y la vista previa: lo que se ve es lo
   que se imprime.
+- `subconjunto.ts` recorta una fuente a los glifos usados (y las piezas de
+  los compuestos), conservando sus ids.
+- `pdf.ts` escribe el PDF/X-1a: PDF 1.3, solo gris, fuentes en subconjunto
+  con ToUnicode, cajas con sangrado, OutputIntent por nombre. Determinista:
+  el reloj se inyecta y el /ID es un hash del contenido.

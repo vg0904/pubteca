@@ -17,6 +17,7 @@
     "epubs": "npm run golden && tsx scripts/generar.ts tests/fixtures/libro-medios tmp/epubs && tsx scripts/epub-grande.ts tmp/epubs",
     "imagenes": "python3 -I scripts/imagenes-prueba.py",
     "medios": "python3 -I scripts/medios-prueba.py",
+    "pdfs": "tsx scripts/impreso-prueba.ts tmp/pdfs",
     "iconos": "python3 -I scripts/iconos.py"
   },
   "dependencies": {

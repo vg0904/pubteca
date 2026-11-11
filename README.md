@@ -46,6 +46,9 @@ npm test
 npm run build
 ```
 
+`npm run epubs` y `npm run pdfs` generan en `tmp/` los EPUB y los PDF de los
+libros de prueba, que CI pasa por EPUBCheck, qpdf y pdffonts.
+
 Requiere Node >= 22.12. El navegador minimo es Safari 16.4.
 
 ## Licencias

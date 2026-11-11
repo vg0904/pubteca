@@ -1,0 +1,64 @@
+name: PDF de imprenta
+
+# El PDF interior del libro de prueba (tests/fixtures/libro-impreso), por las
+# herramientas que no tenemos en el core: qpdf comprueba la sintaxis y los
+# flujos, pdffonts que cada fuente va incrustada. Nuestra lista de PDF/X-1a la
+# pasa el propio script (y los tests). No hay validador libre de PDF/X: la
+# certificacion de verdad es el Preflight de Acrobat, ver plan.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: Instalar qpdf y poppler
+        run: sudo apt-get update -q && sudo apt-get install -y -q qpdf poppler-utils
+
+      - name: Generar los PDF (y pasar nuestra lista de PDF/X-1a)
+        run: npm run pdfs
+
+      - name: qpdf --check
+        run: |
+          for f in tmp/pdfs/*.pdf; do
+            echo "== $f"
+            qpdf --check "$f"
+          done
+
+      - name: pdffonts, todas incrustadas
+        run: |
+          fallos=0
+          for f in tmp/pdfs/*.pdf; do
+            echo "== $f"
+            pdffonts "$f"
+            # Columnas desde el final: emb sub uni objeto generacion.
+            filas=$(pdffonts "$f" | tail -n +3 | wc -l)
+            sin=$(pdffonts "$f" | tail -n +3 | awk '$(NF-4) != "yes"' | wc -l)
+            if [ "$filas" -eq 0 ] || [ "$sin" -ne 0 ]; then
+              echo "::error file=$f::$sin de $filas fuentes sin incrustar"
+              fallos=1
+            fi
+          done
+          exit $fallos
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pdfs
+          path: tmp/pdfs/
