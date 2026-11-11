@@ -9,7 +9,17 @@
 import { crc32 } from '../core/crc32'
 import type { InfoImagen } from '../core/imagen-inspeccion'
 import { guardarImagen, guardarMedio, imagenesDelProyecto, leerMedio, mediosDelProyecto, type Almacen } from './almacen'
-import type { Imagen, Medio } from './modelo'
+import type { DetallesMedio, Imagen, Medio } from './modelo'
+
+/** Los detalles que haya, sin claves con `undefined`: asi un medio sin ellos se compara igual. */
+function detalles(x: DetallesMedio): DetallesMedio {
+  return {
+    ...(x.hz !== undefined ? { hz: x.hz } : {}),
+    ...(x.canales !== undefined ? { canales: x.canales } : {}),
+    ...(x.ancho !== undefined ? { ancho: x.ancho } : {}),
+    ...(x.alto !== undefined ? { alto: x.alto } : {}),
+  }
+}
 
 /** De cuanto en cuanto se lee un video para sacar su CRC: nunca entero. */
 export const TROZO_CRC = 8 * 1024 * 1024
@@ -46,7 +56,15 @@ export class Repositorio {
     if (!db) return { repo, imagenes: [] }
     for (const m of await mediosDelProyecto(db, proyectoId)) {
       repo.blobsMedios.set(m.id, m.datos)
-      repo.datosMedios.set(m.id, { id: m.id, nombreOriginal: m.nombreOriginal, tipo: m.tipo, bytes: m.tamano, crc32: m.crc32, segundos: m.segundos })
+      repo.datosMedios.set(m.id, {
+        id: m.id,
+        nombreOriginal: m.nombreOriginal,
+        tipo: m.tipo,
+        bytes: m.tamano,
+        crc32: m.crc32,
+        segundos: m.segundos,
+        ...detalles(m),
+      })
     }
     const guardadas = await imagenesDelProyecto(db, proyectoId)
     const imagenes = guardadas.map((g): Imagen => {
@@ -115,7 +133,7 @@ export class Repositorio {
     id: string,
     nombreOriginal: string,
     datos: Blob,
-    info: { readonly tipo: Medio['tipo']; readonly segundos: number; readonly crc32?: number },
+    info: { readonly tipo: Medio['tipo']; readonly segundos: number; readonly crc32?: number } & DetallesMedio,
     ahora: number,
   ): Promise<Medio> {
     const tipoMime = info.tipo === 'm4v' ? 'video/mp4' : 'audio/mp4'
@@ -127,6 +145,7 @@ export class Repositorio {
       bytes: blob.size,
       crc32: info.crc32 ?? (await crcDeBlob(blob)),
       segundos: info.segundos,
+      ...detalles(info),
     }
     let guardado = blob
     if (this.db) {
@@ -138,6 +157,7 @@ export class Repositorio {
         tamano: medio.bytes,
         crc32: medio.crc32,
         segundos: medio.segundos,
+        ...detalles(medio),
         datos: blob,
         creada: ahora,
       })

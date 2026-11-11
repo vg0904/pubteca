@@ -30,6 +30,8 @@ export type ClaveProblema =
   | 'mediosPesan'
   /** ... o de lo que Apple acepta (2 GB). Bloquea: la tienda lo rechazaria. */
   | 'mediosPasanLimite'
+  /** Un video sin poster: Apple no lo acepta. */
+  | 'sinPoster'
 
 export interface Problema {
   readonly clave: ClaveProblema
@@ -123,6 +125,9 @@ export function revisar(
   for (const [i, c] of p.capitulos.entries()) {
     if (c.bloques.some((b) => esMedio(b) && !medios.has(b.medioId))) {
       r.push({ clave: 'faltaMedio', nivel: 'error', ir: { capitulo: c.id }, que: nombreDeCapitulo(c, i) })
+    }
+    if (c.bloques.some((b) => b.tipo === 'video' && b.posterId === null)) {
+      r.push({ clave: 'sinPoster', nivel: 'error', ir: { capitulo: c.id }, que: nombreDeCapitulo(c, i) })
     }
   }
   const peso = pesoDeMedios(p, medios, imagenes)

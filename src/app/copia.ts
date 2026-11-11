@@ -47,6 +47,10 @@ export interface MedioDeJson {
   readonly nombreOriginal: string
   readonly tipo: Medio['tipo']
   readonly segundos: number
+  readonly hz?: number
+  readonly canales?: number
+  readonly ancho?: number
+  readonly alto?: number
 }
 
 export const NOMBRE_JSON = 'proyecto.json'
@@ -96,7 +100,22 @@ export function segmentosDeCopia(
   const deMedios = [...e.rutasMedios].flatMap(([id, ruta]): [string, MedioDeJson][] => {
     const m = medios.get(id)
     if (!m) return []
-    return [[id, { ruta, nombreOriginal: m.nombreOriginal, tipo: m.tipo, segundos: m.segundos }]]
+    const { hz, canales, ancho, alto } = m
+    return [
+      [
+        id,
+        {
+          ruta,
+          nombreOriginal: m.nombreOriginal,
+          tipo: m.tipo,
+          segundos: m.segundos,
+          ...(hz !== undefined ? { hz } : {}),
+          ...(canales !== undefined ? { canales } : {}),
+          ...(ancho !== undefined ? { ancho } : {}),
+          ...(alto !== undefined ? { alto } : {}),
+        },
+      ],
+    ]
   })
   const json: ProyectoJson = {
     formato: 'pubteca',

@@ -57,6 +57,10 @@ export interface MedioGuardado {
   readonly tamano: number
   readonly crc32: number
   readonly segundos: number
+  readonly hz?: number
+  readonly canales?: number
+  readonly ancho?: number
+  readonly alto?: number
   readonly datos: Blob
   readonly creada: number
 }

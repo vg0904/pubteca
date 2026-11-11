@@ -16,8 +16,8 @@ import {
 } from '../versos'
 import type { Ui } from '../../i18n'
 import { arreglable } from '../imagen-ajuste'
-import { conMod, MOD, useAjustar, useDespacho, useMedios, useTextos } from './contexto'
-import { elegirArchivos, esArrastreDeArchivos, imagenesDe } from './archivos'
+import { conMod, MOD, useAjustar, useDespacho, useMedios, useMultimedia, useTextos } from './contexto'
+import { ACEPTA_MEDIO, elegirArchivos, esArrastreDeArchivos, imagenesDe, mediosDe } from './archivos'
 import { focoPendiente } from './foco'
 import { Menu } from './Menu'
 import { TODO_PERMITIDO, type Permitidos } from './permitidos'
@@ -552,7 +552,15 @@ const BloqueMedio = memo(function BloqueMedio({
 }) {
   const ui = useTextos()
   const despachar = useDespacho()
+  const { repo } = useMedios()
+  const { elegirPoster } = useMultimedia()
   const ref = useFocoDeTarjeta(foco)
+  const medio = repo?.medios().get(bloque.medioId)
+  const url = repo?.urlMedio(bloque.medioId)
+  const poster = bloque.tipo === 'video' && bloque.posterId !== null ? repo?.url(bloque.posterId) : undefined
+  const altRef = useAltoAutomatico(bloque.alt)
+  const cambiar = (cambios: { alt?: string; decorativa?: boolean }): void =>
+    despachar({ tipo: 'medio', donde, bloque: bloque.id, cambios, ahora: ahora() })
   return (
     <div
       ref={ref}
@@ -567,19 +575,56 @@ const BloqueMedio = memo(function BloqueMedio({
       onFocus={() => despachar({ tipo: 'activarBloque', bloque: bloque.id })}
     >
       <div className="ilus-cuerpo">
+        <div className="ilus-miniatura medio-reproductor">
+          {!url ? (
+            <p className="ilus-falta">{ui.medio.falta}</p>
+          ) : bloque.tipo === 'video' ? (
+            // eslint-disable-next-line jsx-a11y/media-has-caption -- los subtitulos son de la ronda siguiente (plan.md)
+            <video src={url} poster={poster} controls preload="metadata" />
+          ) : (
+            // eslint-disable-next-line jsx-a11y/media-has-caption -- idem
+            <audio src={url} controls preload="metadata" />
+          )}
+        </div>
         <div className="ilus-campos">
           <p className="medio-tipo">
             <span aria-hidden="true">{bloque.tipo === 'video' ? '▶ ' : '♪ '}</span>
-            {bloque.tipo === 'video' ? ui.medio.video : ui.medio.audio}
-            {': '}
-            {bloque.alt || ui.medio.sinDescripcion}
+            <strong>{bloque.tipo === 'video' ? ui.medio.video : ui.medio.audio}</strong>
+            {medio && <span className="ayuda"> · {ui.medio.datos(ui.formato.duracion(medio.segundos), ui.formato.tamano(medio.bytes))}</span>}
           </p>
-          {bloque.tipo === 'video' && bloque.posterId === null && <p className="aviso-medio">{ui.medio.sinPoster}</p>}
+          <label className="campo">
+            <span>{bloque.tipo === 'video' ? ui.medio.altVideo : ui.medio.altAudio}</span>
+            <textarea
+              ref={altRef}
+              rows={1}
+              value={bloque.alt}
+              disabled={bloque.decorativa}
+              placeholder={bloque.decorativa ? '' : ui.medio.altAyuda}
+              onChange={(e) => cambiar({ alt: e.target.value })}
+            />
+          </label>
+          <label className="casilla">
+            <input
+              type="checkbox"
+              checked={bloque.decorativa}
+              onChange={(e) => cambiar({ decorativa: e.target.checked, ...(e.target.checked ? { alt: '' } : {}) })}
+            />
+            {ui.medio.decorativo}
+          </label>
+          {bloque.tipo === 'video' && bloque.posterId === null && (
+            <p className="aviso-medio">
+              {ui.medio.sinPoster}{' '}
+              <button type="button" className="boton-secundario" disabled={!url} onClick={() => elegirPoster(bloque, donde)}>
+                {ui.medio.elegirPoster}
+              </button>
+            </p>
+          )}
           <p className="ayuda-bloque">{ui.medio.soloApple}</p>
         </div>
         <Menu
           etiqueta={ui.medio.menu}
           opciones={[
+            bloque.tipo === 'video' && url !== undefined && { etiqueta: ui.medio.elegirPoster, accion: () => elegirPoster(bloque, donde) },
             { etiqueta: ui.ilustracion.subir, desactivada: indice === 0, accion: () => despachar({ tipo: 'moverBloque', donde, bloque: bloque.id, delta: -1 }) },
             {
               etiqueta: ui.ilustracion.bajar,
@@ -598,9 +643,9 @@ const BloqueMedio = memo(function BloqueMedio({
 // Huecos de insercion
 // ---------------------------------------------------------------------------
 
-type Insertable = 'parrafo' | 'subtitulo' | 'escena' | 'versos' | 'ilustracion'
+type Insertable = 'parrafo' | 'subtitulo' | 'escena' | 'versos' | 'ilustracion' | 'medio'
 
-function nuevoBloque(tipo: Exclude<Insertable, 'ilustracion'>): Bloque {
+function nuevoBloque(tipo: Exclude<Insertable, 'ilustracion' | 'medio'>): Bloque {
   const id = crearId('b')
   switch (tipo) {
     case 'parrafo':
@@ -616,7 +661,14 @@ function nuevoBloque(tipo: Exclude<Insertable, 'ilustracion'>): Bloque {
 function useInsertar(donde: Donde, indice: number): (tipo: Insertable, archivos?: readonly File[]) => Promise<void> {
   const despachar = useDespacho()
   const { subir } = useMedios()
+  const { anadir } = useMultimedia()
   return async (tipo, archivos) => {
+    if (tipo === 'medio') {
+      // Uno cada vez: cada uno tiene su plan, y el autor lo confirma.
+      const [f] = archivos ?? (await elegirArchivos(ACEPTA_MEDIO, false))
+      if (f) anadir(f, donde, indice)
+      return
+    }
     if (tipo !== 'ilustracion') {
       despachar({ tipo: 'insertar', donde, indice, bloque: nuevoBloque(tipo) })
       return
@@ -646,11 +698,16 @@ function opcionesDeInsertar(
     permitidos.escena && { etiqueta: t.escena, accion: () => void insertar('escena') },
     permitidos.versos && { etiqueta: t.versos, accion: () => void insertar('versos') },
     permitidos.ilustracion && { etiqueta: t.ilustracion, accion: () => void insertar('ilustracion') },
+    // Audio y video van donde van las ilustraciones: en los capitulos.
+    permitidos.ilustracion && { etiqueta: t.medio, accion: () => void insertar('medio') },
   ]
 }
 
-/** Recibe imagenes soltadas encima: es el «arrastrar la imagen al hueco». */
-function useSoltarImagenes(permitido: boolean, alSoltar: (archivos: File[]) => void) {
+/**
+ * Recibe imagenes, audio o video soltados encima: es el «arrastrar la imagen
+ * (o el video) al hueco». Si viene un audio o un video, va ese: tiene su plan.
+ */
+function useSoltarImagenes(permitido: boolean, alSoltar: (archivos: File[]) => void, alSoltarMedio?: (archivo: File) => void) {
   const [encima, setEncima] = useState(false)
   if (!permitido) return { encima: false, props: {} }
   return {
@@ -667,6 +724,11 @@ function useSoltarImagenes(permitido: boolean, alSoltar: (archivos: File[]) => v
         if (!esArrastreDeArchivos(e)) return
         e.preventDefault()
         setEncima(false)
+        const [medio] = mediosDe(e.dataTransfer.files)
+        if (medio && alSoltarMedio) {
+          alSoltarMedio(medio)
+          return
+        }
         const archivos = imagenesDe(e.dataTransfer.files)
         if (archivos.length > 0) alSoltar(archivos)
       },
@@ -677,7 +739,11 @@ function useSoltarImagenes(permitido: boolean, alSoltar: (archivos: File[]) => v
 const Hueco = memo(function Hueco({ donde, indice, permitidos }: { donde: Donde; indice: number; permitidos: Permitidos }) {
   const ui = useTextos()
   const insertar = useInsertar(donde, indice)
-  const soltar = useSoltarImagenes(permitidos.ilustracion, (archivos) => void insertar('ilustracion', archivos))
+  const soltar = useSoltarImagenes(
+    permitidos.ilustracion,
+    (archivos) => void insertar('ilustracion', archivos),
+    (archivo) => void insertar('medio', [archivo]),
+  )
   return (
     <div className={`hueco${soltar.encima ? ' encima' : ''}`} {...soltar.props}>
       <Menu className="hueco-menu" etiqueta={ui.editor.insertar} icono="+" opciones={opcionesDeInsertar(ui.editor.insertables, permitidos, insertar)} />
@@ -689,7 +755,11 @@ const Hueco = memo(function Hueco({ donde, indice, permitidos }: { donde: Donde;
 function AlFinal({ donde, indice, permitidos }: { donde: Donde; indice: number; permitidos: Permitidos }) {
   const ui = useTextos()
   const insertar = useInsertar(donde, indice)
-  const soltar = useSoltarImagenes(permitidos.ilustracion, (archivos) => void insertar('ilustracion', archivos))
+  const soltar = useSoltarImagenes(
+    permitidos.ilustracion,
+    (archivos) => void insertar('ilustracion', archivos),
+    (archivo) => void insertar('medio', [archivo]),
+  )
   const t = ui.editor.insertables
   return (
     <div className={`al-final${soltar.encima ? ' encima' : ''}`} {...soltar.props}>
@@ -699,6 +769,7 @@ function AlFinal({ donde, indice, permitidos }: { donde: Donde; indice: number; 
       {permitidos.escena && <button type="button" onClick={() => void insertar('escena')}>{t.escena}</button>}
       {permitidos.versos && <button type="button" onClick={() => void insertar('versos')}>{t.versos}</button>}
       {permitidos.ilustracion && <button type="button" onClick={() => void insertar('ilustracion')}>{t.ilustracion}</button>}
+      {permitidos.ilustracion && <button type="button" onClick={() => void insertar('medio')}>{t.medio}</button>}
     </div>
   )
 }

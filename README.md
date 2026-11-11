@@ -30,10 +30,12 @@ Esa separacion es lo que permite comparar la salida contra el Python
 (*golden tests*), validar con EPUBCheck en CI sin navegador, y que el mismo
 core pueda correr en Node como CLI.
 
-Dependencias de produccion: cinco. `react`, `react-dom`, `fflate` (empaqueta el
+Dependencias de produccion: seis. `react`, `react-dom`, `fflate` (empaqueta el
 EPUB con el `mimetype` primero y sin comprimir, descomprime el chunk `iCCP` y
-exporta el proyecto), `mammoth` (importar `.docx`, cargada a demanda) e `idb`
-(autoguardado). Cero WASM, cero router.
+exporta el proyecto), `mammoth` (importar `.docx`, cargada a demanda), `idb`
+(autoguardado) y `mediabunny` (leer y convertir audio y video con WebCodecs,
+cargada a demanda: unos 108 kB comprimidos que solo descarga quien añade un
+audio o un video). Cero WASM, cero router.
 
 ## Desarrollo
 
@@ -50,7 +52,9 @@ Requiere Node >= 22.12. El navegador minimo es Safari 16.4.
 
 El codigo, MIT (ver `LICENSE`). La fuente Libre Baskerville que se incluye
 dentro de los EPUB de Apple Books va bajo la SIL Open Font License; su
-`OFL.txt` viaja con ella.
+`OFL.txt` viaja con ella. Mediabunny va bajo la Mozilla Public License 2.0, que
+obliga a mantener su codigo fuente disponible tal cual: se usa sin modificar,
+desde npm, y su licencia viaja con el paquete.
 
 Pubteca no esta asociado ni respaldado por Amazon, Kindle Direct Publishing ni
 Apple. Los nombres de esas tiendas se usan solo para describir a que formato va

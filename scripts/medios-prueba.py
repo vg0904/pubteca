@@ -28,6 +28,7 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 LIBRO = RAIZ / "tests" / "fixtures" / "libro-medios"
 MEDIOS = LIBRO / "medios"
+SUELTOS = RAIZ / "tests" / "fixtures" / "medios-sueltos"
 
 EXACTO = ["-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact",
           "-map_metadata", "-1", "-map_chapters", "-1"]
@@ -66,7 +67,23 @@ def main() -> int:
     tono(MEDIOS / "cap01-a01.m4a", 440)
     tono(MEDIOS / "cap02-a01.m4a", 523)
 
-    for f in sorted(MEDIOS.iterdir()):
+    # Para la inspeccion (tests/medios-inspeccion.test.ts): lo que un autor
+    # arrastra tal cual. Un .mov vertical como el del iPhone (girado en los
+    # metadatos), una nota de voz WAV en mono a 48 kHz y un MP3.
+    SUELTOS.mkdir(parents=True, exist_ok=True)
+    ffmpeg("-f", "lavfi", "-i", "testsrc2=size=160x90:rate=30:duration=1",
+           "-f", "lavfi", "-i", "sine=frequency=330:duration=1:sample_rate=44100",
+           "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "40", "-x264-params", "threads=1",
+           "-c:a", "aac", "-ac", "2", "-b:a", "64k", *EXACTO, "-f", "mov", str(SUELTOS / "plano.mov"))
+    ffmpeg("-display_rotation", "90", "-i", str(SUELTOS / "plano.mov"), "-c", "copy", *EXACTO,
+           "-f", "mov", str(SUELTOS / "vertical.mov"))
+    (SUELTOS / "plano.mov").unlink()
+    ffmpeg("-f", "lavfi", "-i", "sine=frequency=440:duration=0.5:sample_rate=48000",
+           "-ac", "1", "-c:a", "pcm_s16le", *EXACTO, str(SUELTOS / "nota-48k-mono.wav"))
+    ffmpeg("-f", "lavfi", "-i", "sine=frequency=440:duration=0.5:sample_rate=44100",
+           "-ac", "2", "-c:a", "libmp3lame", "-b:a", "64k", *EXACTO, str(SUELTOS / "nota.mp3"))
+
+    for f in sorted([*MEDIOS.iterdir(), *SUELTOS.iterdir()]):
         print(f"  {f.relative_to(RAIZ)}  {f.stat().st_size} bytes")
     return 0
 

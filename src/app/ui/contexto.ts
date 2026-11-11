@@ -6,8 +6,8 @@
 import { createContext, useContext, type Dispatch } from 'react'
 import { ui as es } from '../../i18n/es'
 import { IDIOMA_POR_DEFECTO, type Idioma, type Ui } from '../../i18n'
-import type { Accion } from '../estado'
-import type { Imagen } from '../modelo'
+import type { Accion, Donde } from '../estado'
+import type { BloqueMedio, Imagen } from '../modelo'
 import type { Repositorio } from '../repositorio'
 
 /**
@@ -69,6 +69,18 @@ export const useMedios = (): Medios => useContext(MediosCtx)
  */
 export const AjustarCtx = createContext<(imagen: Imagen) => void>(() => undefined)
 export const useAjustar = (): ((imagen: Imagen) => void) => useContext(AjustarCtx)
+
+/**
+ * Abre el cuadro de añadir un audio o un video, o el de elegir el poster de
+ * uno. Como el de ajustar una imagen: lo pinta App, una vez.
+ */
+export interface Multimedia {
+  readonly anadir: (archivo: File, donde: Donde, indice: number) => void
+  readonly elegirPoster: (bloque: Extract<BloqueMedio, { tipo: 'video' }>, donde: Donde) => void
+}
+
+export const MultimediaCtx = createContext<Multimedia>({ anadir: () => undefined, elegirPoster: () => undefined })
+export const useMultimedia = (): Multimedia => useContext(MultimediaCtx)
 
 export interface Aviso {
   readonly id: number

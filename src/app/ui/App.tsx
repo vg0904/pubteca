@@ -26,8 +26,13 @@ import { Repositorio } from '../repositorio'
 import { decodifica, inspeccionarArchivo } from '../subir'
 import { elegirArchivos } from './archivos'
 import { CLAVE_GUARDADA, idiomaInicial, textos, type Idioma } from '../../i18n'
-import { AjustarCtx, AvisosCtx, conMod, DespachoCtx, LenguaCtx, MediosCtx, TextosCtx, type Aviso, type Lengua, type Medios } from './contexto'
+import { AjustarCtx, AvisosCtx, conMod, DespachoCtx, LenguaCtx, MediosCtx, MultimediaCtx, TextosCtx, type Aviso, type Lengua, type Medios, type Multimedia } from './contexto'
 import { AjustarImagen } from './AjustarImagen'
+import { ElegirPoster } from './ElegirPoster'
+import { PrepararMedio } from './PrepararMedio'
+import { limpiarOpfs } from '../medios/convertir'
+import type { Donde } from '../estado'
+import type { BloqueMedio } from '../modelo'
 import { PantallaImportar } from './Importar'
 import { ACEPTA_MANUSCRITO, PantallaInicio } from './Inicio'
 import { PantallaLibro, type EstadoGuardado } from './Libro'
@@ -82,6 +87,12 @@ export default function App() {
   }, [])
 
   const lengua = useMemo<Lengua>(() => ({ idioma, cambiar: cambiarIdioma }), [idioma, cambiarIdioma])
+
+  // Lo que quedara en OPFS de una conversion a medias (una pestaña cerrada
+  // mientras convertia): se borra al abrir la app.
+  useEffect(() => {
+    void limpiarOpfs()
+  }, [])
 
   // El `lang` del documento: los lectores de pantalla eligen la voz con el, y
   // sin esto leerian la interfaz inglesa con pronunciacion española.
@@ -224,6 +235,16 @@ export default function App() {
   // en todos los sitios donde se usaba la vieja, asi que «Deshacer» funciona
   // y los bytes del original siguen intactos en el almacen.
   const [ajustando, setAjustando] = useState<Imagen | null>(null)
+  // Audio y video: el archivo que se esta añadiendo, o el video cuyo poster se elige.
+  const [preparando, setPreparando] = useState<{ archivo: File; donde: Donde; indice: number } | null>(null)
+  const [eligiendoPoster, setEligiendoPoster] = useState<{ bloque: Extract<BloqueMedio, { tipo: 'video' }>; donde: Donde } | null>(null)
+  const multimedia = useMemo<Multimedia>(
+    () => ({
+      anadir: (archivo, donde, indice) => setPreparando({ archivo, donde, indice }),
+      elegirPoster: (bloque, donde) => setEligiendoPoster({ bloque, donde }),
+    }),
+    [],
+  )
 
   // -- abrir, crear, borrar ---------------------------------------------------
   const nuevo = useCallback(() => {
@@ -320,7 +341,22 @@ export default function App() {
       }
       for (const m of c.medios) {
         const datos = m.datos instanceof Blob ? m.datos : new Blob([m.datos as Uint8Array<ArrayBuffer>])
-        await destino.anadirMedio(m.id, m.nombreOriginal, datos, { tipo: m.tipo, segundos: m.segundos, crc32: m.crc32 }, Date.now())
+        const { hz, canales, ancho, alto } = m
+        await destino.anadirMedio(
+          m.id,
+          m.nombreOriginal,
+          datos,
+          {
+            tipo: m.tipo,
+            segundos: m.segundos,
+            crc32: m.crc32,
+            ...(hz !== undefined ? { hz } : {}),
+            ...(canales !== undefined ? { canales } : {}),
+            ...(ancho !== undefined ? { ancho } : {}),
+            ...(alto !== undefined ? { alto } : {}),
+          },
+          Date.now(),
+        )
       }
       void pedirPersistencia()
       // Nada guardado aun: el autoguardado lo escribe en cuanto se abre.
@@ -492,6 +528,7 @@ export default function App() {
       <DespachoCtx.Provider value={despachar}>
       <MediosCtx.Provider value={medios}>
       <AjustarCtx.Provider value={setAjustando}>
+      <MultimediaCtx.Provider value={multimedia}>
         <AvisosCtx.Provider value={avisar}>
           {estado.pantalla === 'inicio' && (
             <PantallaInicio
@@ -572,7 +609,20 @@ export default function App() {
               alCerrar={() => setAjustando(null)}
             />
           )}
+          {preparando && estado.proyecto && (
+            <PrepararMedio
+              archivo={preparando.archivo}
+              donde={preparando.donde}
+              indice={preparando.indice}
+              proyecto={estado.proyecto}
+              alCerrar={() => setPreparando(null)}
+            />
+          )}
+          {eligiendoPoster && (
+            <ElegirPoster bloque={eligiendoPoster.bloque} donde={eligiendoPoster.donde} alCerrar={() => setEligiendoPoster(null)} />
+          )}
         </AvisosCtx.Provider>
+      </MultimediaCtx.Provider>
       </AjustarCtx.Provider>
       </MediosCtx.Provider>
       </DespachoCtx.Provider>

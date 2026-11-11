@@ -154,7 +154,19 @@ export interface Medio {
    */
   readonly crc32: number
   readonly segundos: number
+  /**
+   * Del audio: su frecuencia y sus canales. Apple pide que TODOS los audios
+   * del libro vayan a la misma frecuencia, y de aqui se saca cual es.
+   */
+  readonly hz?: number
+  readonly canales?: number
+  /** Del video: lo que mide en pantalla, ya girado. El poster tiene que medir lo mismo. */
+  readonly ancho?: number
+  readonly alto?: number
 }
+
+/** Los datos del medio que dependen de lo que es: los opcionales de `Medio`. */
+export type DetallesMedio = Pick<Medio, 'hz' | 'canales' | 'ancho' | 'alto'>
 
 export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco'
 

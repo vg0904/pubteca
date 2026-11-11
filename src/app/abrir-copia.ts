@@ -53,6 +53,7 @@ import {
   type EntregaKindle,
   type Extra,
   type Imagen,
+  type DetallesMedio,
   type Medio,
   type Proyecto,
   type RolPortada,
@@ -72,7 +73,7 @@ export interface ImagenDeCopia {
  * bytes NO se leyeron: `datos` es el trozo del .zip donde estan, y guardarlo
  * en el almacen no lo carga en memoria.
  */
-export interface MedioDeCopia {
+export interface MedioDeCopia extends DetallesMedio {
   readonly id: string
   readonly nombreOriginal: string
   readonly tipo: Medio['tipo']
@@ -281,7 +282,7 @@ class RecogidaMedios {
   }
 
   /** El id del medio de esa ruta, o null si no esta en la copia. */
-  id(ruta: string, nombreOriginal: string, segundos: number): string | null {
+  id(ruta: string, nombreOriginal: string, segundos: number, extra: DetallesMedio = {}): string | null {
     const ya = this.porRuta.get(ruta)
     if (ya !== undefined) return ya
     const g = this.grandes.get(ruta)
@@ -294,6 +295,7 @@ class RecogidaMedios {
       nombreOriginal,
       tipo: ruta.toLowerCase().endsWith('.m4a') ? 'm4a' : 'm4v',
       segundos,
+      ...extra,
       tamano: g ? g.tamano : (b as Uint8Array).length,
       crc32: g ? g.crc32 : crc32(b as Uint8Array),
       datos: g ? g.datos : (b as Uint8Array),
@@ -866,7 +868,14 @@ function desdeJson(
     const ruta = esObjeto(info) && typeof info['ruta'] === 'string' ? info['ruta'] : null
     const nombre = esObjeto(info) && typeof info['nombreOriginal'] === 'string' ? limpiarTexto(info['nombreOriginal']) : viejo
     const segundos = esObjeto(info) && typeof info['segundos'] === 'number' && Number.isFinite(info['segundos']) ? Math.max(0, info['segundos']) : 0
-    const id = ruta ? recogidaMedios.id(ruta, nombre, segundos) : null
+    const numero = (k: string): number | undefined => {
+      const v = esObjeto(info) ? info[k] : undefined
+      return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : undefined
+    }
+    const extra: DetallesMedio = Object.fromEntries(
+      (['hz', 'canales', 'ancho', 'alto'] as const).flatMap((k) => (numero(k) !== undefined ? [[k, numero(k)]] : [])),
+    )
+    const id = ruta ? recogidaMedios.id(ruta, nombre, segundos, extra) : null
     if (!id) avisos.push({ clave: 'faltaMedio', detalle: nombre })
     const nuevo = id ?? nuevoId('medio')
     mapaMedios.set(viejo, nuevo)

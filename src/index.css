@@ -465,6 +465,27 @@ input[type='text'], input[type='date'], input:not([type]), select, textarea {
 .ilus-miniatura { width: 7.5rem; flex: none; }
 .ilus-miniatura img { width: 100%; height: auto; border-radius: 6px; display: block; background: repeating-conic-gradient(var(--borde) 0 25%, transparent 0 50%) 0 0 / 14px 14px; }
 .ilus-falta { color: var(--rojo); font-size: 0.85rem; margin: 0; }
+
+/* Audio y video: la tarjeta lleva su reproductor. Un video vertical del
+   telefono a todo el ancho ocuparia la pantalla entera: se limita el alto. */
+.bloque-medio:focus { outline: none; }
+.bloque-medio:focus .ilus-cuerpo, .bloque-medio:focus-within .ilus-cuerpo { border-color: var(--azul); }
+.medio-reproductor { width: 12rem; }
+.medio-reproductor video { display: block; width: 100%; max-height: 16rem; object-fit: contain; border-radius: 6px; background: #000; }
+.medio-reproductor audio { display: block; width: 100%; }
+.bloque-audio .medio-reproductor { width: 15rem; align-self: center; }
+.medio-tipo { margin: 0 0 0.4rem; }
+.aviso-medio { color: var(--rojo); font-size: 0.85rem; margin: 0.3rem 0; }
+.plan-medio { margin: 0.4rem 0 0.8rem; padding-left: 1.2rem; }
+.plan-medio li { margin: 0.25rem 0; }
+.preparar-medio progress { width: 100%; height: 0.8rem; }
+.preparar-medio .botones, .elegir-poster .botones { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.8rem; }
+.poster-vista { display: flex; justify-content: center; align-items: center; min-height: 10rem; background: #000; border-radius: 6px; margin: 0.6rem 0; }
+.poster-vista img { display: block; max-width: 100%; max-height: 50vh; }
+.elegir-poster input[type='range'] { width: 100%; }
+@media (max-width: 40rem) {
+  .medio-reproductor, .bloque-audio .medio-reproductor { width: 100%; }
+}
 .ilus-falta p { margin: 0 0 0.4rem; }
 .ilus-campos { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; min-width: 0; }
 .campo { display: flex; flex-direction: column; gap: 0.25rem; }

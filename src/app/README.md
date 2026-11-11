@@ -49,6 +49,26 @@ EPUB», vive en `datos.idioma` y decide los textos que van DENTRO del EPUB
   treinta ilustraciones del libro, asi que pedirla una por una serian treinta
   veces el mismo gesto. Ahi el peso se estima midiendo una muestra.
 
+## Añadir audio o video
+
+`medios/` en cuatro piezas, de lo que se decide a lo que se hace:
+
+- `clasificar.ts` (puro, se prueba en Node): que es el archivo y que hay que
+  hacerle para que quede como lo pide Apple. `valido`, `convertible` o
+  `imposible`, con cada paso y su motivo. Es lo que el autor ve y confirma
+  ANTES de que se toque nada.
+- `inspeccionar.ts`: lee el archivo con Mediabunny (cabeceras e indice, sin
+  decodificar) y pregunta al navegador que puede hacer. Y aparte, decodificando,
+  si el primer y el ultimo fotograma son negros.
+- `convertir.ts` + `conversion.worker.ts`: la conversion, en su hilo. El negro
+  se pone como fotograma I420 hecho a mano, sin lienzo: con un lienzo, Safari se
+  colgaba con los videos verticales. La salida va a OPFS, no a memoria.
+- `hilo.ts`: el perro guardian, en la pagina. Si el hilo pasa 30 s sin dar
+  señales, se mata y se dice por que.
+
+Mediabunny se carga con `import('./mb')`, nunca del paquete entero: asi el
+empaquetador deja fuera los formatos que no se usan.
+
 ## El audio y el video no pasan por memoria
 
 Un video del iPhone son cientos de MB, y en un iPad eso mata la pestaña. Por eso

@@ -42,3 +42,13 @@ const EXT_IMAGEN = /\.(png|jpe?g)$/iu
 export function imagenesDe(lista: FileList | readonly File[]): File[] {
   return Array.from(lista).filter((f) => f.type.startsWith('image/') || EXT_IMAGEN.test(f.name))
 }
+
+/** Lo que se acepta al elegir un audio o un video: lo convierte la app. */
+export const ACEPTA_MEDIO = 'video/*,audio/*,.mov,.m4v,.mp4,.m4a,.mp3,.wav,.aac,.aif,.aiff,.caf,.flac'
+
+const EXT_MEDIO = /\.(mov|m4v|mp4|m4a|mp3|wav|aac|aif|aiff|caf|flac|ogg|opus|webm|mkv)$/iu
+
+/** Los audios y videos de una lista de archivos, por su tipo o su extension. */
+export function mediosDe(lista: FileList | readonly File[]): File[] {
+  return Array.from(lista).filter((f) => f.type.startsWith('video/') || f.type.startsWith('audio/') || EXT_MEDIO.test(f.name))
+}

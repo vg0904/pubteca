@@ -42,3 +42,18 @@ export function diasEntre(antes: number, ahora: number): number {
   const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate())
   return Math.max(0, Math.round((ub - ua) / 86_400_000))
 }
+
+/** Segundos -> «0:12», «12:05», «1:02:03». */
+export function duracion(segundos: number): string {
+  const t = Math.max(0, Math.round(segundos))
+  const h = Math.floor(t / 3600)
+  const m = Math.floor((t % 3600) / 60)
+  const s = String(t % 60).padStart(2, '0')
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
+}
+
+/** Hercios -> «44,1 kHz», «48 kHz». */
+export function frecuencia(hz: number, s: Separadores): string {
+  const k = hz / 1000
+  return `${Number.isInteger(k) ? String(k) : k.toFixed(1).replace('.', s.decimal)} kHz`
+}

@@ -7,7 +7,7 @@
 // The `Ui` type comes from the Spanish file, so a missing key, a renamed one
 // or a function with a different signature fails `npm run typecheck`.
 import type { Ui } from './es'
-import { dolares, numero, tamano, type Separadores } from '../app/formato'
+import { dolares, duracion, frecuencia, numero, tamano, type Separadores } from '../app/formato'
 
 const SEPARADORES: Separadores = { miles: ',', decimal: '.' }
 
@@ -25,6 +25,8 @@ export const ui: Ui = {
     numero: (n: number) => numero(n, SEPARADORES),
     tamano: (bytes: number) => tamano(bytes, SEPARADORES),
     dolares: (x: number) => dolares(x, SEPARADORES),
+    duracion: (segundos: number) => duracion(segundos),
+    frecuencia: (hz: number) => frecuencia(hz, SEPARADORES),
     haceDias: (dias: number) => (dias === 0 ? 'today' : dias === 1 ? 'yesterday' : `${dias} days ago`),
   },
 
@@ -186,6 +188,7 @@ export const ui: Ui = {
       escena: 'Scene break',
       versos: 'Verse',
       ilustracion: 'Illustration…',
+      medio: 'Audio or video…',
     },
     escena: 'Scene break',
     escenaAyuda: 'Backspace or Delete to remove it',
@@ -218,6 +221,69 @@ export const ui: Ui = {
     sinPoster: 'The video has no cover image (poster): Apple Books requires one.',
     menu: 'Audio or video options',
     quitar: 'Remove',
+    insertar: 'Audio or video…',
+    altVideo: 'What can be seen and heard?',
+    altAudio: 'What can be heard?',
+    altAyuda: 'Screen readers read this out when they reach the player.',
+    decorativo: 'No description needed (it is just atmosphere)',
+    poster: 'Poster',
+    elegirPoster: 'Change the poster…',
+    falta: 'This file is not in this browser. Remove it and add it again.',
+    datos: (duracion: string, tamano: string) => `${duracion} · ${tamano}`,
+    contenedores: { mp4: 'MPEG-4', mov: '.mov (QuickTime)', wave: 'WAV', mp3: 'MP3', adts: 'bare AAC (.aac)', otro: '?' } as Record<string, string>,
+    preparar: {
+      titulo: (nombre: string) => `Add “${nombre}”`,
+      leyendo: 'Looking at the file…',
+      cargando: 'Loading the converter (only the first time)…',
+      esVideo: (codec: string, ancho: number, alto: number, duracion: string, tamano: string, hdr: boolean) =>
+        `${codec}${hdr ? ' HDR' : ''} video, ${ancho}×${alto}, ${duracion}, ${tamano}.`,
+      esAudio: (codec: string, frecuencia: string, canales: number, duracion: string, tamano: string) =>
+        `${codec} audio, ${frecuencia}, ${canales === 1 ? 'mono' : canales === 2 ? 'stereo' : `${canales} channels`}, ${duracion}, ${tamano}.`,
+      yaValido: 'It is already the way Apple Books wants it: it goes in as it is.',
+      plan: 'For Apple Books to accept it, this is what will be done to it. Your original file is not touched.',
+      pasos: {
+        contenedor: (de: string, soloCaja: boolean) => (soloCaja ? `Move it from ${de} to MPEG-4, without re-encoding.` : `Move it from ${de} to MPEG-4.`),
+        videoCodec: (codec: string) => `Re-encode the video as H.264: Apple Books does not take ${codec}.`,
+        videoHdr: 'Re-encode the video as H.264 in standard color (SDR): it is HDR, and Apple asks for standard color.',
+        videoNegro: 'Re-encode the video as H.264 so that it starts and ends with a black frame: Apple requires it.',
+        reducir: (antes: string, despues: string) => `Scale it down from ${antes} to ${despues}: what Apple asks for HD, and much lighter.`,
+        audioCodec: (codec: string) => `Turn the sound into AAC: Apple Books does not take ${codec}.`,
+        audioFrecuencia: (de: string, a: string) => `Change the sound from ${de} to ${a}: every audio file in the book must use the same sample rate.`,
+        audioCanales: (canales: number) => `Turn the sound from ${canales} channels into stereo.`,
+        metadatos: 'Strip the recording data (where it was recorded, which phone): it does not get published inside the book.',
+        poster: 'Take a frame as the poster. You can pick another one or upload an image later.',
+      },
+      soloApple: 'It will only be in the Apple Books EPUB: Kindle does not take audio or video.',
+      imposible: {
+        formato: { porque: 'It is not an audio or video file that can be read.', consejo: 'Export it as .mp4, .mov, .m4a, .mp3 or .wav.' },
+        sinPistas: { porque: 'The file has neither picture nor sound.', consejo: 'Export it again from wherever you made it.' },
+        noDecodifica: { porque: 'This browser cannot read this video or this sound.', consejo: 'Try Chrome, or export it as .mp4 (H.264) or .m4a.' },
+        sinH264: { porque: 'The video has to be re-encoded as H.264, and this browser cannot do it.', consejo: 'Try Chrome or Safari 26, or export it as H.264 first.' },
+        sinAac: {
+          porque: 'The sound has to be turned into AAC, and this browser cannot encode it (Safari can from version 26).',
+          consejo: 'Update Safari, try Chrome, or turn it into .m4a first: in the Music app, File > Convert > Create AAC Version.',
+        },
+      },
+      anadir: 'Add',
+      convertir: 'Convert and add',
+      cancelar: 'Cancel',
+      cerrar: 'Close',
+      convirtiendo: (porcentaje: number) => `Converting… ${porcentaje}%`,
+      noCerrar: 'A long video takes a few minutes. Do not close this tab.',
+      guardando: 'Saving…',
+      parado:
+        'This browser got stuck converting the file, without any error (Safari does this with some vertical videos). Try Chrome or Firefox, or export it first on your Mac: in QuickTime, File > Export As > 1080p.',
+      fallo: (mensaje: string) => `It could not be converted: ${mensaje}`,
+    },
+    elegirPosterDialogo: {
+      titulo: 'The video poster',
+      ayuda: 'It is the picture Apple Books shows before the video plays. Move the slider to the frame you want.',
+      momento: 'Frame',
+      usar: 'Use this frame',
+      subir: 'Upload an image…',
+      subirAyuda: 'It is cropped to the center, to the shape of the video.',
+      cargando: 'Getting the frame…',
+    },
   },
 
   imagen: {
@@ -490,6 +556,7 @@ export const ui: Ui = {
     faltaImagen: 'An illustration has no image: it will not reach the book.',
     faltaMedio: 'An audio or video file is not in this browser: it will not reach the book.',
     mediosPesan: 'With the audio and video, the Apple Books EPUB is over 500 MB, the most Apple recommends. It can be published, but it is slow to download.',
+    sinPoster: 'A video has no poster: Apple Books would not take it. Choose it on its card.',
     mediosPasanLimite: 'With the audio and video, the Apple Books EPUB would be over 2 GB, the most Apple accepts. Remove or shorten a video.',
     capituloVacio: 'A chapter is empty: it will not appear in the book.',
   },
@@ -528,6 +595,16 @@ export const ui: Ui = {
     sinDescripcion: {
       titulo: 'Illustrations with no description: screen readers will only say “Illustration”',
       consejo: 'Write what is in each one, or mark them as decorative.',
+    },
+    soloApple: {
+      titulo: 'Audio and video only go in the Apple Books EPUB',
+      consejo: 'KDP does not accept books with audio or video: the Kindle EPUB comes out without them, and the text stays the same.',
+    },
+    faltaMedio: { titulo: 'Audio or video that is not in this browser', consejo: 'It does not reach the book. Remove it and add it again.' },
+    sinPoster: { titulo: 'Videos with no poster: Apple Books will not take them', consejo: 'Choose the poster on each video card.' },
+    medioSinDescripcion: {
+      titulo: 'Audio and video with no description: a screen reader will not know what it is',
+      consejo: 'Write what can be seen and heard in each one, or mark them as atmosphere.',
     },
     otro: { titulo: '', consejo: '' },
   },

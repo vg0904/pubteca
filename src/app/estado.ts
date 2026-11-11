@@ -197,6 +197,14 @@ export type Accion =
       readonly cambios: { readonly alt?: string; readonly decorativa?: boolean; readonly imagenId?: string }
       readonly ahora: number
     }
+  /** La descripcion, si es decorativo, o el poster de un audio o un video. */
+  | {
+      readonly tipo: 'medio'
+      readonly donde: Donde
+      readonly bloque: string
+      readonly cambios: { readonly alt?: string; readonly decorativa?: boolean; readonly posterId?: string }
+      readonly ahora: number
+    }
   | { readonly tipo: 'aApertura'; readonly capitulo: string; readonly bloque: string }
   | { readonly tipo: 'deApertura'; readonly capitulo: string; readonly indice: number; readonly nuevoId: string }
   | { readonly tipo: 'quitarApertura'; readonly capitulo: string; readonly indice: number }
@@ -915,6 +923,31 @@ export function reducir(e: Estado, a: Accion): Estado {
           bs.map((b) => (b.id === a.bloque && b.tipo === 'ilustracion' ? { ...b, ...cambios } : b)),
         ),
         c.alt !== undefined && c.imagenId === undefined ? { grupo: `alt:${a.bloque}`, ahora: a.ahora } : {},
+      )
+    }
+
+    case 'medio': {
+      const c = a.cambios
+      const comun = {
+        ...(c.alt !== undefined ? { alt: limpiarTexto(c.alt) } : {}),
+        ...(c.decorativa !== undefined ? { decorativa: c.decorativa } : {}),
+      }
+      return cambiar(
+        e,
+        conBloques(p, a.donde, (bs) =>
+          bs.map((b) =>
+            b.id !== a.bloque
+              ? b
+              : b.tipo === 'video'
+                ? { ...b, ...comun, ...(c.posterId !== undefined ? { posterId: c.posterId } : {}) }
+                : b.tipo === 'audio'
+                  ? { ...b, ...comun }
+                  : b,
+          ),
+        ),
+        // Escribir la descripcion letra a letra es UN paso de deshacer, como
+        // en una ilustracion.
+        c.alt !== undefined && c.posterId === undefined ? { grupo: `alt:${a.bloque}`, ahora: a.ahora } : {},
       )
     }
 

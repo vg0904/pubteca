@@ -52,6 +52,7 @@ proteger. Un test que nunca falla no protege nada.
 | `medios.test.ts` | Audio y video en el EPUB de Apple Books y su ausencia en el de Kindle, sobre `fixtures/libro-medios` (lo mismo que CI pasa por EPUBCheck): `media-type`, poster, CSS, indice en orden de lectura, accesibilidad, y que un libro sin medios no cambie ni un byte |
 | `medios-app.test.ts` | Los bloques `video` y `audio` del modelo: al dialecto y de vuelta, a la carpeta `medios/` del motor y a la copia `.zip` |
 | `segmentos.test.ts` | El CRC-32, el zip en segmentos con un hueco por medio (rellenado, lo da por bueno `unzip -t`, que comprueba cada CRC) y que el EPUB armado con los medios como ficha es EXACTAMENTE el mismo que con sus bytes |
+| `medios-conversion.test.ts` | Añadir audio o video: el plan de cada archivo (valido, convertible o imposible, y por que), el negro, el poster, la lectura real con Mediabunny de `fixtures/medios-sueltos`, el perro guardian del hilo con un Worker de mentira, y como lo dicen el reductor, la revision y los avisos |
 | `medios-almacen.test.ts` | El almacen de medios en IndexedDB (y su subida de esquema), la copia `.zip` con `medios/` de ida y vuelta sin leer los videos, y el peso: aviso a 500 MB, bloqueo a 2 GB |
 
 Las mutaciones de H5 (38, todas detectadas) se corrieron con un script fuera
@@ -59,6 +60,12 @@ del repo: cambia una linea, corre el test que la protege y comprueba que
 falla. Si anades un caso, haz lo mismo a mano. Las de M1 (audio y video): 15,
 todas detectadas. Las de M2 (segmentos, almacen, copia, peso): 21; una no se
 detectaba porque protegia una regla que nunca se usaba, y se quito la regla.
+Las de M3 (añadir audio y video): 22; una no se detectaba (un AAC 5.1 a la
+frecuencia del libro) y se añadio su caso.
+
+La CONVERSION de verdad no se puede probar aqui: necesita WebCodecs. Se probo
+con un arnes desechable que corre los modulos reales en Safari 27.2 y Chromium
+156, y se comprobo la salida con ffprobe y ffmpeg: ver plan.md, M3.
 
 ## El libro con medios
 

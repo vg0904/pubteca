@@ -34,6 +34,11 @@ export type ClaveGrupo =
   | 'sinPortada'
   | 'capituloVacio'
   | 'sinDescripcion'
+  // Audio y video
+  | 'soloApple'
+  | 'faltaMedio'
+  | 'sinPoster'
+  | 'medioSinDescripcion'
   | 'otro'
 
 export interface Grupo {
@@ -52,6 +57,11 @@ export interface Grupo {
  */
 const PATRONES: readonly { readonly clave: ClaveGrupo; readonly re: RegExp }[] = [
   { clave: 'noEsImagen', re: /: no es un PNG ni un JPG de verdad/u },
+  // Antes que faltaImagen: los dos empiezan por «la marca pide».
+  { clave: 'faltaMedio', re: /: la marca pide «[^»]*», pero no hay medios\//u },
+  { clave: 'sinPoster', re: /: el video «[^»]*» no tiene póster/u },
+  { clave: 'soloApple', re: /solo van en el EPUB de Apple Books: KDP no acepta libros con audio ni video/u },
+  { clave: 'medioSinDescripcion', re: /^Audio y video sin descripción/u },
   { clave: 'faltaImagen', re: /: la marca pide «/u },
   { clave: 'recursoAusente', re: /: una página del EPUB de .+ la muestra, pero el archivo no entró/u },
   { clave: 'transparencia', re: /: tiene transparencia\./u },
@@ -73,11 +83,11 @@ const PATRONES: readonly { readonly clave: ClaveGrupo; readonly re: RegExp }[] =
 
 /** Lo afectado por un mensaje: lo que va antes de «: », o la lista de la nota de descripciones. */
 function elementosDe(clave: ClaveGrupo, mensaje: string): string[] {
-  if (clave === 'sinDescripcion') {
+  if (clave === 'sinDescripcion' || clave === 'medioSinDescripcion') {
     const lista = mensaje.slice(mensaje.indexOf('): ') + 3)
     return lista.split('; ').filter((x) => x !== '')
   }
-  if (clave === 'sinLogoBlanco' || clave === 'sinPortada' || clave === 'otro') return []
+  if (clave === 'sinLogoBlanco' || clave === 'sinPortada' || clave === 'soloApple' || clave === 'otro') return []
   const i = mensaje.indexOf(': ')
   return i === -1 ? [] : [mensaje.slice(0, i)]
 }
@@ -169,6 +179,11 @@ const TIENDAS_POR_GRUPO: Readonly<Record<ClaveGrupo, readonly Tienda[]>> = {
   sinPortada: ['apple'],
   capituloVacio: AMBAS,
   sinDescripcion: AMBAS,
+  // Lo de Kindle es que NO los recibe: es a Kindle a quien le cambia el libro.
+  soloApple: ['kindle'],
+  faltaMedio: ['apple'],
+  sinPoster: ['apple'],
+  medioSinDescripcion: ['apple'],
   otro: AMBAS,
 }
 
