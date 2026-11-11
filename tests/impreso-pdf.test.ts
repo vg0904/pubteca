@@ -5,7 +5,7 @@ import { Fuente } from '../src/core/impreso/sfnt'
 import { glifosNecesarios, sumaTabla } from '../src/core/impreso/subconjunto'
 import type { Fuentes, PaginaCompuesta } from '../src/core/impreso/tipos'
 import { FECHA, fuentesDelRepo, GOLDEN, imagenDePrueba, libroImpresoDePrueba } from '../scripts/impreso-prueba'
-import { comprobarPdfx, dic, leerPdf, lista, nombreDe, numero, paginas, resolver, texto, volcar, type PdfLeido, type Valor } from '../scripts/leer-pdf'
+import { comprobarPdfx, dic, fuentesDelPdf, leerPdf, lista, nombreDe, numero, objeto, paginas, resolver, textosPintados, texto, volcar, type Valor } from '../scripts/leer-pdf'
 
 // El PDF interior: el golden (estructura y contenido descomprimido), el
 // determinismo byte a byte, nuestra lista de PDF/X-1a, y que lo que se
@@ -14,89 +14,6 @@ import { comprobarPdfx, dic, leerPdf, lista, nombreDe, numero, paginas, resolver
 
 const libro = libroImpresoDePrueba()
 const pdf = leerPdf(libro.pdf)
-
-/** Los bytes de un objeto por su referencia. */
-function objeto(p: PdfLeido, v: Valor | undefined): { dic: ReadonlyMap<string, Valor>; flujo?: Uint8Array } {
-  if (v?.t !== 'ref') throw new Error('se esperaba una referencia')
-  const o = p.objetos.get(v.v)
-  if (!o) throw new Error(`no existe el objeto ${v.v}`)
-  return { dic: dic(o.dic), flujo: o.flujo }
-}
-
-/** Las fuentes del PDF: su nombre de recurso, su Type0, su CIDFont, su programa y su ToUnicode. */
-function fuentesDelPdf(p: PdfLeido) {
-  const recursos = dic(resolver(p, paginas(p)[0]?.get('Resources')))
-  const r: { recurso: string; base: string; programa: Uint8Array; anchos: Map<number, number>; aUnicode: Map<number, string> }[] = []
-  for (const [recurso, ref] of dic(recursos.get('Font'))) {
-    const t0 = objeto(p, ref).dic
-    const cid = dic(resolver(p, lista(t0.get('DescendantFonts'))[0]))
-    const desc = dic(resolver(p, cid.get('FontDescriptor')))
-    const programa = objeto(p, desc.get('FontFile2')).flujo as Uint8Array
-    const anchos = new Map<number, number>()
-    const w = lista(cid.get('W'))
-    for (let i = 0; i < w.length; i += 2) {
-      const primero = numero(w[i])
-      lista(w[i + 1]).forEach((x, k) => anchos.set(primero + k, numero(x)))
-    }
-    const cmap = String.fromCharCode(...(objeto(p, t0.get('ToUnicode')).flujo as Uint8Array))
-    const aUnicode = new Map<number, string>()
-    for (const m of cmap.matchAll(/<([0-9A-F]{4})> <([0-9A-F]+)>/gu)) {
-      const u = m[2] as string
-      let s = ''
-      for (let i = 0; i < u.length; i += 4) s += String.fromCharCode(parseInt(u.slice(i, i + 4), 16))
-      aUnicode.set(parseInt(m[1] as string, 16), s)
-    }
-    r.push({ recurso, base: nombreDe(t0.get('BaseFont')), programa, anchos, aUnicode })
-  }
-  return r
-}
-
-/** Lo que pinta cada pagina: cada Tm con su texto (por la ToUnicode) y cuanto avanza (por /W y TJ). */
-function textosPintados(p: PdfLeido) {
-  const fs = new Map(fuentesDelPdf(p).map((f) => [f.recurso, f]))
-  return paginas(p).map((pag) => {
-    const s = String.fromCharCode(...(objeto(p, pag.get('Contents')).flujo as Uint8Array))
-    const r: { x: number; y: number; texto: string; avance: number }[] = []
-    let fuente = ''
-    let cuerpo = 0
-    let x = 0
-    let y = 0
-    for (const linea of s.split('\n')) {
-      let m = /^\/(\S+) (\S+) Tf$/u.exec(linea)
-      if (m) {
-        fuente = m[1] as string
-        cuerpo = Number(m[2])
-        continue
-      }
-      m = /^1 0 0 1 (\S+) (\S+) Tm$/u.exec(linea)
-      if (m) {
-        x = Number(m[1])
-        y = Number(m[2])
-        continue
-      }
-      m = /^\[(.*)\] TJ$/u.exec(linea)
-      if (!m) continue
-      const f = fs.get(fuente)
-      if (!f) throw new Error(`fuente ${fuente} sin definir`)
-      let t = ''
-      let avance = 0
-      for (const trozo of (m[1] as string).matchAll(/<([0-9A-F]*)>|(-?[\d.]+)/gu)) {
-        if (trozo[2] !== undefined) {
-          avance -= (Number(trozo[2]) / 1000) * cuerpo
-          continue
-        }
-        const h = trozo[1] as string
-        for (let i = 0; i < h.length; i += 4) {
-          const g = parseInt(h.slice(i, i + 4), 16)
-          t += f.aUnicode.get(g) ?? ''
-          avance += ((f.anchos.get(g) ?? NaN) / 1000) * cuerpo
-        }
-      }
-      r.push({ x, y, texto: t, avance })
-    }
-    return r
-  })
-}
 
 describe('el golden del PDF interior', () => {
   it('la estructura y el contenido descomprimido son los del golden', () => {

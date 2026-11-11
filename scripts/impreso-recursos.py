@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Prepara lo que necesita el libro impreso: la fuente y los patrones de particion.
+"""Prepara lo que necesita el libro impreso: las fuentes y los patrones de particion.
 
-  public/fuentes/impreso/   las cuatro caras de Source Serif 4 (regular,
-                            cursiva, negrita y negrita cursiva), estaticas,
-                            con su OFL.txt
+  public/fuentes/impreso/   las cuatro caras (regular, cursiva, negrita y
+                            negrita cursiva) de cada familia de la lista,
+                            estaticas, con el OFL de cada una
+                            (`OFL-<Familia>.txt`)
   src/core/impreso/patrones/es.ts, en.ts
                             los patrones de particion de hyph-utf8, como datos
 
 Todo se descarga de un commit FIJO y se comprueba su sha256: si el origen
 cambia, el script se para en vez de meter otra cosa en el repo.
 
-La fuente se publica variable (peso y tamaño optico). Aqui se sacan las
-cuatro caras estaticas a 11 pt de tamaño optico, que es el del texto de un
-libro, y se recortan a los alfabetos latinos y la puntuacion: de 1,2 MB a
-unos 100 kB por cara. Se conservan el kerning y las ligaduras, que el
-compositor usa, y las versalitas y las cifras de texto, para despues.
+Las fuentes se publican variables (peso y, algunas, tamaño optico). Aqui se
+sacan las cuatro caras estaticas (400 y 700; a 11 pt de tamaño optico si la
+familia lo tiene, que es el del texto de un libro) y se recortan a los
+alfabetos latinos y la puntuacion: de casi 1 MB a unos 100 kB por cara. Se
+conservan el kerning y las ligaduras, que el compositor usa, y las versalitas
+y las cifras de texto. La lista de familias tiene su espejo en
+src/core/impreso/familias.ts (nombre, archivos y cuerpo recomendado).
 
 Necesita fontTools solo para regenerarlos (los archivos se commitean):
   python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools==4.68.0
@@ -28,16 +31,58 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = RAIZ / "public" / "fuentes" / "impreso"
 PATRONES = RAIZ / "src" / "core" / "impreso" / "patrones"
 
-GOOGLE = "https://raw.githubusercontent.com/google/fonts/08dc85da6bca7ae308a6f1d38d0b137465646071/ofl/sourceserif4/"
+GOOGLE = "https://raw.githubusercontent.com/google/fonts/08dc85da6bca7ae308a6f1d38d0b137465646071/ofl/"
+
+# Cada familia: el prefijo de sus archivos, su carpeta en google/fonts, la
+# romana y la cursiva variables con su sha256, el OFL, y los ejes que se fijan
+# ademas del peso (el tamaño optico, si lo tiene).
+FAMILIAS = [
+    {
+        "prefijo": "SourceSerif4", "carpeta": "sourceserif4", "ejes": {"opsz": 11},
+        "romana": ("SourceSerif4[opsz,wght].ttf", "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b"),
+        "cursiva": ("SourceSerif4-Italic[opsz,wght].ttf", "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42"),
+        "ofl": "5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9",
+    },
+    {
+        "prefijo": "EBGaramond", "carpeta": "ebgaramond", "ejes": {},
+        "romana": ("EBGaramond[wght].ttf", "684fcc0db2239b43497341d596d68422ea60ef7522cf2e857071ad84e4ade2a4"),
+        "cursiva": ("EBGaramond-Italic[wght].ttf", "b76b365299331ddff5f8077648ef3b6fbb67f3bd15bebb955a42c6e57904aed0"),
+        "ofl": "0985066662eb755ed3683ae5482a81a9195b49ce3f7e165cc2388b3dbece7dd7",
+    },
+    {
+        # Literata solo nombra 7, 12, 36 y 72 en su STAT: 12 es su texto.
+        "prefijo": "Literata", "carpeta": "literata", "ejes": {"opsz": 12},
+        "romana": ("Literata[opsz,wght].ttf", "b41138c9373112f32abb589cc22e8674b06ed4048b0c513be922bdd26f274440"),
+        "cursiva": ("Literata-Italic[opsz,wght].ttf", "d483dfaeba9cbf4ce71d32a52ee65df82f7e35b15fff8d1011cdb242d1fcd465"),
+        "ofl": "8742963604cd89dc81437811a850018fc03b2bfad686d7422c8235967c87614e",
+    },
+    {
+        "prefijo": "CrimsonPro", "carpeta": "crimsonpro", "ejes": {},
+        "romana": ("CrimsonPro[wght].ttf", "16aa9fb7300a93637da51fac03a071b2ff08b6bbf65f99c794c25f040b58af6a"),
+        "cursiva": ("CrimsonPro-Italic[wght].ttf", "a74dc11dcf2fbb1452064e42395a40a907ca630b49cff86012223785e52b2559"),
+        "ofl": "1820869bd5baa1c2d88fa87c89eea532cf9442d841008acab720654b7f82823d",
+    },
+    {
+        "prefijo": "Alegreya", "carpeta": "alegreya", "ejes": {},
+        "romana": ("Alegreya[wght].ttf", "ba5564634b93a8f8ba57b48cd4f1ae7417d2b4656fbac779028679b00de3cf12"),
+        "cursiva": ("Alegreya-Italic[wght].ttf", "fa915eec76227935dc5fb678953c94b71287c360928013cfdb441dfe52f5a391"),
+        "ofl": "f6f60d5d4cf4f4b1fc4e41353c897a2f5a16e6396c0cd8fa8bdfd2f4586a9a68",
+    },
+    {
+        "prefijo": "LibreBaskerville", "carpeta": "librebaskerville", "ejes": {},
+        "romana": ("LibreBaskerville[wght].ttf", "05a95421961341c5b2556285e8415df9db27dab4f4abe22b446b3c6a8b916c5d"),
+        "cursiva": ("LibreBaskerville-Italic[wght].ttf", "223959683dc73ec4437bd61fabaa4b3f22209e22855ffd3aee36ba61a5116e97"),
+        "ofl": "3624eddd4c8f8a908130a417ae7cd089c9da69899c4e0ca1a5217d0a6fae16fd",
+    },
+]
+
 DESCARGAS = {
-    "romana": (GOOGLE + "SourceSerif4%5Bopsz%2Cwght%5D.ttf", "97b2d4da6e3cb494b5a1e66ae176914d852ccabef49e0c02c0df25f3e39aca0b"),
-    "cursiva": (GOOGLE + "SourceSerif4-Italic%5Bopsz%2Cwght%5D.ttf", "15fbc7e4679489a501998c3669272637a6646388ef7e4bd77eebb5bf967a1f42"),
-    "ofl": (GOOGLE + "OFL.txt", "5f94c3fd3a23131a417ab5a0c8452de57e70c3cfb9f604d88241f7065ebf9fd9"),
     "es": ("https://raw.githubusercontent.com/hyphenation/tex-hyphen/673f7b33e664b141432ba6d78d2caa686ea5317f/"
            "hyph-utf8/tex/generic/hyph-utf8/patterns/tex/hyph-es.tex",
            "6a2e5f39a991a23d1cd8a23dbd0f6fe96a9f07561a6695f4f3320f47030e236c"),
@@ -56,18 +101,25 @@ UNICODES = (
 )
 CARACTERISTICAS = ["kern", "liga", "clig", "onum", "lnum", "pnum", "tnum", "smcp", "c2sc", "ccmp", "locl", "mark", "mkmk"]
 CARAS = [("Regular", "romana", 400), ("Italic", "cursiva", 400), ("Bold", "romana", 700), ("BoldItalic", "cursiva", 700)]
-OPSZ = 11
 
 
-def descargar(clave: str) -> bytes:
+def bajar(url: str, esperado: str, que: str) -> bytes:
     # Con curl y no con urllib: el Python de python.org en macOS no trae
     # certificados, y curl los tiene en macOS y en Linux.
-    url, esperado = DESCARGAS[clave]
     datos = subprocess.run(["curl", "-sSfL", "--max-time", "120", url], check=True, capture_output=True).stdout
     real = hashlib.sha256(datos).hexdigest()
     if real != esperado:
-        sys.exit(f"{clave}: el sha256 no coincide ({real}). El origen cambio: no se sigue.")
+        sys.exit(f"{que}: el sha256 no coincide ({real}). El origen cambio: no se sigue.")
     return datos
+
+
+def descargar(clave: str) -> bytes:
+    url, esperado = DESCARGAS[clave]
+    return bajar(url, esperado, clave)
+
+
+def de_google(carpeta: str, archivo: str, esperado: str) -> bytes:
+    return bajar(GOOGLE + carpeta + "/" + quote(archivo), esperado, f"{carpeta}/{archivo}")
 
 
 def fuentes() -> None:
@@ -78,26 +130,27 @@ def fuentes() -> None:
     except ImportError:
         sys.exit("Hace falta fontTools para regenerar las fuentes (ver el docstring).")
     FUENTES.mkdir(parents=True, exist_ok=True)
-    variables = {k: descargar(k) for k in ("romana", "cursiva")}
-    for nombre, origen, peso in CARAS:
-        f = TTFont(io.BytesIO(variables[origen]))
-        inst = instantiateVariableFont(f, {"wght": peso, "opsz": OPSZ}, inplace=False, updateFontNames=True)
-        opciones = subset.Options()
-        opciones.layout_features = CARACTERISTICAS
-        opciones.hinting = False
-        opciones.name_IDs = ["*"]
-        opciones.name_languages = ["*"]
-        opciones.notdef_outline = True
-        sub = subset.Subsetter(opciones)
-        sub.populate(unicodes=UNICODES)
-        sub.subset(inst)
-        salida = FUENTES / f"SourceSerif4-{nombre}.ttf"
-        # Sin la hora de hoy en la cabecera: regenerarla da los mismos bytes.
-        inst.recalcTimestamp = False
-        inst["head"].modified = f["head"].modified
-        inst.save(salida)
-        print(f"  {salida.relative_to(RAIZ)}  {salida.stat().st_size} bytes")
-    (FUENTES / "OFL.txt").write_bytes(descargar("ofl"))
+    for fam in FAMILIAS:
+        variables = {k: de_google(fam["carpeta"], *fam[k]) for k in ("romana", "cursiva")}
+        for nombre, origen, peso in CARAS:
+            f = TTFont(io.BytesIO(variables[origen]))
+            inst = instantiateVariableFont(f, {"wght": peso, **fam["ejes"]}, inplace=False, updateFontNames=True)
+            opciones = subset.Options()
+            opciones.layout_features = CARACTERISTICAS
+            opciones.hinting = False
+            opciones.name_IDs = ["*"]
+            opciones.name_languages = ["*"]
+            opciones.notdef_outline = True
+            sub = subset.Subsetter(opciones)
+            sub.populate(unicodes=UNICODES)
+            sub.subset(inst)
+            salida = FUENTES / f"{fam['prefijo']}-{nombre}.ttf"
+            # Sin la hora de hoy en la cabecera: regenerarla da los mismos bytes.
+            inst.recalcTimestamp = False
+            inst["head"].modified = f["head"].modified
+            inst.save(salida)
+            print(f"  {salida.relative_to(RAIZ)}  {salida.stat().st_size} bytes")
+        (FUENTES / f"OFL-{fam['prefijo']}.txt").write_bytes(de_google(fam["carpeta"], "OFL.txt", fam["ofl"]))
 
 
 def patrones() -> None:

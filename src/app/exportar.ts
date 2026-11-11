@@ -37,6 +37,11 @@ export interface Exportado {
   readonly rutas: ReadonlyMap<string, string>
   /** id de audio o video -> su ruta en el proyecto del motor (`medios/cap03-v01.m4v`). */
   readonly rutasMedios: ReadonlyMap<string, string>
+  /**
+   * id de extra -> el nombre de su archivo en `extras/` (`dedicatoria.md`).
+   * El impreso los ordena por id, y el core los conoce por ese nombre.
+   */
+  readonly archivosExtras: ReadonlyMap<string, string>
 }
 
 const EXT: Record<Imagen['tipo'], string> = { png: '.png', jpeg: '.jpg' }
@@ -196,6 +201,7 @@ export function exportar(
   }
 
   const extras: Archivo[] = []
+  const archivosExtras = new Map<string, string>()
   for (const extra of p.extras) {
     const s = serializarExtra(extra, p.datos.separadorDeEscena, (id) => nombres.get(id) ?? id)
     avisos.push(...s.avisos)
@@ -210,6 +216,7 @@ export function exportar(
             ? `inicio-${base}`
             : base
     extras.push(archivo(`extras/${nombre}.md`, utf8(s.texto)))
+    archivosExtras.set(extra.id, `${nombre}.md`)
   }
 
   const ROLES: Record<RolPortada, string> = {
@@ -244,5 +251,6 @@ export function exportar(
     nombres,
     rutas,
     rutasMedios,
+    archivosExtras,
   }
 }

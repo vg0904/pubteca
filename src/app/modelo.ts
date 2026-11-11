@@ -20,6 +20,7 @@
  * en la app no es lo que ve en su Kindle, y no se le puede esconder.
  */
 import type { KindlePropio } from './imagen-ajuste'
+import type { ConfigImpreso } from '../core/impreso/config'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -262,6 +263,13 @@ export interface Proyecto {
    */
   readonly kindlePorImagen?: Readonly<Record<string, KindlePropio>>
   /**
+   * Como sale el libro impreso (PDF interior): tamaño, letra, margenes, orden
+   * de las paginas extra... Solo esta si el autor toco algo en «Libro
+   * impreso»; sin el, valen los valores por defecto. El orden de los extras va
+   * por sus ids (ver `ExtraImpreso`).
+   */
+  readonly impreso?: ConfigImpreso
+  /**
    * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
    * interfaz la ensena siempre: el navegador puede borrar lo que guarda.
    */
@@ -294,11 +302,15 @@ export interface Proyecto {
  *   1 · los seis bloques del Python.
  *   2 · bloques `video` y `audio`. La migracion de 1 a 2 es no hacer nada: el
  *       formato 1 es un subconjunto del 2.
+ *   3 · `impreso`, las opciones del libro impreso. Tampoco migra nada: es un
+ *       campo opcional. Pero una version 2 de la app lo tiraria al abrir una
+ *       copia, y el autor perderia su maquetacion sin enterarse.
  */
-export const VERSION_PROYECTO = 2
+export const VERSION_PROYECTO = 3
 
 /** La version minima con la que hay que guardar este libro. */
-export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'>): number {
+export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso'>>): number {
+  if (p.impreso) return 3
   const conMedios = [...p.capitulos, ...p.extras].some((c) => c.bloques.some(esMedio))
   return conMedios ? 2 : 1
 }

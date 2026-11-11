@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { componerLibro, type ImagenImpresa, type LibroCompuesto, type OpcionesImpreso, type SeccionImpresa } from '../src/core/impreso/paginar'
+import { componerLibro, type ImagenImpresa, type LibroCompuesto, type OpcionesImpreso, type SeccionDeTexto, type SeccionImpresa } from '../src/core/impreso/paginar'
 import type { PaginaCompuesta, Renglon } from '../src/core/impreso/tipos'
 import type { Bloque } from '../src/core/parser'
 import { enLinea } from '../src/core/texto'
@@ -11,7 +11,7 @@ import { azar, capitulo, fuentes, OPCIONES, parrafo, seccion } from './impreso/a
 
 const verso = (t: string): Bloque => ({ tipo: 'verso', html: enLinea(t) })
 
-function corpus(cadaEscena = 4): SeccionImpresa[] {
+function corpus(cadaEscena = 4): SeccionDeTexto[] {
   return Array.from({ length: 12 }, (_v, i) => {
     const n = i + 1
     return seccion(
@@ -29,7 +29,7 @@ function corpus(cadaEscena = 4): SeccionImpresa[] {
   })
 }
 
-const imagen = (nombre: string): ImagenImpresa | null => (nombre === 'mapa' ? { id: 'img-mapa', ancho: 800, alto: 600 } : null)
+const imagen = (nombre: string): ImagenImpresa | null => (nombre === 'mapa' ? { id: 'img-mapa', ancho: 2400, alto: 1800 } : null)
 
 const cache = new Map<string, LibroCompuesto>()
 function libro(o: Partial<OpcionesImpreso> = {}, secciones?: SeccionImpresa[]): LibroCompuesto {
@@ -313,7 +313,7 @@ describe('ilustraciones', () => {
   })
 
   it('las de antes del titulo van delante de la apertura, en la par de enfrente si se puede', () => {
-    const s: SeccionImpresa = { ...seccion(2, capitulo(2, 4)), antes: [{ nombre: 'mapa', alt: '' }] }
+    const s: SeccionDeTexto = { ...seccion(2, capitulo(2, 4)), antes: [{ nombre: 'mapa', alt: '' }] }
     const l = libro({}, [seccion(1, capitulo(1, 1)), s])
     const tipos = l.paginas.map((p) => p.tipo)
     expect(tipos).toEqual(['apertura', 'ilustracion', 'apertura', ...tipos.slice(3)])
@@ -343,10 +343,15 @@ describe('folios y cabeceras', () => {
     expect(texto.replace(/\s/gu, '')).toBe(OPCIONES.tituloLibro.replace(/\s/gu, ''))
   })
 
-  it('sin cabeceras, solo el texto', () => {
+  it('sin cabeceras, el folio sigue en su esquina y no hay mas texto en esa linea', () => {
     const l = libro({ cabeceras: false })
     const yCabecera = OPCIONES.formato.superior + OPCIONES.cuerpo - 2 * OPCIONES.interlinea
-    for (const p of deTexto(l)) expect(p.ops.filter((o) => o.op === 'texto' && Math.abs(o.y - yCabecera) < 1e-9)).toEqual([])
+    const texto = l.paginas.filter((p) => p.tipo === 'texto')
+    expect(texto.length).toBeGreaterThan(20)
+    for (const p of texto) {
+      const arriba = p.ops.filter((o) => o.op === 'texto' && Math.abs(o.y - yCabecera) < 1e-9)
+      expect(arriba.flatMap((o) => (o.op === 'texto' ? o.glifos.map((g) => g.texto) : [])).join('')).toBe(p.folio)
+    }
   })
 
   it('los folios siguen la numeracion pedida', () => {

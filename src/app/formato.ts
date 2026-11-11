@@ -23,6 +23,13 @@ export function numero(n: number, s: Separadores): string {
   return n < 0 ? `-${entero}` : entero
 }
 
+/** Un numero con hasta `cifras` decimales y sin ceros de sobra: 10,5 · 22 · 12,7. */
+export function decimal(n: number, s: Separadores, cifras = 1): string {
+  const f = Math.pow(10, cifras)
+  const r = Math.round(n * f) / f
+  return String(r).replace('.', s.decimal)
+}
+
 /** Bytes -> «7,4 MB» o «850 kB». */
 export function tamano(bytes: number, s: Separadores): string {
   if (bytes < 1e6) return `${numero(Math.max(1, Math.round(bytes / 1e3)), s)} kB`

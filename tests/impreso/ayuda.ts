@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Bloque } from '../../src/core/parser'
 import { enLinea } from '../../src/core/texto'
-import type { OpcionesImpreso, SeccionImpresa } from '../../src/core/impreso/paginar'
+import type { OpcionesImpreso, SeccionDeTexto } from '../../src/core/impreso/paginar'
 import { Fuente } from '../../src/core/impreso/sfnt'
 import type { Fuentes } from '../../src/core/impreso/tipos'
 
@@ -80,6 +80,6 @@ export function capitulo(semilla: number, parrafos: number, extra: (i: number) =
   return b
 }
 
-export function seccion(n: number, bloques: Bloque[], titulo = `El capitulo ${n}`): SeccionImpresa {
+export function seccion(n: number, bloques: Bloque[], titulo = `El capitulo ${n}`): SeccionDeTexto {
   return { numero: `Capitulo ${n}`, titulo: enLinea(titulo), bloques }
 }

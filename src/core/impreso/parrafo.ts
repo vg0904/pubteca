@@ -427,8 +427,13 @@ export class Componedor {
     const partir = o.partir && o.modo === 'justificado' ? this.particion : null
     const espacio = (cara: Cara): number => this.medir(' ', cara, o.cuerpo)
     const ragged = o.modo !== 'justificado'
-    // El estiramiento de la bandera: 3 em, como el \raggedright de TeX.
-    const bandera = 3 * o.cuerpo
+    // El estiramiento de la bandera: 3 em, como el \raggedright de TeX. Lo
+    // centrado (un titulo, una dedicatoria) estira la medida entera: con 3 em
+    // dos lineas parejas quedaban fuera de toda tolerancia, todos los cortes
+    // empataban y salia «Dicho de / la costa, que nadie recuerda…». Con la
+    // medida entera la mala nota crece con lo que falta, y gana el reparto
+    // parejo; lo que cabe en una linea sigue en una.
+    const bandera = o.modo === 'centrado' ? o.ancho : 3 * o.cuerpo
     if (o.sangria && o.sangria > 0) items.push({ t: 'caja', w: o.sangria, glifos: [] })
     const ultimaPalabra = lista.reduce((u, f, i) => (f.k === 'palabra' && /\p{L}/u.test(f.trozos.map((t) => t.texto).join('')) ? i : u), -1)
 

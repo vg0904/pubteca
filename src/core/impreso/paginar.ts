@@ -45,9 +45,20 @@ export interface OpcionesImpreso {
   readonly escena: 'adorno' | 'blanco'
   readonly adorno: string
   readonly capituloEnImpar: boolean
-  /** Las cabeceras de pagina: el titulo del libro en las pares y el del capitulo en las impares. */
+  /**
+   * Las cabeceras de pagina: el titulo del libro (o `cabeceraPar`) en las
+   * pares y el del capitulo en las impares. Sin ellas el folio sigue saliendo.
+   */
   readonly cabeceras: boolean
   readonly tituloLibro: string
+  /** Lo que va en la cabecera de las pares; por defecto, `tituloLibro` (puede ser el autor). */
+  readonly cabeceraPar?: string
+  /** Donde va el folio de las paginas de texto: en la esquina de fuera de la cabecera, o al pie. */
+  readonly folio?: 'arriba' | 'abajo'
+  /** Justificado con particion, o en bandera (sin partir). */
+  readonly alineacion?: 'justificado' | 'bandera'
+  /** Cuanto baja el titulo de una apertura, en fraccion de la pagina (0,28 por defecto). */
+  readonly caida?: number
   /** Lineas minimas de un parrafo a cada lado de un corte de pagina. */
   readonly huerfanas?: number
   readonly viudas?: number
@@ -56,19 +67,91 @@ export interface OpcionesImpreso {
   readonly folioInicial?: number
 }
 
-export interface SeccionImpresa {
+/** Como se numeran las paginas de una seccion. */
+export type Folios = 'arabigos' | 'romanos' | 'ninguno'
+
+/** Lo comun a las secciones que corren como texto (capitulos, extras, indice). */
+interface ComunDeTexto {
+  /** Si abre en impar; por defecto, `capituloEnImpar`. */
+  readonly enImpar?: boolean
+  /** Arabigos (por defecto), romanos (el numero fisico) o sin folio. */
+  readonly folios?: Folios
+  /** Los arabigos vuelven a 1 en la primera pagina de esta seccion: la del capitulo 1. */
+  readonly reiniciar?: boolean
+  /** Si sus paginas llevan cabecera; por defecto, `cabeceras`. */
+  readonly cabeceras?: boolean
+  /** La cabecera de las paginas impares; por defecto, el titulo. */
+  readonly cabecera?: string | null
+}
+
+export interface SeccionDeTexto extends ComunDeTexto {
+  readonly k?: 'texto'
   /** «Capítulo 1», o null. */
   readonly numero: string | null
   /** El titulo en HTML en linea, como lo da el parser; null si no lleva (una dedicatoria). */
   readonly titulo: string | null
-  /** La cabecera de las paginas impares; por defecto, el titulo. */
-  readonly cabecera?: string | null
   readonly bloques: readonly Bloque[]
   /** Ilustraciones marcadas antes del titulo: van en su pagina, delante de la apertura. */
   readonly antes?: readonly { readonly nombre: string; readonly alt: string }[]
-  /** Si abre en impar; por defecto, `capituloEnImpar`. */
-  readonly enImpar?: boolean
+  /**
+   * `dedicatoria`: parrafos centrados y en cursiva que empiezan a la altura
+   * de la caida, en paginas de presentacion (sin cabecera ni folio). Asi va
+   * tambien el epigrafe, como en el EPUB.
+   */
+  readonly estilo?: 'texto' | 'dedicatoria'
 }
+
+/** Una linea (o un parrafo corto) de una pagina de presentacion. */
+export interface Rotulo {
+  /** En HTML en linea, como el titulo de un capitulo. */
+  readonly html: string
+  readonly cara?: Cara
+  /** El cuerpo, en veces el del texto. */
+  readonly escala?: number
+  readonly alinear?: 'centro' | 'izquierda'
+  /** Espacio entre letras, en em. */
+  readonly espaciado?: number
+  /** Renglones en blanco antes. */
+  readonly antes?: number
+}
+
+/** Anteportada, portada, creditos, colofon: rotulos colocados en la reticula. */
+export interface SeccionDeRotulos {
+  readonly k: 'rotulos'
+  readonly enImpar: boolean
+  /** Desde que altura empieza lo de arriba, en fraccion de la pagina; por defecto, la caida. */
+  readonly desde?: number
+  /** Un logo encima de los rotulos de arriba: su nombre de imagen y que parte de la medida ocupa como mucho. */
+  readonly logo?: { readonly imagen: string; readonly ancho: number }
+  readonly arriba: readonly Rotulo[]
+  /** Lo de abajo acaba en la ultima linea de la caja (los creditos, el sello). */
+  readonly abajo?: readonly Rotulo[]
+}
+
+/** Una pagina con una imagen sola: una lamina, o la portadilla a pagina completa. */
+export interface SeccionDeImagen {
+  readonly k: 'imagen'
+  readonly imagen: string
+  readonly enImpar: boolean
+}
+
+export interface EntradaIndice {
+  /** En HTML en linea. */
+  readonly html: string
+  /** El folio de su primera pagina; vacio mientras no se sabe (o si no lo lleva). */
+  readonly folio: string
+}
+
+/** El indice con sus folios a la derecha. Se compone dos veces: ver `componerImpreso`. */
+export interface SeccionDeIndice extends ComunDeTexto {
+  readonly k: 'indice'
+  readonly titulo: string
+  readonly entradas: readonly EntradaIndice[]
+  /** El folio mas ancho que puede salir: se reserva su sitio, y el indice no cambia de paginas al rellenarse. */
+  readonly reserva: string
+}
+
+export type SeccionImpresa = SeccionDeTexto | SeccionDeRotulos | SeccionDeImagen | SeccionDeIndice
 
 export interface ImagenImpresa {
   readonly id: string
@@ -94,7 +177,7 @@ export const ADORNO_DE_RESERVA = '* * *'
 type Unidad =
   | {
       readonly k: 'texto'
-      readonly clase: 'parrafo' | 'verso' | 'sub'
+      readonly clase: 'parrafo' | 'verso' | 'sub' | 'indice'
       readonly bloque: number
       /** El grupo que no debe quedar con una linea sola a un lado del corte: el parrafo, o la estrofa. */
       readonly grupo: number
@@ -102,6 +185,8 @@ type Unidad =
       readonly cuerpo: number
       parrafo: Parrafo
       readonly sinGuion: Set<number>
+      /** Lo que va alineado a la derecha en su ultima linea: el folio de una entrada del indice. */
+      readonly derecha?: string
     }
   | { readonly k: 'blanco' }
   | { readonly k: 'escena'; readonly bloque: number }
@@ -146,6 +231,10 @@ class Paginador {
   private readonly paginas: PaginaCompuesta[] = []
   private readonly avisos: AvisoImpreso[] = []
   private numero: number
+  /** La pagina fisica que lleva el folio 1 arabigo, desde que una seccion la reinicia. */
+  private baseArabigo: number | null = null
+  /** Las imagenes ya avisadas por resolucion baja: una vez cada una. */
+  private readonly avisadas = new Set<string>()
 
   constructor(fuentes: Fuentes, o: OpcionesImpreso, imagen: (nombre: string) => ImagenImpresa | null) {
     this.c = new Componedor(fuentes, o.idioma)
@@ -181,40 +270,62 @@ class Paginador {
     return numero % 2 === 1 ? this.o.formato.interior : this.o.formato.exterior
   }
 
-  private folio(numero: number): string {
+  /** El folio de la pagina fisica `numero` con esa numeracion. */
+  private folio(numero: number, modo: Folios = 'arabigos'): string | null {
+    if (modo === 'ninguno') return null
+    if (modo === 'romanos') return romano(numero)
+    if (this.baseArabigo !== null) return String(numero - this.baseArabigo + 1)
     return String((this.o.folioInicial ?? this.o.primeraPagina ?? 1) + numero - (this.o.primeraPagina ?? 1))
   }
 
-  private emitir(tipo: TipoPagina, seccion: number, ops: Op[], renglones: Renglon[], folio: boolean): void {
-    this.paginas.push({ numero: this.numero, folio: folio ? this.folio(this.numero) : null, tipo, seccion, ops, renglones })
+  private emitir(tipo: TipoPagina, seccion: number, ops: Op[], renglones: Renglon[], folio: string | null): void {
+    this.paginas.push({ numero: this.numero, folio, tipo, seccion, ops, renglones })
     this.numero++
   }
 
   private blanca(): void {
-    this.emitir('blanca', -1, [], [], false)
+    this.emitir('blanca', -1, [], [], null)
   }
 
   // --- Una seccion -----------------------------------------------------------
 
   private seccion(s: SeccionImpresa, si: number): void {
+    if (s.k === 'rotulos') return this.seccionDeRotulos(s, si)
+    if (s.k === 'imagen') {
+      if (s.enImpar && this.numero % 2 === 0) this.blanca()
+      const img = this.imagen(s.imagen)
+      if (img) this.paginaDeIlustracion(img, si)
+      else this.avisos.push({ codigo: 'ilustracionPerdida', nombre: s.imagen })
+      return
+    }
+    const texto = s.k === 'indice' ? null : s
     const enImpar = s.enImpar ?? this.o.capituloEnImpar
-    for (const a of s.antes ?? []) {
+    for (const a of texto?.antes ?? []) {
       const img = this.imagen(a.nombre)
       if (img) this.paginaDeIlustracion(img, si)
       else this.avisos.push({ codigo: 'ilustracionPerdida', nombre: a.nombre })
     }
     if (enImpar && this.numero % 2 === 0) this.blanca()
+    // Despues del blanco: el folio 1 es el de la apertura, nunca el de la blanca de antes.
+    if (s.reiniciar) this.baseArabigo = this.numero
+    const presentacion = texto?.estilo === 'dedicatoria'
+    const modoFolio: Folios = presentacion ? 'ninguno' : (s.folios ?? 'arabigos')
+    const conCabeceras = !presentacion && (s.cabeceras ?? this.o.cabeceras)
 
-    const unidades = this.unidades(s.bloques)
+    const unidades = texto ? this.unidades(texto.bloques, presentacion) : this.unidadesDeIndice(s as SeccionDeIndice)
     let slots = this.slots(unidades)
     const plano = (html: string): string =>
       trozosDeHtml(html)
         .map((t) => t.texto)
         .join('')
-    const cabecera = s.cabecera ?? (s.titulo !== null ? plano(s.titulo) : null)
+    const titulo = texto ? texto.titulo : (s as SeccionDeIndice).titulo
+    const cabecera = s.cabecera ?? (titulo !== null ? plano(titulo) : null)
 
-    // La apertura: el titulo cae a un tercio de la pagina.
-    const apertura = this.apertura(s, si)
+    // La apertura: el titulo cae a un tercio de la pagina. Una dedicatoria
+    // no tiene titulo, pero su texto empieza a esa misma altura.
+    const apertura = presentacion
+      ? { lineas: Math.round(this.lineas * (this.o.caida ?? 0.28)), ops: [], renglones: [], titulada: false }
+      : this.apertura({ numero: texto ? texto.numero : null, titulo }, si)
     let cursor = 0
     let primera = true
     const flotantes = unidades.map((u, i) => ({ u, i })).filter((x) => x.u.k === 'ilus')
@@ -272,7 +383,10 @@ class Paginador {
           const l = u.parrafo.lineas[sl.linea] as Linea
           this.pintarLinea(ops, l, izq + u.x0, this.base(fila), u.cuerpo)
           if (l.desbordada) this.avisos.push({ codigo: 'lineaDesbordada', pagina: this.numero, texto: l.texto })
-          renglones.push({ clase: u.clase, texto: l.texto, guion: l.guion, seccion: si, bloque: u.bloque, linea: sl.enGrupo, de: sl.deGrupo, y: this.base(fila) })
+          // El folio de una entrada del indice, en su ultima linea y contra el margen de fuera.
+          const derecha = u.derecha && sl.linea === u.parrafo.lineas.length - 1 ? u.derecha : undefined
+          if (derecha) this.pintarTexto(ops, derecha, 'regular', u.cuerpo, izq + this.medida - this.c.medir(derecha, 'regular', u.cuerpo), this.base(fila))
+          renglones.push({ clase: u.clase, texto: l.texto, guion: l.guion, seccion: si, bloque: u.bloque, linea: sl.enGrupo, de: sl.deGrupo, y: this.base(fila), ...(derecha ? { derecha } : {}) })
         } else if (sl.k === 'escena' && u.k === 'escena') {
           if (this.o.escena === 'adorno') {
             // Dos renglones; el adorno, centrado entre la linea de antes y la de despues.
@@ -289,10 +403,17 @@ class Paginador {
           }
         }
       })
-      const tipo: TipoPagina = primera && apertura.titulada ? 'apertura' : 'texto'
-      if (tipo === 'texto' && this.o.cabeceras) this.pintarCabecera(ops, this.numero % 2 === 0 ? this.o.tituloLibro : cabecera)
-      if (tipo === 'apertura') this.pintarFolioAlPie(ops)
-      this.emitir(tipo, si, ops, renglones, true)
+      const tipo: TipoPagina = presentacion ? 'presentacion' : primera && apertura.titulada ? 'apertura' : 'texto'
+      const folio = this.folio(this.numero, modoFolio)
+      if (tipo === 'texto') {
+        const arriba = conCabeceras ? (this.numero % 2 === 0 ? (this.o.cabeceraPar ?? this.o.tituloLibro) : cabecera) : null
+        if (this.o.folio === 'abajo') {
+          if (arriba) this.pintarCabecera(ops, arriba, null)
+          if (folio) this.pintarFolioAlPie(ops, folio)
+        } else if (arriba || folio) this.pintarCabecera(ops, arriba, folio)
+      }
+      if (tipo === 'apertura' && folio) this.pintarFolioAlPie(ops, folio)
+      this.emitir(tipo, si, ops, renglones, folio)
       cursor = fin + 1
       primera = false
 
@@ -318,7 +439,7 @@ class Paginador {
 
   // --- De bloques a unidades, y de unidades a renglones ------------------------
 
-  private unidades(bloques: readonly Bloque[]): Unidad[] {
+  private unidades(bloques: readonly Bloque[], presentacion = false): Unidad[] {
     const o = this.o
     const u: Unidad[] = []
     let grupo = 0
@@ -328,6 +449,17 @@ class Paginador {
     const sangria = o.sangria * o.cuerpo
     const margenVerso = 1.6 * o.cuerpo
     const hayAlgo = (): boolean => u.some((x) => x.k !== 'ilus')
+    if (presentacion) {
+      // Dedicatoria y epigrafe: cada parrafo (o verso) centrado y en cursiva,
+      // sin partir, como en el EPUB. Lo demas no cabe en una dedicatoria.
+      bloques.forEach((b, bi) => {
+        if (b.tipo !== 'p' && b.tipo !== 'verso') return
+        const parrafo = this.c.parrafo(trozosDeHtml(b.html, 'cursiva'), { cuerpo: o.cuerpo, ancho: this.medida, modo: 'centrado', partir: false })
+        u.push({ k: 'texto', clase: 'parrafo', bloque: bi, grupo: ++grupo, x0: 0, cuerpo: o.cuerpo, parrafo, sinGuion: new Set() })
+      })
+      return u
+    }
+    const modo = o.alineacion === 'bandera' ? 'bandera' : 'justificado'
     bloques.forEach((b, bi) => {
       const esVerso = b.tipo === 'verso' || b.tipo === 'estrofa'
       if (enPoema && !esVerso && b.tipo !== 'ilus' && b.tipo !== 'medio') {
@@ -336,7 +468,7 @@ class Paginador {
       }
       switch (b.tipo) {
         case 'p': {
-          const parrafo = this.c.parrafo(trozosDeHtml(b.html), { cuerpo: o.cuerpo, ancho: this.medida, modo: 'justificado', partir: o.partir, sangria: primero ? 0 : sangria })
+          const parrafo = this.c.parrafo(trozosDeHtml(b.html), { cuerpo: o.cuerpo, ancho: this.medida, modo, partir: o.partir, sangria: primero ? 0 : sangria })
           u.push({ k: 'texto', clase: 'parrafo', bloque: bi, grupo: ++grupo, x0: 0, cuerpo: o.cuerpo, parrafo, sinGuion: new Set() })
           primero = false
           break
@@ -383,6 +515,23 @@ class Paginador {
     return u
   }
 
+  /** Cada entrada del indice, en bandera, dejando a la derecha el sitio de su folio. */
+  private unidadesDeIndice(s: SeccionDeIndice): Unidad[] {
+    const o = this.o
+    const hueco = this.c.medir(s.reserva, 'regular', o.cuerpo) + o.cuerpo
+    return s.entradas.map((e, i) => ({
+      k: 'texto',
+      clase: 'indice',
+      bloque: i,
+      grupo: i + 1,
+      x0: 0,
+      cuerpo: o.cuerpo,
+      parrafo: this.c.parrafo(trozosDeHtml(e.html), { cuerpo: o.cuerpo, ancho: this.medida - hueco, modo: 'bandera', partir: false }),
+      sinGuion: new Set<number>(),
+      ...(e.folio ? { derecha: e.folio } : {}),
+    }))
+  }
+
   private slots(unidades: readonly Unidad[]): Slot[] {
     // Cuantas lineas tiene cada grupo (un parrafo, o una estrofa entera).
     const total = new Map<number, number>()
@@ -423,13 +572,13 @@ class Paginador {
 
   // --- Apertura, cabeceras, folios, adornos, ilustraciones ----------------------
 
-  private apertura(s: SeccionImpresa, si: number): { lineas: number; ops: Op[]; renglones: Renglon[]; titulada: boolean } {
+  private apertura(s: { readonly numero: string | null; readonly titulo: string | null }, si: number): { lineas: number; ops: Op[]; renglones: Renglon[]; titulada: boolean } {
     const o = this.o
     const ops: Op[] = []
     const renglones: Renglon[] = []
     if (s.titulo === null && s.numero === null) return { lineas: 0, ops, renglones, titulada: false }
     const izq = this.izquierda(this.numero)
-    let fila = Math.round(this.lineas * 0.28)
+    let fila = Math.round(this.lineas * (o.caida ?? 0.28))
     if (s.numero) {
       const cuerpo = o.cuerpo * 0.8
       const p = this.c.parrafo([{ texto: s.numero.toLocaleUpperCase(o.idioma), cara: 'regular' }], { cuerpo, ancho: this.medida, modo: 'centrado', partir: false, espaciado: 0.25 })
@@ -465,7 +614,7 @@ class Paginador {
     for (const l of p.lineas) this.pintarLinea(ops, l, izq, y, this.o.cuerpo)
   }
 
-  private pintarCabecera(ops: Op[], texto: string | null): void {
+  private pintarCabecera(ops: Op[], texto: string | null, folio: string | null): void {
     const o = this.o
     const cuerpo = o.cuerpo * 0.9
     const y = this.base(0) - 2 * o.interlinea
@@ -479,18 +628,79 @@ class Paginador {
       const l = p.lineas[0]
       if (l) this.pintarLinea(ops, l, izq, y, cuerpo)
     }
+    if (!folio) return
     // El folio, en la esquina de fuera.
-    const folio = this.folio(this.numero)
     const w = this.c.medir(folio, 'regular', cuerpo)
     const x = this.numero % 2 === 1 ? izq + this.medida - w : izq
     this.pintarTexto(ops, folio, 'regular', cuerpo, x, y)
   }
 
-  private pintarFolioAlPie(ops: Op[]): void {
+  private pintarFolioAlPie(ops: Op[], folio: string): void {
     const cuerpo = this.o.cuerpo * 0.9
-    const folio = this.folio(this.numero)
     const w = this.c.medir(folio, 'regular', cuerpo)
     this.pintarTexto(ops, folio, 'regular', cuerpo, this.izquierda(this.numero) + (this.medida - w) / 2, this.base(this.lineas - 1) + 2 * this.o.interlinea)
+  }
+
+  // --- Paginas de presentacion ---------------------------------------------------
+
+  /**
+   * Una pagina de rotulos: lo de arriba desde la altura pedida (con el logo
+   * delante, si lo hay) y lo de abajo acabando en la ultima linea de la caja.
+   * Todo en la reticula: un rotulo de texto ocupa sus renglones, y uno grande
+   * (un titulo) los que cubra con su propio paso, como en una apertura.
+   */
+  private seccionDeRotulos(s: SeccionDeRotulos, si: number): void {
+    if (s.enImpar && this.numero % 2 === 0) this.blanca()
+    const o = this.o
+    const ops: Op[] = []
+    const renglones: Renglon[] = []
+    const izq = this.izquierda(this.numero)
+    const preparar = (r: Rotulo): { r: Rotulo; lineas: readonly Linea[]; cuerpo: number; paso: number; filas: number } => {
+      const cuerpo = o.cuerpo * (r.escala ?? 1)
+      const p = this.c.parrafo(trozosDeHtml(r.html, r.cara ?? 'regular'), { cuerpo, ancho: this.medida, modo: r.alinear === 'izquierda' ? 'bandera' : 'centrado', partir: false, espaciado: r.espaciado ?? 0 })
+      const grande = cuerpo > o.cuerpo * 1.05
+      const paso = grande ? cuerpo * 1.25 : o.interlinea
+      const filas = (r.antes ?? 0) + (grande ? Math.ceil(((p.lineas.length - 1) * paso) / o.interlinea) + 1 : p.lineas.length)
+      return { r, lineas: p.lineas, cuerpo, paso, filas }
+    }
+    const colocar = (x: ReturnType<typeof preparar>, fila: number): number => {
+      const f0 = fila + (x.r.antes ?? 0)
+      x.lineas.forEach((l, i) => {
+        const y = this.base(f0) + i * x.paso
+        this.pintarLinea(ops, l, izq, y, x.cuerpo)
+        renglones.push({ clase: 'rotulo', texto: l.texto, guion: false, seccion: si, bloque: -1, linea: i, de: x.lineas.length, y })
+      })
+      return fila + x.filas
+    }
+
+    let fila = Math.round(this.lineas * (s.desde ?? o.caida ?? 0.28))
+    if (s.logo) {
+      const img = this.imagen(s.logo.imagen)
+      if (img) {
+        const alto = o.formato.alto - o.formato.superior - o.formato.inferior
+        const escala = Math.min((this.medida * s.logo.ancho) / img.ancho, (alto * 0.4) / img.alto)
+        const w = img.ancho * escala
+        const h = img.alto * escala
+        ops.push({ op: 'imagen', id: img.id, x: izq + (this.medida - w) / 2, y: this.base(fila) - o.cuerpo, ancho: w, alto: h })
+        this.resolucion(img, w, h)
+        fila += Math.ceil(h / o.interlinea) + 1
+      } else this.avisos.push({ codigo: 'ilustracionPerdida', nombre: s.logo.imagen })
+    }
+    for (const r of s.arriba) fila = colocar(preparar(r), fila)
+    const abajo = (s.abajo ?? []).map(preparar)
+    if (abajo.length > 0) {
+      let f = Math.max(fila, this.lineas - abajo.reduce((n, x) => n + x.filas, 0))
+      for (const x of abajo) f = colocar(x, f)
+    }
+    this.emitir('presentacion', si, ops, renglones, null)
+  }
+
+  /** Avisa una vez de cada imagen que, impresa a ese tamaño, queda bajo 300 ppi. */
+  private resolucion(img: ImagenImpresa, w: number, h: number): void {
+    const ppi = Math.min(img.ancho / (w / 72), img.alto / (h / 72))
+    if (ppi >= 300 || this.avisadas.has(img.id)) return
+    this.avisadas.add(img.id)
+    this.avisos.push({ codigo: 'resolucionBaja', nombre: img.id, ppi: Math.floor(ppi) })
   }
 
   private pintarTexto(ops: Op[], texto: string, cara: Cara, cuerpo: number, x: number, y: number): void {
@@ -505,6 +715,22 @@ class Paginador {
     const h = img.alto * escala
     const x = this.izquierda(this.numero) + (this.medida - w) / 2
     const y = f.superior + (alto - h) / 2
-    this.emitir('ilustracion', si, [{ op: 'imagen', id: img.id, x, y, ancho: w, alto: h }], [], false)
+    this.resolucion(img, w, h)
+    this.emitir('ilustracion', si, [{ op: 'imagen', id: img.id, x, y, ancho: w, alto: h }], [], null)
   }
+}
+
+/** El numero en romanos, en minusculas: los folios de los preliminares (Chicago 1.6). */
+export function romano(n: number): string {
+  const tabla: readonly [number, string][] = [
+    [1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'], [100, 'c'], [90, 'xc'],
+    [50, 'l'], [40, 'xl'], [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i'],
+  ]
+  let r = ''
+  let x = Math.max(0, Math.floor(n))
+  for (const [v, s] of tabla) while (x >= v) {
+    r += s
+    x -= v
+  }
+  return r
 }

@@ -88,3 +88,29 @@ Para que las dos tiendas lleven imagenes distintas, el motor se corre DOS veces
 libro. El core no se entera: sigue construyendo los dos EPUB de un solo
 proyecto, con sus golden tests intactos.
 
+
+## El libro impreso
+
+`ui/Impreso.tsx` se carga con `import()` al entrar en «Libro impreso», y
+`impreso/` hace el resto:
+
+- `preparar.ts` (puro, se prueba en Node): del libro de la app a lo que lee
+  el compositor, por el MISMO `exportar()` que los EPUB. Para componer bastan
+  las medidas de las imagenes, asi que se exporta con bytes vacios. El orden de
+  las paginas extra se guarda por ids de la app y llega al core por el nombre
+  de su archivo.
+- `motor.ts` + `impreso.worker.ts`: componer y escribir el PDF, en su hilo.
+  El PDF sale de la ULTIMA composicion, la que el autor esta viendo.
+- `hilo.ts`: la cola. Mientras se compone, de lo que llega solo espera el
+  ultimo (arrastrar un deslizador no encola veinte libros). Sin Worker, el
+  motor corre en la pagina.
+- `fuentes.ts` trae las letras de `public/fuentes/impreso/` la primera vez.
+- `lienzo.ts` pinta una pagina con los contornos de los glifos que da el core:
+  las mismas operaciones que el PDF. La miniatura entera va en gris por CSS.
+- `grises.ts`: cada imagen, en gris, aplanada sobre blanco y a 300 ppi del
+  tamaño al que se imprime (sin ampliar nunca).
+- `avisos.ts` agrupa los avisos por clase, con su nivel. Nada bloquea.
+
+Las opciones viven en `Proyecto.impreso`, opcional: un libro que nunca las
+toco se guarda igual que antes, y uno que si, como formato 3 (ver
+`VERSION_PROYECTO`).

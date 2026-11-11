@@ -933,3 +933,52 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .mandos-kindle .ayuda { margin: 0; }
 .por-tienda .estimado { margin: 0.4rem 0 0; }
 .por-tienda .alerta { margin: 0.2rem 0; }
+
+/* ---------------------------------------------------------------------------
+   Libro impreso: las opciones a la izquierda; a la derecha, la medida en vivo,
+   los avisos, el PDF y el plan de paginas en pares. Las paginas son papel:
+   blancas tambien en modo oscuro, y en gris, como sale un interior en B/N.
+   --------------------------------------------------------------------------- */
+.pantalla-impreso { max-width: 76rem; }
+.impreso-cabecera { max-width: 46rem; }
+.impreso-cuerpo { display: grid; grid-template-columns: minmax(17rem, 25rem) minmax(0, 1fr); gap: 1.6rem; align-items: start; margin-top: 1rem; }
+@media (max-width: 860px) { .impreso-cuerpo { grid-template-columns: minmax(0, 1fr); } }
+.impreso-opciones { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
+.opciones-impreso { border: 1px solid var(--borde); border-radius: 10px; padding: 0.7rem 0.9rem 0.8rem; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.opciones-impreso > legend { font-weight: 700; padding: 0 0.3rem; }
+.opciones-impreso .opciones-impreso { border: 0; padding: 0; }
+.opciones-impreso .opciones-impreso > legend { font-weight: 600; font-size: 0.85rem; padding: 0 0 0.2rem; }
+.opciones-impreso h3 { font-size: 0.95rem; margin: 0.5rem 0 0; }
+.opciones-impreso .ayuda { margin: 0; }
+.opciones-impreso select, .opciones-impreso input[type='range'] { width: 100%; }
+.opciones-impreso output { font-weight: 400; color: var(--suave); }
+.fila-opciones { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; align-items: baseline; }
+.extras-impreso { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.extras-impreso li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 0.4rem; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid var(--borde); }
+.extras-impreso li.fuera strong { color: var(--suave); text-decoration: line-through; }
+.extras-impreso select { width: auto; }
+.extras-impreso .mover { display: flex; gap: 0.2rem; }
+@media (max-width: 420px) { .extras-impreso li { grid-template-columns: minmax(0, 1fr) auto; } .extras-impreso select { grid-column: 1; } }
+
+.impreso-resultado { min-width: 0; display: flex; flex-direction: column; gap: 1rem; }
+.medida-en-vivo { position: sticky; top: 3.4rem; z-index: 5; background: var(--papel); border: 1px solid var(--borde); border-radius: 10px; padding: 0.6rem 0.9rem; box-shadow: var(--sombra); }
+.medida-en-vivo p { margin: 0; }
+.medida-cifras { display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; align-items: baseline; }
+.medida-cifras .fuera-de-rango { color: var(--ambar); }
+.componiendo { color: var(--suave); font-style: italic; }
+.avisos-impreso h2, .pdf-impreso h2, .plan-de-paginas h2 { font-size: 1.15rem; margin: 0 0 0.3rem; }
+
+.pliegos { list-style: none; margin: 0.6rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem 1.4rem; }
+.pliego { display: flex; gap: 0; }
+.hoja { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.hoja-vacia { cursor: default; }
+.pagina-impresa { display: block; background: #fff; filter: grayscale(1); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(60, 40, 20, 0.12); }
+.hoja-par .pagina-impresa { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), -2px 2px 6px rgba(60, 40, 20, 0.12); }
+.hoja:hover .pagina-impresa, .hoja:focus-visible .pagina-impresa { outline: 2px solid var(--acento); outline-offset: 1px; }
+.hoja.en-blanco .pagina-impresa { opacity: 0.8; }
+.hoja-pie { font-size: 0.7rem; color: var(--suave); max-width: 84px; text-align: center; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hoja-numero { font-weight: 700; color: var(--texto); }
+.en-blanco .hoja-pie { font-style: italic; }
+.ver-pagina { max-width: min(600px, calc(100vw - 2rem)); }
+.ver-pagina-hoja { display: flex; justify-content: center; margin: 0.6rem 0; }
+.ver-pagina-mandos { display: flex; justify-content: space-between; gap: 0.6rem; }

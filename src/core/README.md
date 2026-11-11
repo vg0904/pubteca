@@ -17,11 +17,12 @@ ser deterministas y el `await` se contagia a todo el pipeline. No lo vuelvas asy
 ## `impreso/`: el libro en papel
 
 El compositor del PDF interior, igual de puro y sincrono. La app le pasa las
-fuentes ya leidas (`Fuente` sobre sus bytes) y los bloques del parser; el core
+fuentes ya leidas (`Fuente` sobre sus bytes) y el proyecto del motor; el core
 no carga nada.
 
 - `sfnt.ts` lee una fuente TrueType: `cmap`, avances, kerning de GPOS y
-  ligaduras de GSUB, y si su licencia deja incrustarla (`fsType`).
+  ligaduras de GSUB, si su licencia deja incrustarla (`fsType`), y el
+  contorno de cada glifo como trazado SVG (con el pinta la vista previa).
 - `guiones.ts` parte palabras: Liang con los patrones de `patrones/` (generados,
   no se editan a mano) y encima las reglas de la RAE.
 - `parrafo.ts` compone un parrafo con Knuth y Plass: nunca tres guiones
@@ -37,3 +38,16 @@ no carga nada.
 - `pdf.ts` escribe el PDF/X-1a: PDF 1.3, solo gris, fuentes en subconjunto
   con ToUnicode, cajas con sangrado, OutputIntent por nombre. Determinista:
   el reloj se inyecta y el /ID es un hash del contenido.
+- `familias.ts` (las seis letras, con su cuerpo recomendado), `formatos.ts`
+  (los cortes de KDP y lo que pide cada destino: margenes minimos, el medianil
+  por numero de paginas, cuantas paginas, la ultima en blanco) y `config.ts`
+  (las opciones del impreso con su valor por defecto; `normalizarConfig` es la
+  unica puerta, para el almacen, la copia y el compositor).
+- `contenido.ts` lee lo que se imprime del MISMO proyecto del motor que da los
+  EPUB, con las reglas de `libro.ts`.
+- `plan.ts` decide que paginas lleva el libro y en que orden (anteportada,
+  laminas, portada, creditos, extras, indice, capitulos, colofon), como se
+  numeran (romanos o nada en los preliminares, arabigos desde el capitulo 1),
+  y lo compone entero con los margenes del destino: el medianil de KDP sale
+  del numero real de paginas (`buscarMedianil`) y el indice lleva los folios
+  reales (dos vueltas).

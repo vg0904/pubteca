@@ -1,0 +1,28 @@
+22 paginas · 35 lineas por pagina · 59 caracteres por linea · 1 vuelta(s)
+margenes (mm): interior 22.0, exterior 16.0, superior 20.0, inferior 22.0 · medianil minimo 9.5
+
+  1     · presentacion anteportada El faro de las mareas quietas
+  2     · blanca
+  3     · presentacion portada     El faro de las mareas quietas
+  4     · presentacion creditos    El faro de las mareas quietas
+  5     · presentacion epigrafe    El mar no devuelve nada que no haya pedido antes.
+  6     · blanca
+  7   vii apertura     indice      Índice   [ix 1 3 5 9]
+  8     · blanca
+  9    ix apertura     extra       Nota de la autora
+ 10     · blanca
+ 11     1 apertura     capitulo    CAPÍTULO 1
+ 12     2 texto        capitulo    Al amanecer bajó con los ojos irritados y una certeza nueva:
+ 13     3 apertura     capitulo    CAPÍTULO 2
+ 14     · ilustracion  capitulo    [imagen]
+ 15     5 apertura     capitulo    CAPÍTULO 3
+ 16     · blanca
+ 17     · presentacion dedicatoria A quien deja una luz encendida
+ 18     · blanca
+ 19     9 apertura     extra       Agradecimientos
+ 20     · blanca
+ 21     · presentacion colofon     Este libro se compuso en Source Serif 4.
+ 22     · blanca
+
+{"codigo":"resolucionBaja","nombre":"cap02-01","ppi":133}
+{"codigo":"paginasFueraDeRango","paginas":22,"min":24,"max":776}

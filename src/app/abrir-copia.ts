@@ -29,6 +29,7 @@ import { inflateSync, unzipSync } from 'fflate'
 import { crc32 } from '../core/crc32'
 import { claseDe } from '../core/medios'
 import { CONFIG_DEFAULT, leerConfig, si } from '../core/config'
+import { normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
 import { inspeccionarImagen, type InfoImagen } from '../core/imagen-inspeccion'
 import { Imagenes } from '../core/imagenes'
 import { EXT_EXTRA, EXT_IMG, EXT_TEXTO } from '../core/libro'
@@ -708,14 +709,18 @@ function proyectoDeJson(
   }
 
   const extras: Extra[] = []
+  // Los ids de los extras se regeneran, y el orden del impreso va por id.
+  const idsDeExtras = new Map<string, string>()
   for (const e of Array.isArray(x['extras']) ? x['extras'] : []) {
     const tipo = esObjeto(e) ? e['tipo'] : null
     if (!esObjeto(e) || (tipo !== 'dedicatoria' && tipo !== 'epigrafe' && tipo !== 'conTitulo')) {
       descartados += 1
       continue
     }
+    const id = nuevoId('extra')
+    if (typeof e['id'] === 'string') idsDeExtras.set(e['id'], id)
     extras.push({
-      id: nuevoId('extra'),
+      id,
       donde: e['donde'] === 'inicio' ? 'inicio' : 'final',
       tipo,
       titulo: tramosDe(e['titulo']) ?? [],
@@ -754,9 +759,12 @@ function proyectoDeJson(
       : undefined
 
   if (descartados > 0) avisos.push({ clave: 'descartados', detalle: String(descartados) })
+  // Las opciones del impreso, si las hay, campo a campo como todo lo demas; un
+  // extra que ya no esta se queda fuera del orden (ver `ordenDeExtras`).
+  const impreso = x['impreso'] !== undefined ? normalizarConfig(x['impreso'], (v) => idsDeExtras.get(v) ?? `perdido-${v}`) : undefined
   return {
     id: nuevoId('libro'),
-    version: versionNecesaria({ capitulos, extras }),
+    version: versionNecesaria({ capitulos, extras, impreso }),
     datos: { ...datos, idioma: idioma ?? 'es', portadilla },
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),
@@ -765,6 +773,7 @@ function proyectoDeJson(
     kindle: entregaDe(x['kindle']),
     kindlePorImagen: kindlePorImagenDe(x['kindlePorImagen'], imagenId),
     ...(descargado ? { descargado } : {}),
+    ...(impreso ? { impreso } : {}),
   }
 }
 
@@ -960,11 +969,24 @@ export function leerCopia(
       copia: {
         ...r.copia,
         // Lo que el dialecto no guarda y el json si, y no depende del texto.
-        proyecto: { ...dePapel, ...(proyecto.descargado ? { descargado: proyecto.descargado } : {}), ...(creada !== null ? { ultimaCopia: creada } : {}) },
+        proyecto: {
+          ...dePapel,
+          ...(proyecto.descargado ? { descargado: proyecto.descargado } : {}),
+          ...(creada !== null ? { ultimaCopia: creada } : {}),
+          // El impreso no depende del texto, salvo el orden de los extras, que
+          // va por ids que los archivos no tienen: ese vuelve al del EPUB.
+          ...(proyecto.impreso ? { impreso: sinOrdenDeExtras(proyecto.impreso), version: 3 } : {}),
+        },
         avisos: [{ clave: 'editadaFuera', detalle: '' }, ...r.copia.avisos],
         creada,
       },
     }
   }
   return { ok: true, copia: { origen: 'pubteca', proyecto, imagenes, medios, avisos, creada } }
+}
+
+/** Las opciones del impreso sin su orden propio de extras. */
+function sinOrdenDeExtras(c: ConfigImpreso): ConfigImpreso {
+  const { extras: _fuera, ...resto } = c
+  return resto
 }

@@ -23,6 +23,10 @@ export interface TextosLibro {
   readonly derechos: string
   readonly publicadoPor: (sello: string) => string
   readonly edicionDigital: (anio: string) => string
+  /** La linea de los creditos del libro impreso: nunca «Edición digital». */
+  readonly edicionImpresa: (anio: string) => string
+  /** El colofon del impreso, si el autor lo pide: con que letra se compuso. */
+  readonly colofon: (fuente: string) => string
   readonly dedicatoria: string
   readonly epigrafe: string
   /** El alt de una ilustracion sin descripcion. */
@@ -74,6 +78,8 @@ const ES: TextosLibro = {
   derechos: 'Derechos',
   publicadoPor: (s) => `Publicado por ${s}`,
   edicionDigital: (a) => `Edición digital, ${a}`,
+  edicionImpresa: (a) => `Edición impresa, ${a}`,
+  colofon: (f) => `Este libro se compuso en ${f}.`,
   dedicatoria: 'Dedicatoria',
   epigrafe: 'Epígrafe',
   ilustracion: 'Ilustración',
@@ -99,6 +105,8 @@ const EN: TextosLibro = {
   derechos: 'Copyright',
   publicadoPor: (s) => `Published by ${s}`,
   edicionDigital: (a) => `Digital edition, ${a}`,
+  edicionImpresa: (a) => `Print edition, ${a}`,
+  colofon: (f) => `This book was set in ${f}.`,
   dedicatoria: 'Dedication',
   epigrafe: 'Epigraph',
   ilustracion: 'Illustration',
@@ -124,6 +132,8 @@ const PT: TextosLibro = {
   derechos: 'Direitos',
   publicadoPor: (s) => `Publicado por ${s}`,
   edicionDigital: (a) => `Edição digital, ${a}`,
+  edicionImpresa: (a) => `Edição impressa, ${a}`,
+  colofon: (f) => `Este livro foi composto em ${f}.`,
   dedicatoria: 'Dedicatória',
   epigrafe: 'Epígrafe',
   ilustracion: 'Ilustração',
@@ -149,6 +159,8 @@ const CA: TextosLibro = {
   derechos: 'Drets',
   publicadoPor: (s) => `Publicat per ${s}`,
   edicionDigital: (a) => `Edició digital, ${a}`,
+  edicionImpresa: (a) => `Edició impresa, ${a}`,
+  colofon: (f) => `Aquest llibre s’ha compost en ${f}.`,
   dedicatoria: 'Dedicatòria',
   epigrafe: 'Epígraf',
   ilustracion: 'Il·lustració',
@@ -174,6 +186,8 @@ const GL: TextosLibro = {
   derechos: 'Dereitos',
   publicadoPor: (s) => `Publicado por ${s}`,
   edicionDigital: (a) => `Edición dixital, ${a}`,
+  edicionImpresa: (a) => `Edición impresa, ${a}`,
+  colofon: (f) => `Este libro compúxose en ${f}.`,
   dedicatoria: 'Dedicatoria',
   epigrafe: 'Epígrafe',
   ilustracion: 'Ilustración',
@@ -199,6 +213,8 @@ const EU: TextosLibro = {
   derechos: 'Eskubideak',
   publicadoPor: (s) => `Argitaratzailea: ${s}`,
   edicionDigital: (a) => `Edizio digitala, ${a}`,
+  edicionImpresa: (a) => `Edizio inprimatua, ${a}`,
+  colofon: (f) => `Liburu hau ${f} letrarekin konposatu da.`,
   dedicatoria: 'Eskaintza',
   epigrafe: 'Epigrafea',
   ilustracion: 'Ilustrazioa',
@@ -224,6 +240,8 @@ const FR: TextosLibro = {
   derechos: 'Droits',
   publicadoPor: (s) => `Publié par ${s}`,
   edicionDigital: (a) => `Édition numérique, ${a}`,
+  edicionImpresa: (a) => `Édition imprimée, ${a}`,
+  colofon: (f) => `Ce livre a été composé en ${f}.`,
   dedicatoria: 'Dédicace',
   epigrafe: 'Épigraphe',
   ilustracion: 'Illustration',
@@ -249,6 +267,8 @@ const IT: TextosLibro = {
   derechos: 'Diritti',
   publicadoPor: (s) => `Pubblicato da ${s}`,
   edicionDigital: (a) => `Edizione digitale, ${a}`,
+  edicionImpresa: (a) => `Edizione a stampa, ${a}`,
+  colofon: (f) => `Questo libro è stato composto in ${f}.`,
   dedicatoria: 'Dedica',
   epigrafe: 'Epigrafe',
   ilustracion: 'Illustrazione',
@@ -274,6 +294,8 @@ const DE: TextosLibro = {
   derechos: 'Impressum',
   publicadoPor: (s) => `Verlag: ${s}`,
   edicionDigital: (a) => `Digitale Ausgabe, ${a}`,
+  edicionImpresa: (a) => `Druckausgabe, ${a}`,
+  colofon: (f) => `Gesetzt aus der ${f}.`,
   dedicatoria: 'Widmung',
   epigrafe: 'Motto',
   ilustracion: 'Illustration',

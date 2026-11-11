@@ -16,6 +16,7 @@
  * obliga a serializar cadenas gigantes en cada autoguardado.
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { normalizarConfig } from '../core/impreso/config'
 import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, versionNecesaria, type DatosLibro, type Proyecto } from './modelo'
 
 const NOMBRE_BD = 'pubteca'
@@ -174,8 +175,9 @@ function esFaltaDeEspacio(e: unknown): boolean {
  * Guarda el proyecto. El `modificado` lo pone quien llama: el reloj se inyecta.
  *
  * Con la version MINIMA que necesita, no con la que traiga en memoria: un libro
- * sin audio ni video se guarda como 1, igual que antes de que existieran, y
- * uno con medios como 2. Ver `VERSION_PROYECTO`.
+ * sin audio ni video se guarda como 1, igual que antes de que existieran, uno
+ * con medios como 2, y uno con opciones del impreso como 3. Ver
+ * `VERSION_PROYECTO`.
  */
 export async function guardarProyecto(
   db: Almacen,
@@ -257,6 +259,8 @@ export async function leerProyecto(
       // decidir que pagina construye, asi que un valor raro no puede pasar.
       portadilla: disenoPortadilla(puestos.portadilla),
     },
+    // Lo del impreso se normaliza entero: lo lee el compositor.
+    ...(p.impreso !== undefined ? { impreso: normalizarConfig(p.impreso) } : {}),
   }
 }
 

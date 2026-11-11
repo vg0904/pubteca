@@ -64,6 +64,7 @@ export class Fuente {
   private readonly pares: ((a: number, b: number) => number | undefined)[] = []
   private readonly ligaduras = new Map<number, Ligadura[]>()
   private readonly cacheKern = new Map<number, number>()
+  private readonly contornos = new Map<number, string>()
 
   constructor(bytes: Uint8Array) {
     // Copia propia: un Buffer de Node comparte memoria, y su slice() no copia
@@ -386,4 +387,155 @@ export class Fuente {
     })
     return { glifos, ancho, faltan }
   }
+
+  /**
+   * El contorno de un glifo como trazado SVG (`M`, `L`, `Q`, `Z`), en
+   * unidades de la fuente y con la y hacia ARRIBA, como en la fuente. Con el
+   * pinta la vista previa de la app los mismos glifos que lleva el PDF: lo que
+   * se ve es lo que se imprime, sin depender de que el navegador cargue la
+   * letra. Vacio para un glifo sin contornos (el espacio).
+   */
+  contorno(g: number): string {
+    let c = this.contornos.get(g)
+    if (c === undefined) {
+      c = trazado(this.puntos(g, 0))
+      this.contornos.set(g, c)
+    }
+    return c
+  }
+
+  /** Los contornos de un glifo; los de un compuesto, con cada pieza ya movida y escalada. */
+  private puntos(g: number, profundidad: number): Punto[][] {
+    const loca = this.tablas.get('loca')
+    const glyf = this.tablas.get('glyf')
+    if (!loca || !glyf || profundidad > 8 || g < 0 || g >= this.numGlifos) return []
+    const dv = this.dv
+    const pos = (i: number): number => (this.locaLarga ? dv.getUint32(loca.off + i * 4) : dv.getUint16(loca.off + i * 2) * 2)
+    const a = glyf.off + pos(g)
+    if (glyf.off + pos(g + 1) <= a) return []
+    const n = dv.getInt16(a)
+    if (n >= 0) return this.simple(a, n)
+    const r: Punto[][] = []
+    const f2 = (o: number): number => dv.getInt16(o) / 16384
+    let p = a + 10
+    for (;;) {
+      const banderas = dv.getUint16(p)
+      const pieza = dv.getUint16(p + 2)
+      p += 4
+      let dx = 0
+      let dy = 0
+      // ARGS_ARE_XY_VALUES: un desplazamiento. Sin ella son puntos que casar (raro): se dejan en su sitio.
+      const xy = (banderas & 0x0002) !== 0
+      if (banderas & 0x0001) {
+        if (xy) [dx, dy] = [dv.getInt16(p), dv.getInt16(p + 2)]
+        p += 4
+      } else {
+        if (xy) [dx, dy] = [dv.getInt8(p), dv.getInt8(p + 1)]
+        p += 2
+      }
+      let [xx, yx, xy2, yy] = [1, 0, 0, 1]
+      if (banderas & 0x0008) {
+        xx = yy = f2(p)
+        p += 2
+      } else if (banderas & 0x0040) {
+        ;[xx, yy] = [f2(p), f2(p + 2)]
+        p += 4
+      } else if (banderas & 0x0080) {
+        ;[xx, yx, xy2, yy] = [f2(p), f2(p + 2), f2(p + 4), f2(p + 6)]
+        p += 8
+      }
+      for (const contorno of this.puntos(pieza, profundidad + 1)) {
+        r.push(contorno.map((q) => ({ x: xx * q.x + xy2 * q.y + dx, y: yx * q.x + yy * q.y + dy, sobre: q.sobre })))
+      }
+      if (!(banderas & 0x0020)) break
+    }
+    return r
+  }
+
+  /** Un glifo simple: sus puntos con las banderas, las x y las y en deltas. */
+  private simple(a: number, n: number): Punto[][] {
+    const dv = this.dv
+    const fines: number[] = []
+    for (let i = 0; i < n; i++) fines.push(dv.getUint16(a + 10 + i * 2))
+    const total = n > 0 ? (fines[n - 1] as number) + 1 : 0
+    let p = a + 10 + n * 2
+    p += 2 + dv.getUint16(p)
+    const banderas: number[] = []
+    while (banderas.length < total) {
+      const f = dv.getUint8(p++)
+      banderas.push(f)
+      if (f & 0x08) for (let rep = dv.getUint8(p++); rep > 0; rep--) banderas.push(f)
+    }
+    const coordenadas = (corta: number, misma: number): number[] => {
+      const r: number[] = []
+      let v = 0
+      for (const f of banderas) {
+        if (f & corta) {
+          const d = dv.getUint8(p++)
+          v += f & misma ? d : -d
+        } else if (!(f & misma)) {
+          v += dv.getInt16(p)
+          p += 2
+        }
+        r.push(v)
+      }
+      return r
+    }
+    const xs = coordenadas(0x02, 0x10)
+    const ys = coordenadas(0x04, 0x20)
+    const r: Punto[][] = []
+    let desde = 0
+    for (const fin of fines) {
+      const c: Punto[] = []
+      for (let i = desde; i <= fin; i++) c.push({ x: xs[i] as number, y: ys[i] as number, sobre: ((banderas[i] as number) & 0x01) !== 0 })
+      r.push(c)
+      desde = fin + 1
+    }
+    return r
+  }
+}
+
+interface Punto {
+  readonly x: number
+  readonly y: number
+  /** Sobre la curva; si no, es el punto de control de una cuadratica. */
+  readonly sobre: boolean
+}
+
+const n2 = (v: number): string => String(Math.round(v * 100) / 100)
+
+/**
+ * Los contornos de TrueType a trazado SVG. Dos puntos de control seguidos
+ * llevan entre medias un punto sobre la curva que no se escribe (el punto
+ * medio); un contorno puede empezar fuera de la curva.
+ */
+function trazado(contornos: readonly Punto[][]): string {
+  let d = ''
+  for (const c of contornos) {
+    if (c.length === 0) continue
+    const i0 = c.findIndex((q) => q.sobre)
+    const medio = (a: Punto, b: Punto): Punto => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, sobre: true })
+    // Se empieza en un punto sobre la curva; si no hay ninguno, en el medio de los dos primeros.
+    const pts = i0 >= 0 ? [...c.slice(i0), ...c.slice(0, i0)] : c
+    const inicio = i0 >= 0 ? (pts[0] as Punto) : medio(c[0] as Punto, (c[1] ?? c[0]) as Punto)
+    d += `M${n2(inicio.x)} ${n2(inicio.y)}`
+    let control: Punto | null = null
+    // Sin puntos sobre la curva se arranca en el medio del 0 y el 1: los
+    // controles van del 1 en adelante, y el 0 cierra la vuelta.
+    const resto = i0 >= 0 ? pts.slice(1) : [...c.slice(1), c[0] as Punto]
+    for (const q of [...resto, inicio]) {
+      if (q.sobre) {
+        d += control ? `Q${n2(control.x)} ${n2(control.y)} ${n2(q.x)} ${n2(q.y)}` : `L${n2(q.x)} ${n2(q.y)}`
+        control = null
+      } else {
+        if (control) {
+          const m = medio(control, q)
+          d += `Q${n2(control.x)} ${n2(control.y)} ${n2(m.x)} ${n2(m.y)}`
+        }
+        control = q
+      }
+    }
+    d += 'Z'
+  }
+  return d
 }

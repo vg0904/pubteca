@@ -38,7 +38,7 @@ export type Op =
       readonly alto: number
     }
 
-export type ClaseLinea = 'parrafo' | 'verso' | 'sub' | 'escena' | 'titulo' | 'numero'
+export type ClaseLinea = 'parrafo' | 'verso' | 'sub' | 'escena' | 'titulo' | 'numero' | 'rotulo' | 'indice'
 
 /**
  * Lo que hay en cada renglon de una pagina, en palabras. Lo usan los tests de
@@ -57,9 +57,15 @@ export interface Renglon {
   readonly de: number
   /** La linea base, desde arriba. */
   readonly y: number
+  /** Lo que va alineado a la derecha en ese renglon: el folio de una entrada del indice. */
+  readonly derecha?: string
 }
 
-export type TipoPagina = 'texto' | 'apertura' | 'blanca' | 'ilustracion'
+/**
+ * `presentacion`: una pagina que se mira y no se lee seguida (anteportada,
+ * portada, creditos, dedicatoria, colofon). No lleva cabecera ni folio.
+ */
+export type TipoPagina = 'texto' | 'apertura' | 'blanca' | 'ilustracion' | 'presentacion'
 
 export interface PaginaCompuesta {
   /** El numero fisico: la 1 es la primera impar (recto). */
@@ -81,3 +87,17 @@ export type AvisoImpreso =
   | { readonly codigo: 'guionEnImpar'; readonly pagina: number }
   | { readonly codigo: 'ilustracionPerdida'; readonly nombre: string }
   | { readonly codigo: 'sinParticion'; readonly idioma: string }
+  /** Una imagen que impresa a ese tamaño queda por debajo de 300 ppi (KDP los pide). */
+  | { readonly codigo: 'resolucionBaja'; readonly nombre: string; readonly ppi: number }
+  // Los del plan (ver plan.ts): no salen de componer una pagina, sino del libro entero.
+  /** Un margen elegido por debajo de lo que pide el destino: se subio, en mm. */
+  | { readonly codigo: 'margenSubido'; readonly lado: 'interior' | 'exterior' | 'superior' | 'inferior'; readonly elegido: number; readonly usado: number; readonly porque: 'medianil' | 'destino' | 'cabecera' | 'folio' }
+  | { readonly codigo: 'paginasFueraDeRango'; readonly paginas: number; readonly min: number; readonly max: number }
+  /** Caracteres por linea fuera de 45–75 (Bringhurst). */
+  | { readonly codigo: 'medidaFuera'; readonly caracteres: number }
+  | { readonly codigo: 'mediosFuera'; readonly medios: number }
+  | { readonly codigo: 'laminasOmitidas'; readonly laminas: number }
+  | { readonly codigo: 'isbnNoValido'; readonly isbn: string }
+  | { readonly codigo: 'sinIsbn' }
+  /** Mas paginas en blanco seguidas de las que admite KDP. Las reglas no deberian llegar nunca. */
+  | { readonly codigo: 'blancasSeguidas'; readonly desde: number; readonly cuantas: number }

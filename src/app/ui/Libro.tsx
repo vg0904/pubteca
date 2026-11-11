@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   capituloActual,
   extraActual,
@@ -21,6 +21,12 @@ import { PantallaPortada } from './Portada'
 import { SelectorIdioma } from './SelectorIdioma'
 
 export type EstadoGuardado = 'guardado' | 'guardando' | 'error' | 'sinAlmacen' | 'conflicto'
+
+/**
+ * El libro impreso, cargado solo al entrar: trae el compositor, los patrones
+ * de particion y el escritor de PDF, y quien no imprime no los descarga.
+ */
+const PantallaImpreso = lazy(() => import('./Impreso'))
 
 /** Dias a partir de los cuales la copia se marca en ambar. */
 const DIAS_COPIA_VIEJA = 7
@@ -187,7 +193,7 @@ export function PantallaLibro({
   const capitulo = capituloActual(estado)
   const extra = extraActual(estado)
   const separador = p.datos.separadorDeEscena || '* * *'
-  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar']
+  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar', 'impreso']
 
   // Al cambiar de capitulo o de seccion se empieza por arriba, como al pasar
   // de pagina; si no, se hereda el desplazamiento del anterior.
@@ -295,6 +301,11 @@ export function PantallaLibro({
             <PantallaExtras proyecto={p} extra={extra} foco={estado.foco} separador={separador} bloqueActivo={estado.bloqueActivo} />
           )}
           {estado.seccion === 'descargar' && <PantallaDescargar estado={estado} />}
+          {estado.seccion === 'impreso' && (
+            <Suspense fallback={<p className="ayuda">{ui.impreso.medida.componiendo}</p>}>
+              <PantallaImpreso estado={estado} />
+            </Suspense>
+          )}
         </main>
       </div>
     </div>

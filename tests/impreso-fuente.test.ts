@@ -107,3 +107,61 @@ describe('trampa 7 del plan: Buffer de Node', () => {
     expect(f.bytes.buffer).not.toBe(buf.buffer)
   })
 })
+
+describe('el contorno de cada glifo (lo que pinta la vista previa)', () => {
+  /** La caja que la propia fuente declara en la cabecera del glifo, leida a mano. */
+  function cabecera(f: Fuente, g: number): { contornos: number; caja: [number, number, number, number] } | null {
+    const dv = new DataView(f.bytes.buffer, f.bytes.byteOffset, f.bytes.byteLength)
+    const loca = (f.tablas.get('loca') as { off: number }).off
+    const glyf = (f.tablas.get('glyf') as { off: number }).off
+    const pos = (i: number): number => (f.locaLarga ? dv.getUint32(loca + i * 4) : dv.getUint16(loca + i * 2) * 2)
+    if (pos(g + 1) <= pos(g)) return null
+    const a = glyf + pos(g)
+    return { contornos: dv.getInt16(a), caja: [dv.getInt16(a + 2), dv.getInt16(a + 4), dv.getInt16(a + 6), dv.getInt16(a + 8)] }
+  }
+  /** La caja de todos los puntos del trazado (los de control incluidos, como la de TrueType). */
+  function cajaDelTrazado(d: string): [number, number, number, number] {
+    const n = [...d.matchAll(/-?\d+(?:\.\d+)?/gu)].map((m) => Number(m[0]))
+    const xs = n.filter((_v, i) => i % 2 === 0)
+    const ys = n.filter((_v, i) => i % 2 === 1)
+    return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
+  }
+
+  for (const cara of ['regular', 'cursiva', 'negrita', 'negritaCursiva'] as const) {
+    it(`${cara}: cada trazado ocupa la caja que la fuente declara (exacta en los simples; ±1 en los compuestos, que fontTools redondea)`, () => {
+      const f = fuentes()[cara]
+      let compuestos = 0
+      for (const c of 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789áéíóúüñÁÉÍÓÚÑ¿¡«»—…&%') {
+        const g = f.glifo(c.codePointAt(0) as number)
+        const h = cabecera(f, g)
+        expect(h, c).not.toBeNull()
+        const { contornos, caja } = h as NonNullable<typeof h>
+        if (contornos < 0) compuestos++
+        const t = cajaDelTrazado(f.contorno(g))
+        t.forEach((v, i) => expect(Math.abs(v - (caja[i] as number)), `${cara} ${c} [${i}]`).toBeLessThanOrEqual(contornos < 0 ? 1 : 0.005))
+      }
+      // Que de verdad se prueban compuestos (las letras con tilde lo son).
+      expect(compuestos).toBeGreaterThan(5)
+    })
+  }
+
+  it('un trazado por cada contorno que declara el glifo, abierto y cerrado; un compuesto suma los de sus piezas', () => {
+    const f = fuentes().regular
+    const g = (c: string): number => f.glifo(c.codePointAt(0) as number)
+    const cuenta = (c: string, letra: 'M' | 'Z'): number => (f.contorno(g(c)).match(new RegExp(letra, 'gu')) ?? []).length
+    for (const c of 'olBiao') {
+      const declarados = (cabecera(f, g(c)) as { contornos: number }).contornos
+      expect(declarados, c).toBeGreaterThan(0)
+      expect([cuenta(c, 'M'), cuenta(c, 'Z')], c).toEqual([declarados, declarados])
+    }
+    // La «ñ» es la «n» mas su tilde: tiene los de la «n» y alguno mas.
+    expect((cabecera(f, g('ñ')) as { contornos: number }).contornos).toBeLessThan(0)
+    expect(cuenta('ñ', 'M')).toBeGreaterThan(cuenta('n', 'M'))
+  })
+
+  it('el espacio no tiene contorno, y el trazado empieza en un punto (M) y solo usa M, L, Q y Z', () => {
+    const f = fuentes().regular
+    expect(f.contorno(f.glifo(0x20))).toBe('')
+    expect(f.contorno(f.glifo(0x61))).toMatch(/^M[-\d. LQMZ]+Z$/u)
+  })
+})
