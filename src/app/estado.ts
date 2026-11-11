@@ -24,7 +24,7 @@ import { KINDLE_PROPIO_POR_DEFECTO, type KindlePropio } from './imagen-ajuste'
 import {
   DATOS_POR_DEFECTO,
   ENTREGA_KINDLE_POR_DEFECTO,
-  VERSION_PROYECTO,
+  versionNecesaria,
   idsDeImagenes,
   textoDeTramos,
   type Bloque,
@@ -256,7 +256,8 @@ export function capituloConTexto(c: Capitulo): boolean {
 export function proyectoVacio(id: string, capitulo: string, bloque: string): Proyecto {
   return {
     id,
-    version: VERSION_PROYECTO,
+    // Un libro nuevo no tiene medios: el formato minimo. Ver VERSION_PROYECTO.
+    version: versionNecesaria({ capitulos: [], extras: [] }),
     datos: DATOS_POR_DEFECTO,
     capitulos: [{ id: capitulo, etiqueta: 'Capítulo 1', titulo: [], aperturas: [], bloques: [parrafoVacio(bloque)] }],
     extras: [],
@@ -991,7 +992,13 @@ export function reducir(e: Estado, a: Accion): Estado {
       if (a.viejo === a.nuevo || !idsDeImagenes(p).has(a.viejo)) return e
       const cambiarId = (id: string): string => (id === a.viejo ? a.nuevo : id)
       const enBloques = (bloques: readonly Bloque[]): readonly Bloque[] =>
-        bloques.map((b) => (b.tipo === 'ilustracion' && b.imagenId === a.viejo ? { ...b, imagenId: a.nuevo } : b))
+        bloques.map((b) =>
+          b.tipo === 'ilustracion' && b.imagenId === a.viejo
+            ? { ...b, imagenId: a.nuevo }
+            : b.tipo === 'video' && b.posterId === a.viejo
+              ? { ...b, posterId: a.nuevo }
+              : b,
+        )
       const portada: Partial<Record<RolPortada, string>> = {}
       for (const [rol, id] of Object.entries(p.portada) as [RolPortada, string][]) portada[rol] = cambiarId(id)
       // El ajuste propio de Kindle va POR ID DE IMAGEN, asi que tambien se

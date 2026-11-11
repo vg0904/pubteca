@@ -210,12 +210,28 @@ export type NombreDeImagen = (imagenId: string) => string
 
 const ID_TAL_CUAL: NombreDeImagen = (id) => id
 
+/** La descripcion de una marca: recortada, sin «]» y con las barras escapadas. */
+function descripcionDeMarca(alt: string, que: string, avisos: Aviso[]): string {
+  // La marca RECORTA la descripcion y la DESESCAPA al leerla, asi que aqui
+  // se recorta y se escapan las barras invertidas. Y no puede llevar «]»,
+  // que cerraria la marca antes de tiempo.
+  if (alt.includes(']')) {
+    avisos.push({
+      que: `Descripción de ${que}: «${alt}»`,
+      porque: 'La descripción no puede llevar un corchete de cierre «]»: cerraría la marca.',
+      sugerencia: 'Quita el corchete de la descripción.',
+    })
+  }
+  return limpiarTexto(alt).replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
+}
+
 /** Serializa un bloque a sus lineas del dialecto. */
 function lineasDeBloque(
   b: Bloque,
   separador: string,
   avisos: Aviso[],
   nombreDeImagen: NombreDeImagen,
+  nombreDeMedio: NombreDeImagen,
 ): string[] {
   switch (b.tipo) {
     case 'parrafo':
@@ -246,19 +262,15 @@ function lineasDeBloque(
     case 'ilustracion': {
       // El nombre de archivo se genera al exportar; aqui va el id, que la capa
       // de exportacion traduce. Ver app/exportar.ts.
-      //
-      // La marca RECORTA la descripcion y la DESESCAPA al leerla, asi que aqui
-      // se recorta y se escapan las barras invertidas. Y no puede llevar «]»,
-      // que cerraria la marca antes de tiempo.
-      if (b.alt.includes(']')) {
-        avisos.push({
-          que: `Descripción de una ilustración: «${b.alt}»`,
-          porque: 'La descripción no puede llevar un corchete de cierre «]»: cerraría la marca.',
-          sugerencia: 'Quita el corchete de la descripción.',
-        })
-      }
-      const alt = limpiarTexto(b.alt).replace(/\]/g, '').trim().replace(/\\/g, '\\\\')
+      const alt = descripcionDeMarca(b.alt, 'una ilustración', avisos)
       return [`[ilustración: ${nombreDeImagen(b.imagenId)} | ${alt}]`]
+    }
+    case 'video':
+    case 'audio': {
+      // El poster no se escribe: es la imagen de medios/ con el MISMO nombre
+      // que el video, y eso lo decide la exportacion.
+      const alt = descripcionDeMarca(b.alt, b.tipo === 'video' ? 'un video' : 'un audio', avisos)
+      return [`[${b.tipo}: ${nombreDeMedio(b.medioId)} | ${alt}]`]
     }
   }
 }
@@ -312,6 +324,7 @@ export function serializarCapitulo(
   cap: Capitulo,
   separador: string,
   nombreDeImagen: NombreDeImagen = ID_TAL_CUAL,
+  nombreDeMedio: NombreDeImagen = ID_TAL_CUAL,
 ): Serializado {
   const avisos: Aviso[] = []
   const lineas: string[] = []
@@ -324,7 +337,7 @@ export function serializarCapitulo(
   lineas.push('')
 
   for (const b of cap.bloques) {
-    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen))
+    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen, nombreDeMedio))
     lineas.push('')
   }
 
@@ -345,7 +358,7 @@ export function serializarExtra(
     lineas.push('')
   }
   for (const b of extra.bloques) {
-    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen))
+    lineas.push(...lineasDeBloque(b, separador, avisos, nombreDeImagen, ID_TAL_CUAL))
     lineas.push('')
   }
 

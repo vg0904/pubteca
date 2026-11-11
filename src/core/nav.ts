@@ -12,6 +12,19 @@ import { textosLibro } from './textos-libro'
 export interface EntradaIndice {
   readonly texto: string
   readonly href: string
+  /**
+   * Los audios y videos del capitulo. Apple recomienda que el indice tenga
+   * entradas que lleven a cada medio. Van ANIDADOS bajo su capitulo y en el
+   * orden del libro: puestos al final del indice, EPUBCheck da NAV-011 (el
+   * indice tiene que seguir el orden de lectura). Medido en la fase 0.
+   */
+  readonly hijos?: readonly EntradaIndice[]
+}
+
+function item(e: EntradaIndice): string {
+  const a = `<a href="${soloNombre(e.href)}">${esc(e.texto)}</a>`
+  if (!e.hijos || e.hijos.length === 0) return `<li>${a}</li>`
+  return `<li>${a}\n<ol>\n${e.hijos.map(item).join('\n')}\n</ol>\n</li>`
 }
 
 /** El nombre de archivo de un href, sin la carpeta. */
@@ -27,9 +40,7 @@ export function nav(
 ): string {
   // Los href del indice son SOLO el nombre del archivo, porque nav.xhtml vive
   // en la misma carpeta texto/. El NCX y el guide si llevan la carpeta.
-  const items = indice
-    .map((e) => `<li><a href="${soloNombre(e.href)}">${esc(e.texto)}</a></li>`)
-    .join('\n')
+  const items = indice.map(item).join('\n')
 
   const t = textosLibro(idioma)
   const marcas: string[] = []

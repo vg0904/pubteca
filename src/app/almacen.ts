@@ -16,7 +16,7 @@
  * obliga a serializar cadenas gigantes en cada autoguardado.
  */
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, type DatosLibro, type Proyecto } from './modelo'
+import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, versionNecesaria, type DatosLibro, type Proyecto } from './modelo'
 
 const NOMBRE_BD = 'pubteca'
 /** Version del ESQUEMA de IndexedDB (distinta de la version del proyecto). */
@@ -135,7 +135,13 @@ function esFaltaDeEspacio(e: unknown): boolean {
   return e instanceof Error && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED')
 }
 
-/** Guarda el proyecto. El `modificado` lo pone quien llama: el reloj se inyecta. */
+/**
+ * Guarda el proyecto. El `modificado` lo pone quien llama: el reloj se inyecta.
+ *
+ * Con la version MINIMA que necesita, no con la que traiga en memoria: un libro
+ * sin audio ni video se guarda como 1, igual que antes de que existieran, y
+ * uno con medios como 2. Ver `VERSION_PROYECTO`.
+ */
 export async function guardarProyecto(
   db: Almacen,
   proyecto: Proyecto,
@@ -149,8 +155,9 @@ export async function guardarProyecto(
   esperado?: number | null,
 ): Promise<'ok' | 'conflicto'> {
   try {
+    const guardado = { ...proyecto, version: versionNecesaria(proyecto), modificado }
     if (esperado === undefined) {
-      await db.put('proyectos', { ...proyecto, modificado })
+      await db.put('proyectos', guardado)
       return 'ok'
     }
     // Leer y escribir en la MISMA transaccion: entre las dos no puede colarse
@@ -161,7 +168,7 @@ export async function guardarProyecto(
       await tx.done
       return 'conflicto'
     }
-    await tx.store.put({ ...proyecto, modificado })
+    await tx.store.put(guardado)
     await tx.done
     return 'ok'
   } catch (e) {

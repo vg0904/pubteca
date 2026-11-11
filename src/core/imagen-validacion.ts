@@ -21,7 +21,13 @@ export const ALTO_RECOMENDADO_PORTADA = 2500
 /** Por encima de esto conviene comprimir: la tarifa de Kindle se cobra por MB. */
 export const PESO_NOTABLE = 600_000
 
-export type RolImagen = 'ilustracion' | 'portada' | 'logo'
+/**
+ * `poster` es de Pubteca (el Python no tiene video): la imagen que Apple Books
+ * enseña antes de reproducir un video. Solo viaja a Apple Books, asi que no se
+ * le avisa de la transparencia (eso es de Kindle), y como su tamaño lo manda el
+ * video, tampoco se le piden las medidas de una ilustracion.
+ */
+export type RolImagen = 'ilustracion' | 'portada' | 'logo' | 'poster'
 
 /**
  * `revisar_imagen()`. Emite avisos y notas segun el rol de la imagen.
@@ -54,7 +60,7 @@ export function revisarImagen(
   }
 
   // Orden fijo: alfa, cmyk, p3, pixeles.
-  if (info.alfa) {
+  if (info.alfa && rol !== 'poster') {
     dg.aviso(
       `${etiqueta}: tiene transparencia. Kindle la convierte en blanco; aplánala sobre su fondo.`,
     )
@@ -72,6 +78,8 @@ export function revisarImagen(
       `${etiqueta}: ${w}×${h} px = ${formatoFijo((w * h) / 1e6, 1)} millones de píxeles; Apple Books admite hasta 5.6. Redúcela.`,
     )
   }
+
+  if (rol === 'poster') return
 
   if (rol === 'portada') {
     if (Math.min(w, h) < MIN_LADO_CORTO_PORTADA) {

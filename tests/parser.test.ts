@@ -17,6 +17,8 @@ function bloqueATupla(b: Bloque): Tupla {
   switch (b.tipo) {
     case 'ilus':
       return ['ilus', b.nombre, b.alt]
+    case 'medio':
+      return ['medio', b.clase, b.nombre, b.alt]
     case 'escena':
       return ['escena']
     case 'estrofa':

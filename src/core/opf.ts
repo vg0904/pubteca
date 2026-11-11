@@ -9,6 +9,7 @@ import type { Config } from './config'
 import type { Fuente } from './fuentes'
 import type { Registro } from './imagenes'
 import type { Pagina } from './libro'
+import type { RegistroMedio } from './medios'
 import { esc } from './texto'
 import { textosLibro } from './textos-libro'
 
@@ -26,6 +27,8 @@ export interface OpfEntrada {
   readonly todasConAlt: boolean
   /** `dcterms:modified` ya formateado en UTC, sin milisegundos. Se inyecta. */
   readonly ahora: string
+  /** Audio y video. Solo los recibe el EPUB de Apple Books. */
+  readonly medios?: readonly RegistroMedio[]
 }
 
 export function opf(e: OpfEntrada): string {
@@ -66,8 +69,12 @@ export function opf(e: OpfEntrada): string {
 
   // Metadatos de accesibilidad. Los pide Apple y los exige la Ley Europea de
   // Accesibilidad, y cambian segun haya o no descripcion en TODAS las imagenes.
+  const t = textosLibro(e.idioma)
+  const medios = e.medios ?? []
   md.push('<meta property="schema:accessMode">textual</meta>')
-  if (e.imagenes.length > 0) {
+  if (medios.length > 0) {
+    md.push(...accesibilidadConMedios(e, medios))
+  } else if (e.imagenes.length > 0) {
     md.push('<meta property="schema:accessMode">visual</meta>')
     md.push('<meta property="schema:accessModeSufficient">textual,visual</meta>')
     if (e.todasConAlt) {
@@ -81,11 +88,18 @@ export function opf(e: OpfEntrada): string {
     '<meta property="schema:accessibilityFeature">tableOfContents</meta>',
     '<meta property="schema:accessibilityFeature">readingOrder</meta>',
     '<meta property="schema:accessibilityFeature">structuralNavigation</meta>',
-    '<meta property="schema:accessibilityHazard">none</meta>',
+    // Con video nadie ha comprobado si hay destellos: decir «none» seria
+    // afirmar algo que no se sabe.
+    `<meta property="schema:accessibilityHazard">${medios.length > 0 ? 'unknown' : 'none'}</meta>`,
   )
-  const t = textosLibro(e.idioma)
   let resumen = t.resumenAccesibilidad
   if (e.imagenes.length > 0) resumen += e.todasConAlt ? t.conDescripciones : t.sinDescripciones
+  if (medios.length > 0) {
+    resumen += t.conMedios(
+      medios.filter((m) => m.clase === 'video').length,
+      medios.filter((m) => m.clase === 'audio').length,
+    )
+  }
   md.push(`<meta property="schema:accessibilitySummary">${esc(resumen)}</meta>`)
 
   const man: string[] = [
@@ -99,6 +113,9 @@ export function opf(e: OpfEntrada): string {
   for (const img of e.imagenes) {
     const prop = e.conPortada && img === e.portadaImg ? ' properties="cover-image"' : ''
     man.push(`<item id="${img.id}" href="${img.href}" media-type="${img.media}"${prop}/>`)
+  }
+  for (const m of medios) {
+    man.push(`<item id="${m.id}" href="${m.href}" media-type="${m.media}"/>`)
   }
   // Las fuentes solo van en Apple Books.
   for (const f of e.conPortada ? e.fuentes : []) {
@@ -143,6 +160,29 @@ export function opf(e: OpfEntrada): string {
   </guide>
 </package>
 `
+}
+
+/**
+ * Los modos de acceso de un libro con audio o video.
+ *
+ * Se lee con todos los sentidos que hagan falta y con ninguno menos: sin
+ * subtitulos ni transcripcion (fuera de esta ronda), el audio solo se oye y el
+ * video solo se ve y se oye, asi que la unica combinacion suficiente es la de
+ * todos los modos que el libro usa. Afirmar que basta el texto seria falso.
+ */
+function accesibilidadConMedios(e: OpfEntrada, medios: readonly RegistroMedio[]): string[] {
+  const hayVideo = medios.some((m) => m.clase === 'video')
+  const hayAudio = medios.some((m) => m.clase === 'audio')
+  const modos = ['textual']
+  if (e.imagenes.length > 0 || hayVideo) modos.push('visual')
+  if (hayAudio || hayVideo) modos.push('auditory')
+  const md = modos.slice(1).map((m) => `<meta property="schema:accessMode">${m}</meta>`)
+  md.push(`<meta property="schema:accessModeSufficient">${modos.join(',')}</meta>`)
+  // Las imagenes con su descripcion siguen siendo verdad aunque haya video.
+  if (e.imagenes.length > 0 && e.todasConAlt) {
+    md.push('<meta property="schema:accessibilityFeature">alternativeText</meta>')
+  }
+  return md
 }
 
 /** `dcterms:modified` en UTC, sin milisegundos: EPUBCheck rechaza el formato con ellos. */

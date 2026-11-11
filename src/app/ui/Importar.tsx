@@ -51,6 +51,14 @@ function Extracto({ b, url }: { b: Bloque; url: (id: string) => string | undefin
           {ui.importar.versos}: {b.estrofas.flat().map((v) => v.texto).join(' / ')}
         </p>
       )
+    case 'video':
+    case 'audio':
+      return (
+        <p className="extracto medio">
+          {b.tipo === 'video' ? ui.importar.video : ui.importar.audio}
+          {b.alt ? `: ${b.alt}` : ''}
+        </p>
+      )
     case 'ilustracion': {
       const u = url(b.imagenId)
       return (

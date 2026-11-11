@@ -76,6 +76,10 @@ export function bloquesDelModelo(bloques: readonly Bloque[]): BloqueCore[] {
         // de tiempo: el serializador avisa y lo quita.
         salida.push({ tipo: 'ilus', nombre: b.imagenId, alt: b.alt.replace(/\]/g, '').trim() })
         break
+      case 'video':
+      case 'audio':
+        salida.push({ tipo: 'medio', clase: b.tipo, nombre: b.medioId, alt: b.alt.replace(/\]/g, '').trim() })
+        break
     }
   }
   return salida

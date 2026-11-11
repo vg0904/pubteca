@@ -87,6 +87,32 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
     )
   }
 
+  // Audio y video: lo que no entro, lo que no tiene descripcion, y que Kindle
+  // no los recibe. Ninguno de estos mensajes sale en un libro sin medios.
+  const medioUsado = new Set([...libro.medios.usados.values()].map((u) => u.origen.ruta))
+  for (const [, p] of libro.medios.disponibles) {
+    if (!medioUsado.has(p.ruta)) {
+      dg.aviso(`medios/${p.nombre}: no está marcado en ningún capítulo, así que no entró al libro.`)
+    }
+  }
+  if (libro.medios.sinDescripcion.length > 0) {
+    dg.nota(
+      'Audio y video sin descripción (la leen los lectores de pantalla): ' +
+        libro.medios.sinDescripcion.join('; '),
+    )
+  }
+  const { videos, audios } = libro.medios.cuenta()
+  if (videos + audios > 0) {
+    const partes = [
+      ...(videos > 0 ? [`${videos} ${videos === 1 ? 'video' : 'videos'}`] : []),
+      ...(audios > 0 ? [`${audios} ${audios === 1 ? 'audio' : 'audios'}`] : []),
+    ]
+    dg.nota(
+      `${partes.join(' y ')} solo van en el EPUB de Apple Books: KDP no acepta libros con audio ni video, ` +
+        'así que el de Kindle sale sin ellos.',
+    )
+  }
+
   const hayCapitulos = libro.resumenCaps.length > 0
   if (!hayCapitulos) {
     return {
@@ -109,7 +135,8 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
   // Apple Books: Baskerville del sistema mas la fuente incluida de respaldo.
   // Kindle: SIN fuente, el lector usa la suya. Asi el archivo pesa menos y
   // baja la tarifa de entrega.
-  const cssApple = cssLibro(fuentes, (cfg.fuente ?? '').trim())
+  const medios = [...libro.medios.usados.values()]
+  const cssApple = cssLibro(fuentes, (cfg.fuente ?? '').trim(), medios.length > 0)
   const cssKindle = cssLibro([], '')
 
   const resultados: Resultado[] = []
@@ -117,7 +144,9 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
     ['Kindle', false],
     ['AppleBooks', true],
   ] as const) {
-    const paginas: Pagina[] = libro.paginas.filter((p) => esApple || p.seccion !== 'portada')
+    const paginas: Pagina[] = libro.paginas.filter(
+      (p) => esApple || (p.seccion !== 'portada' && !p.soloApple),
+    )
     const imgs = [...libro.imagenes.usadas.values()].filter(
       (u) => esApple || (u !== portadaImg && !u.soloApple),
     )
@@ -146,13 +175,14 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
             inicioLectura: libro.inicioLectura,
             todasConAlt,
             ahora,
+            ...(esApple && medios.length > 0 ? { medios } : {}),
           }),
         ),
       },
       { ruta: 'OEBPS/toc.ncx', datos: utf8(ncx(libro.indice, cfg.titulo, libro.idioma, uid)) },
       {
         ruta: 'OEBPS/texto/nav.xhtml',
-        datos: utf8(libro.nav(esApple && portadaImg !== null)),
+        datos: utf8(libro.nav(esApple && portadaImg !== null, esApple)),
       },
       { ruta: 'OEBPS/estilos/estilo.css', datos: utf8(esApple ? cssApple : cssKindle) },
     )
@@ -167,6 +197,9 @@ export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Cons
       archivos.push({ ruta: `OEBPS/${u.href}`, datos: u.origen.bytes })
     }
     if (esApple) {
+      for (const m of medios) {
+        archivos.push({ ruta: `OEBPS/${m.href}`, datos: m.origen.bytes })
+      }
       for (const f of fuentes) {
         archivos.push({ ruta: `OEBPS/${f.href}`, datos: f.origen.bytes })
       }
@@ -211,9 +244,12 @@ function comprobarReferencias(
   // Se escanea lo que REALMENTE se empaqueta para esta tienda, no el cuerpo de
   // Apple: la portadilla de Kindle lleva el titulo como texto y no referencia
   // ningun logo, asi que mirar el cuerpo equivocado da falsos positivos.
+  //
+  // Se mira todo `src` y todo `poster`, no solo los de <img>: un video trae
+  // su archivo y su poster, y un audio su archivo.
   for (const a of archivos) {
     if (!a.ruta.endsWith('.xhtml')) continue
-    for (const m of decodificador.decode(a.datos).matchAll(/<img[^>]+src="\.\.\/([^"]+)"/gu)) {
+    for (const m of decodificador.decode(a.datos).matchAll(/\b(?:src|poster)="\.\.\/([^"]+)"/gu)) {
       const ruta = m[1] as string
       if (!presentes.has(ruta)) faltan.add(ruta)
     }

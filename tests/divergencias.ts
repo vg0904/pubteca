@@ -279,6 +279,22 @@ export const DE_COMPORTAMIENTO = [
     donde: 'src/core/libro.ts (portadilla)',
   },
   {
+    nombre: 'Audio y video en Apple Books',
+    motivo:
+      'Funcion NUEVA: el Python no conoce el audio ni el video. Las marcas «[video: nombre | ' +
+      'descripcion]» y «[audio: ...]» las imprimiria como un parrafo con corchetes; aqui son un ' +
+      'bloque «medio» que va DENTRO del texto (no parte el capitulo, no reinicia el parrafo ' +
+      'primero), con sus archivos en medios/ y el poster del video al lado, con el mismo nombre. ' +
+      'Solo llegan al EPUB de Apple Books: KDP no acepta libros con audio ni video, asi que el de ' +
+      'Kindle se construye sin esos bloques, y una pagina que solo tenia medios no existe alli. El ' +
+      'media-type del audio es audio/mp4 y no el audio/m4a del ejemplo de Apple, porque EPUBCheck ' +
+      'rechaza ese con RSC-032. Las entradas del indice van anidadas bajo su capitulo: al final del ' +
+      'indice dan NAV-011. Un libro sin medios produce los mismos bytes que antes: la hoja de ' +
+      'estilo solo lleva las reglas de medios si hay medios, y los golden lo fijan. Su propio ' +
+      'fixture es tests/fixtures/libro-medios, y su test tests/medios.test.ts.',
+    donde: 'src/core/parser.ts, secuencia.ts, medios.ts, libro.ts, opf.ts, nav.ts, css.ts',
+  },
+  {
     nombre: 'n_ilus muerto',
     motivo:
       'seccion_con_titulo declaraba un n_ilus que solo contaba las ilustraciones del cuerpo, ' +

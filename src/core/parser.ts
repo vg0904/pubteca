@@ -4,16 +4,28 @@
 import { desescapar, enLinea, limpiarTitulo, lineasDe } from './texto'
 
 /**
- * Los seis tipos de bloque del motor. Es TODO lo que el EPUB sabe
- * representar: la interfaz no puede ofrecer nada que no quepa aqui.
+ * Los tipos de bloque del motor. Es TODO lo que el EPUB sabe representar: la
+ * interfaz no puede ofrecer nada que no quepa aqui.
+ *
+ * Eran seis, los del Python. `medio` (audio o video) es de Pubteca y solo
+ * existe en el EPUB de Apple Books: KDP no admite libros con audio ni video, y
+ * la version de Kindle se construye sin ellos (ver `Libro.seccionConTitulo`).
  */
 export type Bloque =
   | { readonly tipo: 'ilus'; readonly nombre: string; readonly alt: string }
+  | {
+      readonly tipo: 'medio'
+      readonly clase: ClaseMedio
+      readonly nombre: string
+      readonly alt: string
+    }
   | { readonly tipo: 'escena' }
   | { readonly tipo: 'verso'; readonly html: string }
   | { readonly tipo: 'estrofa' }
   | { readonly tipo: 'sub'; readonly html: string }
   | { readonly tipo: 'p'; readonly html: string }
+
+export type ClaseMedio = 'video' | 'audio'
 
 export interface Parseado {
   /** null si el archivo esta vacio. */
@@ -29,6 +41,16 @@ export interface Parseado {
  * acento y sin el.
  */
 export const RE_ILUS = /^\[\s*ilustraci[oó]n\s*:\s*([^\]|]+?)\s*(?:\|\s*([^\]]*?)\s*)?\]$/iu
+
+/**
+ * Marca de audio o video: `[video: nombre | descripcion]`, `[audio: ...]`.
+ * La misma forma que la de ilustracion, para que se escriba igual. Admite
+ * «vídeo» con tilde, que es como se escribe en España.
+ *
+ * DIVERGENCIA: el Python no la conoce y la imprimiria como un parrafo. Ver
+ * tests/divergencias.ts.
+ */
+export const RE_MEDIO = /^\[\s*(v[ií]deo|audio)\s*:\s*([^\]|]+?)\s*(?:\|\s*([^\]]*?)\s*)?\]$/iu
 
 /** Cambio de escena: tres o mas de `* - _`, o una linea de simbolos. */
 export const RE_ESCENA = /^(?:[*\-_]\s*){3,}$|^[⁂❦✦◆•~]+$/u
@@ -66,7 +88,10 @@ export const RE_SEPARADOR_TITULO = /\s*[:.\-–—]\s*/u
  * en otro tipo de bloque al volver a leerlo.
  *
  * La primera linea no vacia se consume SIEMPRE como titulo cuando no es una
- * marca de ilustracion, aunque no parezca una cabecera de capitulo.
+ * marca de ilustracion, aunque no parezca una cabecera de capitulo. Una marca
+ * de audio o video ahi tambien se toma como titulo, igual que el Python
+ * tomaria cualquier otra linea: un capitulo no puede abrir con un medio antes
+ * de su cabecera (la interfaz no lo ofrece).
  */
 export function parsear(texto: string, conTitulo = true): Parseado {
   let titulo: string | null = null
@@ -85,8 +110,16 @@ export function parsear(texto: string, conTitulo = true): Parseado {
       continue
     }
 
+    const mm = m ? null : RE_MEDIO.exec(linea)
     if (m) {
       bloques.push({ tipo: 'ilus', nombre, alt })
+    } else if (mm) {
+      bloques.push({
+        tipo: 'medio',
+        clase: (mm[1] as string).toLowerCase() === 'audio' ? 'audio' : 'video',
+        nombre: desescapar(mm[2] as string),
+        alt: desescapar(mm[3] ?? '').trim(),
+      })
     } else if (RE_ESCENA.exec(linea)) {
       bloques.push({ tipo: 'escena' })
     } else if (linea.startsWith('>')) {

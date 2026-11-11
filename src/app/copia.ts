@@ -17,12 +17,15 @@
 import { zipSync, type Zippable } from 'fflate'
 import { nombreSeguro } from '../core/texto'
 import type { Exportado } from './exportar'
-import { VERSION_PROYECTO, type Imagen, type Proyecto } from './modelo'
+import { versionNecesaria, type Imagen, type Proyecto } from './modelo'
 
 /** Lo que va en proyecto.json. */
 export interface ProyectoJson {
   readonly formato: 'pubteca'
-  /** La version del MODELO (VERSION_PROYECTO): la misma regla que en IndexedDB. */
+  /**
+   * La version del MODELO, la MINIMA que el libro necesita: la misma regla que
+   * en IndexedDB (ver `VERSION_PROYECTO`).
+   */
   readonly version: number
   /** Cuando se hizo la copia, en ISO 8601. */
   readonly creada: string
@@ -56,11 +59,12 @@ inicio. Se abre como un libro nuevo, asi que no pisa nada.
 
 export function zipDeCopia(e: Exportado, proyecto: Proyecto, imagenes: ReadonlyMap<string, Imagen>, ahora: Date): Uint8Array {
   const p = e.proyecto
+  const version = versionNecesaria(proyecto)
   const json: ProyectoJson = {
     formato: 'pubteca',
-    version: VERSION_PROYECTO,
+    version,
     creada: ahora.toISOString(),
-    proyecto,
+    proyecto: { ...proyecto, version },
     imagenes: Object.fromEntries(
       [...e.rutas].map(([id, ruta]) => [id, { ruta, nombreOriginal: imagenes.get(id)?.nombreOriginal ?? ruta }]),
     ),

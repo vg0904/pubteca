@@ -143,6 +143,28 @@ ol.indice li { margin: 0 0 0.8em 0; text-align: left; text-indent: 0; }
 ol.indice a { text-decoration: none; }
 `
 
+/**
+ * Audio y video. Solo se añade si el libro los trae (y solo llegan al EPUB de
+ * Apple Books), asi que la hoja de un libro sin ellos no cambia ni un byte.
+ *
+ * Lo que pide Apple (Asset Guide 5.3.1): cada medio en su linea, centrado con
+ * text-align, ancho en porcentaje y SIN alto («to avoid layout issues, do not
+ * set an explicit height on video elements»).
+ */
+export const CSS_MEDIOS = `
+/* Audio y video (solo en Apple Books): cada uno en su línea, centrado,
+   con el ancho en porcentaje y sin alto, como pide Apple. */
+div.medio {
+  margin: 1.4em 0; padding: 0; text-align: center; text-indent: 0;
+  page-break-inside: avoid; break-inside: avoid;
+}
+div.medio video { width: 100%; }
+div.medio audio { width: 90%; }
+/* En el índice, los medios van anidados bajo su capítulo. */
+ol.indice ol { list-style-type: none; margin: 0.6em 0 0 1.4em; padding: 0; }
+ol.indice ol li { margin: 0 0 0.4em 0; font-size: 0.9em; }
+`
+
 /** Una cara de fuente para el @font-face y para el manifiesto. */
 export interface CaraFuente {
   readonly familia: string
@@ -162,7 +184,7 @@ export interface CaraFuente {
  * fuente que tenga elegida: asi va la version de Kindle, que ademas pesa menos
  * y baja la tarifa de entrega.
  */
-export function cssLibro(fuentes: readonly CaraFuente[], preferida: string): string {
+export function cssLibro(fuentes: readonly CaraFuente[], preferida: string, conMedios = false): string {
   const caras = fuentes.map(
     (f) =>
       `@font-face {\n  font-family: "${f.familia}";\n  font-style: ${f.style};\n` +
@@ -175,5 +197,6 @@ export function cssLibro(fuentes: readonly CaraFuente[], preferida: string): str
 
   const declaracion = familias.length > 0 ? ` font-family: ${[...familias, 'serif'].join(', ')};` : ''
 
-  return CSS.replace(MARCA_FUENTES, caras.join('\n\n')).replace(MARCA_FAMILIA, declaracion)
+  const hoja = CSS.replace(MARCA_FUENTES, caras.join('\n\n')).replace(MARCA_FAMILIA, declaracion)
+  return conMedios ? hoja + CSS_MEDIOS : hoja
 }

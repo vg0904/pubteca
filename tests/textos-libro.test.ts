@@ -25,7 +25,12 @@ describe('la tabla de textos', () => {
   for (const idioma of IDIOMAS_DEL_LIBRO) {
     it(`${idioma}: no le falta nada`, () => {
       const t = textosLibro(idioma)
+      // conMedios cuenta: con dos numeros distintos tienen que salir los dos.
+      const conMedios = t.conMedios(3, 7)
+      expect(conMedios, `${idioma}.conMedios`).toContain('3')
+      expect(conMedios, `${idioma}.conMedios`).toContain('7')
       for (const [clave, valor] of Object.entries(t)) {
+        if (clave === 'conMedios') continue
         const texto = typeof valor === 'function' ? (valor as (x: string | number) => string)('XYZ') : valor
         expect(texto.trim(), `${idioma}.${clave}`).not.toBe('')
         if (typeof valor === 'function') expect(texto, `${idioma}.${clave}`).toContain('XYZ')

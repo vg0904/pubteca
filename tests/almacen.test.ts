@@ -24,7 +24,8 @@ import { DATOS_POR_DEFECTO, VERSION_PROYECTO, type Proyecto } from '../src/app/m
 function proyecto(id: string, titulo: string, capitulos = 0): Proyecto {
   return {
     id,
-    version: VERSION_PROYECTO,
+    // Sin audio ni video: el formato 1, que es con el que se guarda.
+    version: 1,
     datos: { ...DATOS_POR_DEFECTO, titulo },
     capitulos: Array.from({ length: capitulos }, (_, i) => ({
       id: `c${i}`,
@@ -157,10 +158,37 @@ describe('proyectos', () => {
   it('un proyecto de una version FUTURA se niega a leerse', async () => {
     // Si el autor uso una version mas nueva de Pubteca en otro navegador,
     // interpretarlo a medias le estropearia el libro.
+    // Se escribe como lo escribiria ESA version: guardarProyecto pondria la
+    // version que este libro necesita, que es la de hoy.
     const futuro = { ...proyecto('p1', 'Del futuro'), version: VERSION_PROYECTO + 1 }
-    await guardarProyecto(db, futuro, 1000)
+    await db.put('proyectos', { ...futuro, modificado: 1000 })
     await expect(leerProyecto(db, 'p1')).rejects.toThrow(ErrorAlmacen)
     await expect(leerProyecto(db, 'p1')).rejects.toThrow(/versión más nueva/)
+  })
+})
+
+describe('la version con la que se guarda un libro', () => {
+  const video = { id: 'v1', tipo: 'video' as const, medioId: 'm1', posterId: 'i1', alt: 'El muelle', decorativa: false }
+
+  it('sin audio ni video, 1: lo guardado es identico a antes de que existieran', async () => {
+    // Aunque traiga la version mas nueva en memoria.
+    await guardarProyecto(db, { ...proyecto('p1', 'Sin medios', 2), version: VERSION_PROYECTO }, 1000)
+    expect((await db.get('proyectos', 'p1'))?.version).toBe(1)
+  })
+
+  it('con un video, 2: una version vieja se niega a abrirlo en vez de perderlo', async () => {
+    const p = proyecto('p1', 'Con medios', 1)
+    const conVideo = { ...p, capitulos: p.capitulos.map((c) => ({ ...c, bloques: [...c.bloques, video] })) }
+    await guardarProyecto(db, conVideo, 1000)
+    expect((await db.get('proyectos', 'p1'))?.version).toBe(2)
+    // Y esta version si lo abre, con su video.
+    expect((await leerProyecto(db, 'p1'))?.capitulos[0]?.bloques[1]).toEqual(video)
+  })
+
+  it('el poster de un video cuenta como imagen en uso: limpiar no lo borra', () => {
+    const p = proyecto('p1', 'Con medios', 1)
+    const conVideo = { ...p, capitulos: p.capitulos.map((c) => ({ ...c, bloques: [...c.bloques, video] })) }
+    expect(idsDeImagenes(conVideo).has('i1')).toBe(true)
   })
 })
 

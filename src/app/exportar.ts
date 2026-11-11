@@ -13,10 +13,13 @@
  */
 import { nombreSeguro } from '../core/texto'
 import { archivo, type Archivo, type Proyecto as ProyectoMotor } from '../core/proyecto'
-import type { Imagen, Proyecto, RolPortada } from './modelo'
+import type { Imagen, Medio, Proyecto, RolPortada } from './modelo'
 import { serializarCapitulo, serializarExtra, type Aviso } from './serializar'
 
-/** Los bytes de cada imagen del proyecto, por id. */
+/**
+ * Los bytes de cada imagen y de cada audio o video del proyecto, por id. Los
+ * ids de imagenes y de medios no se pisan: los dos salen de `crearId`.
+ */
 export type Bytes = ReadonlyMap<string, Uint8Array>
 
 export interface Exportado {
@@ -32,6 +35,8 @@ export interface Exportado {
    * poder devolver cada imagen a su sitio al abrirla.
    */
   readonly rutas: ReadonlyMap<string, string>
+  /** id de audio o video -> su ruta en el proyecto del motor (`medios/cap03-v01.m4v`). */
+  readonly rutasMedios: ReadonlyMap<string, string>
 }
 
 const EXT: Record<Imagen['tipo'], string> = { png: '.png', jpeg: '.jpg' }
@@ -90,11 +95,18 @@ export function exportar(
   imagenes: ReadonlyMap<string, Imagen>,
   bytes: Bytes,
   fuentes: readonly Archivo[] = [],
+  medios: ReadonlyMap<string, Medio> = new Map(),
 ): Exportado {
   const avisos: Aviso[] = []
   const nombres = new Map<string, string>()
   const rutas = new Map<string, string>()
   const ilustraciones: Archivo[] = []
+  // Audio, video y sus posters: carpeta medios/, que el Python no tiene. Solo
+  // entra al proyecto del motor si hay algo, asi que un libro sin medios se
+  // exporta exactamente igual que antes.
+  const nombresMedios = new Map<string, string>()
+  const rutasMedios = new Map<string, string>()
+  const archivosMedios: Archivo[] = []
 
   const registrar = (id: string, base: string): string => {
     const yaEsta = nombres.get(id)
@@ -114,10 +126,42 @@ export function exportar(
     registrar(id, `color-${String(i + 1).padStart(2, '0')}`)
   }
 
+  /**
+   * Un audio o un video: `capNN-vKK.m4v`, `capNN-aKK.m4a`, y el poster del
+   * video al lado con el MISMO nombre, que es como el motor lo encuentra.
+   * Devuelve el nombre sin extension, que es lo que lleva la marca.
+   */
+  const registrarMedio = (id: string, base: string, tipo: 'video' | 'audio', posterId: string | null): string => {
+    const yaEsta = nombresMedios.get(id)
+    if (yaEsta) return yaEsta
+    nombresMedios.set(id, base)
+    const ext = `.${medios.get(id)?.tipo ?? (tipo === 'video' ? 'm4v' : 'm4a')}`
+    const datos = bytes.get(id)
+    if (datos) {
+      archivosMedios.push(archivo(`medios/${base}${ext}`, datos))
+      rutasMedios.set(id, `medios/${base}${ext}`)
+    }
+    if (tipo === 'video' && posterId !== null) {
+      const poster = bytes.get(posterId)
+      if (poster) {
+        const ruta = `medios/${base}${extensionDe(imagenes, posterId)}`
+        archivosMedios.push(archivo(ruta, poster))
+        if (!rutas.has(posterId)) rutas.set(posterId, ruta)
+      }
+    }
+    return base
+  }
+
   const capitulos: Archivo[] = []
   for (const [i, cap] of p.capitulos.entries()) {
     const nn = String(i + 1).padStart(2, '0')
     let k = 0
+    let kv = 0
+    let ka = 0
+    for (const b of cap.bloques) {
+      if (b.tipo === 'video') registrarMedio(b.medioId, `cap${nn}-v${String(++kv).padStart(2, '0')}`, 'video', b.posterId)
+      if (b.tipo === 'audio') registrarMedio(b.medioId, `cap${nn}-a${String(++ka).padStart(2, '0')}`, 'audio', null)
+    }
     // Las aperturas van primero: en el texto aparecen antes de la cabecera.
     for (const a of cap.aperturas) {
       k += 1
@@ -129,12 +173,17 @@ export function exportar(
       registrar(b.imagenId, `cap${nn}-${String(k).padStart(2, '0')}`)
     }
 
-    const s = serializarCapitulo(cap, p.datos.separadorDeEscena, (id) => {
-      const nombre = nombres.get(id)
-      // Sin extension: la marca la acepta con o sin ella, y asi el .md se lee
-      // igual que lo escribiria un autor a mano.
-      return nombre ? nombre.replace(/\.(png|jpg)$/u, '') : id
-    })
+    const s = serializarCapitulo(
+      cap,
+      p.datos.separadorDeEscena,
+      (id) => {
+        const nombre = nombres.get(id)
+        // Sin extension: la marca la acepta con o sin ella, y asi el .md se lee
+        // igual que lo escribiria un autor a mano.
+        return nombre ? nombre.replace(/\.(png|jpg)$/u, '') : id
+      },
+      (id) => nombresMedios.get(id) ?? id,
+    )
     avisos.push(...s.avisos)
     capitulos.push(archivo(`capitulos/cap${nn}.md`, utf8(s.texto)))
   }
@@ -182,9 +231,11 @@ export function exportar(
       portada,
       extras,
       fuentes: [...fuentes],
+      ...(archivosMedios.length > 0 ? { medios: archivosMedios } : {}),
     },
     avisos,
     nombres,
     rutas,
+    rutasMedios,
   }
 }

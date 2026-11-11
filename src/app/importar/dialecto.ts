@@ -85,6 +85,16 @@ function bloquesDelMotor(bloques: ReturnType<typeof parsear>['bloques']): Bloque
       case 'p':
         salida.push({ id: nuevoId('b'), tipo: 'parrafo', tramos: tramosDeHtml(b.html) })
         break
+      case 'medio':
+        // Como con las ilustraciones, el id es de momento el NOMBRE de la marca:
+        // quien importa lo traduce al del almacen. El poster de un video es la
+        // imagen de medios/ con ese mismo nombre.
+        salida.push(
+          b.clase === 'video'
+            ? { id: nuevoId('b'), tipo: 'video', medioId: b.nombre, posterId: b.nombre, alt: limpiarTexto(b.alt), decorativa: false }
+            : { id: nuevoId('b'), tipo: 'audio', medioId: b.nombre, alt: limpiarTexto(b.alt), decorativa: false },
+        )
+        break
     }
   }
   cerrarVersos()

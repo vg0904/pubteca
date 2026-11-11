@@ -6,10 +6,18 @@
  * serializacion (para alimentar al motor y para el .zip del proyecto).
  *
  * El modelo es ISOMORFO al del motor: los bloques de aqui son exactamente los
- * seis que el EPUB sabe representar, y la unica riqueza en linea es cursiva y
+ * que el EPUB sabe representar, y la unica riqueza en linea es cursiva y
  * negrita. Asi es imposible que el escritor cree algo que el generador tire en
  * silencio, que es el fallo mas caro de esta herramienta: ver una cosa en la
  * app y otra en su Kindle.
+ *
+ * Eran SEIS bloques, los del Python. `video` y `audio` rompen esa cuenta a
+ * proposito (ronda 2, plan.md): el motor ya sabe representarlos, asi que el
+ * isomorfismo se mantiene. Pero rompen otra simetria, y conviene tenerlo
+ * presente: son los unicos bloques que una tienda recibe y la otra NO. KDP no
+ * acepta libros con audio ni video, y el EPUB de Kindle sale sin ellos. Por eso
+ * la interfaz dice de cada uno que solo va en Apple Books: lo que el autor ve
+ * en la app no es lo que ve en su Kindle, y no se le puede esconder.
  */
 import type { KindlePropio } from './imagen-ajuste'
 import { textosLibro } from '../core/textos-libro'
@@ -56,6 +64,34 @@ export type Bloque =
       /** El autor dijo explicitamente que no necesita descripcion. */
       readonly decorativa: boolean
     }
+  | {
+      readonly id: string
+      readonly tipo: 'video'
+      /** Referencia al almacen de medios, NO un nombre de archivo. */
+      readonly medioId: string
+      /**
+       * La imagen que Apple Books enseña antes de reproducir: va en el almacen
+       * de IMAGENES. Apple la exige; null mientras el autor no la elija.
+       */
+      readonly posterId: string | null
+      /** Que se ve y se oye. Es lo que lee un lector de pantalla. */
+      readonly alt: string
+      readonly decorativa: boolean
+    }
+  | {
+      readonly id: string
+      readonly tipo: 'audio'
+      readonly medioId: string
+      readonly alt: string
+      readonly decorativa: boolean
+    }
+
+/** Un bloque de audio o de video. */
+export type BloqueMedio = Extract<Bloque, { tipo: 'video' | 'audio' }>
+
+export function esMedio(b: Bloque): b is BloqueMedio {
+  return b.tipo === 'video' || b.tipo === 'audio'
+}
 
 export interface Capitulo {
   readonly id: string
@@ -98,6 +134,20 @@ export interface Imagen {
   readonly alfa?: boolean
   readonly cmyk?: boolean
   readonly p3?: boolean
+}
+
+/**
+ * Un audio o un video del proyecto, YA en el formato que pide Apple Books:
+ * convertir es lo que pasa al subirlo (ver plan.md, M3), y el motor no
+ * convierte nada. Los bytes viven en el almacen, no aqui.
+ */
+export interface Medio {
+  readonly id: string
+  /** Como lo llamo el autor, para mostrarselo. */
+  readonly nombreOriginal: string
+  readonly tipo: 'm4v' | 'm4a'
+  readonly bytes: number
+  readonly segundos: number
 }
 
 export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco'
@@ -211,8 +261,29 @@ export interface Proyecto {
   }
 }
 
-/** La version del formato guardado. Subirla obliga a escribir una migracion. */
-export const VERSION_PROYECTO = 1
+/**
+ * La version MAS NUEVA del formato guardado que esta app entiende. Subirla
+ * obliga a escribir una migracion.
+ *
+ * Cada libro se guarda con la version MINIMA que necesita (`versionNecesaria`),
+ * no con esta. Asi un libro sin audio ni video se guarda exactamente igual que
+ * antes de que existieran, y una version vieja de la app lo sigue abriendo;
+ * pero uno CON medios se guarda como 2, y la version vieja se niega a abrirlo
+ * («actualiza la pagina») en vez de tirar los bloques que no conoce y
+ * devolverle al autor un libro sin sus videos.
+ *
+ * Historia:
+ *   1 · los seis bloques del Python.
+ *   2 · bloques `video` y `audio`. La migracion de 1 a 2 es no hacer nada: el
+ *       formato 1 es un subconjunto del 2.
+ */
+export const VERSION_PROYECTO = 2
+
+/** La version minima con la que hay que guardar este libro. */
+export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'>): number {
+  const conMedios = [...p.capitulos, ...p.extras].some((c) => c.bloques.some(esMedio))
+  return conMedios ? 2 : 1
+}
 
 export const DATOS_POR_DEFECTO: DatosLibro = {
   titulo: '',
@@ -241,11 +312,24 @@ export const DATOS_POR_DEFECTO: DatosLibro = {
  */
 export function idsDeImagenes(p: Proyecto): Set<string> {
   const ids = new Set<string>([...p.laminas, ...Object.values(p.portada)])
+  const deBloque = (b: Bloque): void => {
+    if (b.tipo === 'ilustracion') ids.add(b.imagenId)
+    // El poster de un video es una imagen del almacen: olvidarlo aqui lo
+    // borraria al limpiar las huerfanas.
+    if (b.tipo === 'video' && b.posterId !== null) ids.add(b.posterId)
+  }
   for (const c of p.capitulos) {
     for (const a of c.aperturas) ids.add(a.imagenId)
-    for (const b of c.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
+    for (const b of c.bloques) deBloque(b)
   }
-  for (const x of p.extras) for (const b of x.bloques) if (b.tipo === 'ilustracion') ids.add(b.imagenId)
+  for (const x of p.extras) for (const b of x.bloques) deBloque(b)
+  return ids
+}
+
+/** Todos los audios y videos que el proyecto usa, por id. */
+export function idsDeMedios(p: Proyecto): Set<string> {
+  const ids = new Set<string>()
+  for (const c of [...p.capitulos, ...p.extras]) for (const b of c.bloques) if (esMedio(b)) ids.add(b.medioId)
   return ids
 }
 

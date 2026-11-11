@@ -38,7 +38,11 @@ jobs:
       - name: Generar los libros de prueba
         # El core es TypeScript puro y sincrono, asi que corre en Node sin
         # navegador. Esa frontera es lo que hace posible este paso.
-        run: npm run golden
+        #
+        # Dos libros: el de prueba de siempre y el que trae audio y video
+        # (tests/fixtures/libro-medios), para que el EPUB de Apple Books con
+        # medios pase por EPUBCheck igual que el otro.
+        run: npm run epubs
 
       - uses: actions/setup-java@v5
         with:

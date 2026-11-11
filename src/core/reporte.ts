@@ -43,9 +43,12 @@ export function reporte(c: Construccion, ahora: Date): string {
   r.push('')
   r.push('Capítulos:')
   for (const cap of libro.resumenCaps) {
-    const extra = cap.ilustraciones
-      ? `, ${cap.ilustraciones} ` + (cap.ilustraciones === 1 ? 'ilustración' : 'ilustraciones')
-      : ''
+    const extra =
+      (cap.ilustraciones
+        ? `, ${cap.ilustraciones} ` + (cap.ilustraciones === 1 ? 'ilustración' : 'ilustraciones')
+        : '') +
+      (cap.videos ? `, ${cap.videos} ` + (cap.videos === 1 ? 'video' : 'videos') : '') +
+      (cap.audios ? `, ${cap.audios} ` + (cap.audios === 1 ? 'audio' : 'audios') : '')
     r.push(
       `  · ${cap.archivo.padEnd(12)} ${cap.titulo}  (${cap.parrafos} párrafos${extra})`,
     )

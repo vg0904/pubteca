@@ -208,6 +208,16 @@ export const ui: Ui = {
     arrastrar: 'Drag it onto the title to open the chapter with it',
   },
 
+  medio: {
+    video: 'Video',
+    audio: 'Audio',
+    soloApple: 'Only in the Apple Books EPUB: Kindle does not take audio or video.',
+    sinDescripcion: 'No description',
+    sinPoster: 'The video has no cover image (poster): Apple Books requires one.',
+    menu: 'Audio or video options',
+    quitar: 'Remove',
+  },
+
   imagen: {
     rechazada: {
       heic: 'This is a HEIC photo (the iPhone format). An EPUB only takes PNG or JPG: open it and export it as JPG.',
@@ -608,6 +618,8 @@ export const ui: Ui = {
     importando: 'Importing…',
     lineas: (n: string) => `${n} lines`,
     ilustracion: 'Illustration',
+    video: 'Video',
+    audio: 'Audio',
     escena: 'Scene break',
     versos: 'Verse',
   },

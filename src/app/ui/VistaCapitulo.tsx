@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Bloque, Capitulo, Tramo } from '../modelo'
+import { esMedio, type Bloque, type BloqueMedio, type Capitulo, type Tramo } from '../modelo'
 import { useTextos } from './contexto'
 
 /** Unos tramos como elementos de React: sin innerHTML, el texto nunca se interpreta. */
@@ -27,6 +27,18 @@ function Ilustracion({ imagenId, alt, url }: { imagenId: string; alt: string; ur
       {u ? <img src={u} alt={alt} /> : <p className="ilus-falta">{ui.ilustracion.falta(imagenId)}</p>}
       {alt && <figcaption>{alt}</figcaption>}
     </figure>
+  )
+}
+
+/** Un audio o un video: dice que esta, y que solo va en Apple Books. */
+function MedioEnVista({ b }: { b: BloqueMedio }) {
+  const ui = useTextos()
+  return (
+    <p className="medio-vista">
+      <span aria-hidden="true">{b.tipo === 'video' ? '▶ ' : '♪ '}</span>
+      {b.tipo === 'video' ? ui.medio.video : ui.medio.audio}
+      {b.alt ? `: ${b.alt}` : ''} · <small>{ui.medio.soloApple}</small>
+    </p>
   )
 }
 
@@ -62,6 +74,9 @@ function VistaBloque({ b, primero, separador, url }: { b: Bloque; primero: boole
       )
     case 'ilustracion':
       return <Ilustracion imagenId={b.imagenId} alt={b.alt} url={url} />
+    case 'video':
+    case 'audio':
+      return <MedioEnVista b={b} />
   }
 }
 
@@ -82,7 +97,7 @@ export function VistaCapitulo({
   // unos versos: lo mismo que decide secuencia() en el motor.
   const sinSangria = capitulo.bloques.reduce<{ previo: boolean; marcas: boolean[] }>(
     (acc, b) => ({
-      previo: b.tipo === 'parrafo' ? false : b.tipo === 'ilustracion' ? acc.previo : true,
+      previo: b.tipo === 'parrafo' ? false : b.tipo === 'ilustracion' || esMedio(b) ? acc.previo : true,
       marcas: [...acc.marcas, b.tipo === 'parrafo' && acc.previo],
     }),
     { previo: true, marcas: [] },

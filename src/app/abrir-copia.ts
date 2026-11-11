@@ -44,6 +44,7 @@ import {
   disenoPortadilla,
   ENTREGA_KINDLE_POR_DEFECTO,
   VERSION_PROYECTO,
+  versionNecesaria,
   type Bloque,
   type Capitulo,
   type DatosLibro,
@@ -387,7 +388,7 @@ function desdeCarpetas(archivos: ReadonlyMap<string, Uint8Array>, nuevoId: Nuevo
 
   const proyecto: Proyecto = {
     id: nuevoId('libro'),
-    version: VERSION_PROYECTO,
+    version: versionNecesaria({ capitulos, extras }),
     datos,
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),
@@ -461,6 +462,23 @@ function proyectoDeJson(
       case 'ilustracion':
         if (typeof b['imagenId'] !== 'string') return null
         return { id, tipo: 'ilustracion', imagenId: imagenId(b['imagenId']), alt: texto(b['alt']), decorativa: b['decorativa'] === true }
+      // Audio y video (formato 2). Sus bytes aun no viajan en la copia: eso
+      // llega con el almacen de medios (M2). Hasta entonces se recupera el
+      // bloque entero, que es lo que el autor escribio, y el medio queda como
+      // pendiente de volver a subir en vez de perderse en silencio.
+      case 'video':
+        if (typeof b['medioId'] !== 'string') return null
+        return {
+          id,
+          tipo: 'video',
+          medioId: b['medioId'],
+          posterId: typeof b['posterId'] === 'string' ? imagenId(b['posterId']) : null,
+          alt: texto(b['alt']),
+          decorativa: b['decorativa'] === true,
+        }
+      case 'audio':
+        if (typeof b['medioId'] !== 'string') return null
+        return { id, tipo: 'audio', medioId: b['medioId'], alt: texto(b['alt']), decorativa: b['decorativa'] === true }
       default:
         return null
     }
@@ -538,7 +556,7 @@ function proyectoDeJson(
   if (descartados > 0) avisos.push({ clave: 'descartados', detalle: String(descartados) })
   return {
     id: nuevoId('libro'),
-    version: VERSION_PROYECTO,
+    version: versionNecesaria({ capitulos, extras }),
     datos: { ...datos, idioma: idioma ?? 'es', portadilla },
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),

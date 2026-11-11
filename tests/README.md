@@ -48,8 +48,21 @@ proteger. Un test que nunca falla no protege nada.
 | `importar-docx-navegador.test.ts` | El `.docx` por el camino de mammoth que usa el NAVEGADOR (otra clave de opciones y sin `Buffer`): los demas tests van por el de Node |
 | `avisos.test.ts` | Los avisos agrupados (30 ilustraciones -> 4 renglones) y la revision antes de generar |
 | `editor-dom.test.ts` | El puente `contenteditable` <-> tramos y el pegado desde Word y Google Docs |
-| `almacen.test.ts` | IndexedDB, incluido que una pestaña atrasada no pise lo guardado por otra |
+| `almacen.test.ts` | IndexedDB, incluido que una pestaña atrasada no pise lo guardado por otra, y la version minima con la que se guarda cada libro |
+| `medios.test.ts` | Audio y video en el EPUB de Apple Books y su ausencia en el de Kindle, sobre `fixtures/libro-medios` (lo mismo que CI pasa por EPUBCheck): `media-type`, poster, CSS, indice en orden de lectura, accesibilidad, y que un libro sin medios no cambie ni un byte |
+| `medios-app.test.ts` | Los bloques `video` y `audio` del modelo: al dialecto y de vuelta, a la carpeta `medios/` del motor y a la copia `.zip` |
 
 Las mutaciones de H5 (38, todas detectadas) se corrieron con un script fuera
 del repo: cambia una linea, corre el test que la protege y comprueba que
-falla. Si anades un caso, haz lo mismo a mano.
+falla. Si anades un caso, haz lo mismo a mano. Las de M1 (audio y video): 15,
+todas detectadas.
+
+## El libro con medios
+
+`fixtures/libro-medios` es un libro INVENTADO con un video, su poster y dos
+audios; uno de los audios va solo tras una ilustracion, que es el caso en que a
+Kindle le quedaria una pagina vacia. Los medios los genera
+`scripts/medios-prueba.py` (`npm run medios`), que necesita ffmpeg solo para
+regenerarlos: son diminutos y estan commiteados, y CI no lo necesita. A
+diferencia de `libro-prueba`, no tiene golden del Python: el Python no conoce
+el audio ni el video.

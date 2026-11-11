@@ -35,11 +35,34 @@ export interface TextosLibro {
   readonly resumenAccesibilidad: string
   readonly conDescripciones: string
   readonly sinDescripciones: string
+  /** Como se llama un video y un audio en el indice («Video: El faro al amanecer»). */
+  readonly video: string
+  readonly audio: string
+  /**
+   * Lo que se añade al resumen de accesibilidad si el libro trae audio o
+   * video. Dice que no hay subtitulos ni transcripcion, que es la verdad: sin
+   * ellos, el texto solo NO basta para leer el libro entero.
+   */
+  readonly conMedios: (videos: number, audios: number) => string
   /**
    * La linea de derechos que se propone. Lleva las MISMAS marcas en todos los
    * idiomas ({año}, {autor}), que son las que el motor sustituye.
    */
   readonly derechosPorDefecto: string
+}
+
+/** «1 video y 2 audios», «2 videos», «1 audio»: solo lo que haya. */
+function lista(
+  v: number,
+  a: number,
+  video: readonly [string, string],
+  audio: readonly [string, string],
+  y: string,
+): string {
+  const partes: string[] = []
+  if (v > 0) partes.push(`${v} ${v === 1 ? video[0] : video[1]}`)
+  if (a > 0) partes.push(`${a} ${a === 1 ? audio[0] : audio[1]}`)
+  return partes.join(` ${y} `)
 }
 
 const ES: TextosLibro = {
@@ -61,6 +84,9 @@ const ES: TextosLibro = {
   resumenAccesibilidad: 'Novela con navegación por capítulos.',
   conDescripciones: ' Las ilustraciones incluyen descripción alternativa.',
   sinDescripciones: ' Algunas ilustraciones no tienen descripción alternativa.',
+  video: 'Video',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Incluye ${lista(v, a, ['video', 'videos'], ['audio', 'audios'], 'y')}, sin subtítulos ni transcripción.`,
   derechosPorDefecto: '© {año} {autor}. Todos los derechos reservados.',
 }
 
@@ -83,6 +109,9 @@ const EN: TextosLibro = {
   resumenAccesibilidad: 'Novel with chapter navigation.',
   conDescripciones: ' The illustrations include alternative text.',
   sinDescripciones: ' Some illustrations have no alternative text.',
+  video: 'Video',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Includes ${lista(v, a, ['video', 'videos'], ['audio clip', 'audio clips'], 'and')}, without captions or transcripts.`,
   derechosPorDefecto: '© {año} {autor}. All rights reserved.',
 }
 
@@ -105,6 +134,9 @@ const PT: TextosLibro = {
   resumenAccesibilidad: 'Romance com navegação por capítulos.',
   conDescripciones: ' As ilustrações incluem descrição alternativa.',
   sinDescripciones: ' Algumas ilustrações não têm descrição alternativa.',
+  video: 'Vídeo',
+  audio: 'Áudio',
+  conMedios: (v, a) => ` Inclui ${lista(v, a, ['vídeo', 'vídeos'], ['áudio', 'áudios'], 'e')}, sem legendas nem transcrição.`,
   derechosPorDefecto: '© {año} {autor}. Todos os direitos reservados.',
 }
 
@@ -127,6 +159,9 @@ const CA: TextosLibro = {
   resumenAccesibilidad: 'Novel·la amb navegació per capítols.',
   conDescripciones: ' Les il·lustracions inclouen descripció alternativa.',
   sinDescripciones: ' Algunes il·lustracions no tenen descripció alternativa.',
+  video: 'Vídeo',
+  audio: 'Àudio',
+  conMedios: (v, a) => ` Inclou ${lista(v, a, ['vídeo', 'vídeos'], ['àudio', 'àudios'], 'i')}, sense subtítols ni transcripció.`,
   derechosPorDefecto: '© {año} {autor}. Tots els drets reservats.',
 }
 
@@ -149,6 +184,9 @@ const GL: TextosLibro = {
   resumenAccesibilidad: 'Novela con navegación por capítulos.',
   conDescripciones: ' As ilustracións inclúen descrición alternativa.',
   sinDescripciones: ' Algunhas ilustracións non teñen descrición alternativa.',
+  video: 'Vídeo',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Inclúe ${lista(v, a, ['vídeo', 'vídeos'], ['audio', 'audios'], 'e')}, sen subtítulos nin transcrición.`,
   derechosPorDefecto: '© {año} {autor}. Todos os dereitos reservados.',
 }
 
@@ -171,6 +209,9 @@ const EU: TextosLibro = {
   resumenAccesibilidad: 'Kapituluka nabigatzeko eleberria.',
   conDescripciones: ' Ilustrazioek testu alternatiboa dute.',
   sinDescripciones: ' Ilustrazio batzuek ez dute testu alternatiborik.',
+  video: 'Bideoa',
+  audio: 'Audioa',
+  conMedios: (v, a) => ` Bideoak: ${v}. Audioak: ${a}. Ez dute azpititulurik ez transkripziorik.`,
   derechosPorDefecto: '© {año} {autor}. Eskubide guztiak erreserbatuta.',
 }
 
@@ -193,6 +234,9 @@ const FR: TextosLibro = {
   resumenAccesibilidad: 'Roman avec navigation par chapitres.',
   conDescripciones: ' Les illustrations comportent une description alternative.',
   sinDescripciones: ' Certaines illustrations n’ont pas de description alternative.',
+  video: 'Vidéo',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Comprend ${lista(v, a, ['vidéo', 'vidéos'], ['extrait audio', 'extraits audio'], 'et')}, sans sous-titres ni transcription.`,
   derechosPorDefecto: '© {año} {autor}. Tous droits réservés.',
 }
 
@@ -215,6 +259,9 @@ const IT: TextosLibro = {
   resumenAccesibilidad: 'Romanzo con navigazione per capitoli.',
   conDescripciones: ' Le illustrazioni includono una descrizione alternativa.',
   sinDescripciones: ' Alcune illustrazioni non hanno una descrizione alternativa.',
+  video: 'Video',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Include ${lista(v, a, ['video', 'video'], ['audio', 'audio'], 'e')}, senza sottotitoli né trascrizione.`,
   derechosPorDefecto: '© {año} {autor}. Tutti i diritti riservati.',
 }
 
@@ -237,6 +284,9 @@ const DE: TextosLibro = {
   resumenAccesibilidad: 'Roman mit Kapitelnavigation.',
   conDescripciones: ' Die Illustrationen haben einen Alternativtext.',
   sinDescripciones: ' Einige Illustrationen haben keinen Alternativtext.',
+  video: 'Video',
+  audio: 'Audio',
+  conMedios: (v, a) => ` Enthält ${lista(v, a, ['Video', 'Videos'], ['Audio', 'Audios'], 'und')}, ohne Untertitel oder Transkript.`,
   derechosPorDefecto: '© {año} {autor}. Alle Rechte vorbehalten.',
 }
 

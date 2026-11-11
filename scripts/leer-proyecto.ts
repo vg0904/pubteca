@@ -25,6 +25,14 @@ function leerCarpeta(raiz: string, nombre: string): Archivo[] {
   return salida
 }
 
+function existe(ruta: string): boolean {
+  try {
+    return statSync(ruta).isDirectory()
+  } catch {
+    return false
+  }
+}
+
 export function leerProyecto(raiz: string): Proyecto {
   let libroTxt: string | undefined
   try {
@@ -39,5 +47,8 @@ export function leerProyecto(raiz: string): Proyecto {
     portada: leerCarpeta(raiz, 'portada'),
     extras: leerCarpeta(raiz, 'extras'),
     fuentes: leerCarpeta(raiz, 'fuentes'),
+    // Solo si existe: un libro del Python no la tiene, y el proyecto queda
+    // exactamente como antes.
+    ...(existe(join(raiz, 'medios')) ? { medios: leerCarpeta(raiz, 'medios') } : {}),
   }
 }

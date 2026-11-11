@@ -7,12 +7,13 @@
  */
 import { CONFIG_DEFAULT, anio as calcularAnio, si, type Config } from './config'
 import { Imagenes, type Registro } from './imagenes'
+import { Medios } from './medios'
 import type { Diagnosticos } from './mensajes'
 import { nav, type EntradaIndice } from './nav'
 import { RE_SEPARADOR_TITULO, RE_TITULO, parsear, type Bloque } from './parser'
 import { paginaImagen, xhtml } from './plantillas'
 import { buscarEn, type Archivo, type Proyecto } from './proyecto'
-import { secuencia } from './secuencia'
+import { secuencia, type ResolverMedio, type Tramo } from './secuencia'
 import { enLinea, esc, nombreSeguro, ordenarNatural, textoPlano, valorDigitos } from './texto'
 import { textosLibro, type TextosLibro } from './textos-libro'
 
@@ -23,8 +24,13 @@ export interface Pagina {
   readonly href: string
   readonly seccion: Seccion
   readonly contenido: string
-  /** Solo cuando la version de Kindle necesita un cuerpo distinto (la portadilla). */
+  /**
+   * Solo cuando la version de Kindle necesita un cuerpo distinto: la
+   * portadilla, y las paginas con audio o video (Kindle las recibe sin ellos).
+   */
   readonly contenidoKindle?: string
+  /** La pagina solo tenia audio o video: en Kindle no existe. */
+  readonly soloApple?: boolean
 }
 
 export interface ResumenCapitulo {
@@ -32,6 +38,8 @@ export interface ResumenCapitulo {
   readonly titulo: string
   readonly parrafos: number
   readonly ilustraciones: number
+  readonly videos: number
+  readonly audios: number
 }
 
 export const EXT_TEXTO = ['.md', '.txt', '.markdown']
@@ -44,6 +52,8 @@ export class Libro {
   /** Lo que el libro dice por su cuenta («Indice», «Edicion digital»...), en su idioma. */
   readonly t: TextosLibro
   readonly imagenes: Imagenes
+  /** Audio y video, de `medios/`. Solo van en el EPUB de Apple Books. */
+  readonly medios: Medios
   readonly paginas: Pagina[] = []
   readonly indice: EntradaIndice[] = []
   readonly resumenCaps: ResumenCapitulo[] = []
@@ -61,6 +71,7 @@ export class Libro {
     this.idioma = cfg.idioma || 'es'
     this.t = textosLibro(this.idioma)
     this.imagenes = new Imagenes(proyecto.ilustraciones, dg)
+    this.medios = new Medios(proyecto.medios ?? [], dg)
   }
 
   // -- utilidades ----------------------------------------------------------
@@ -76,6 +87,7 @@ export class Libro {
     // Kindle, asi que cada uno necesita su clase de body. Sin esto, el body de
     // Kindle salia con `pagina-imagen` y su titulo se quedaba sin margenes.
     claseBodyKindle = claseBody,
+    soloApple = false,
   ): string {
     const href = `texto/${nombre}.xhtml`
     const pagina: Pagina = {
@@ -86,6 +98,7 @@ export class Libro {
       ...(cuerpoKindle === undefined
         ? {}
         : { contenidoKindle: xhtml(titulo, cuerpoKindle, this.idioma, claseBodyKindle) }),
+      ...(soloApple ? { soloApple: true } : {}),
     }
     this.paginas.push(pagina)
     return href
@@ -333,10 +346,39 @@ export class Libro {
     donde: string,
     seccion: Seccion,
     epubType: string,
-  ): { primera: string; ilustraciones: number } {
+  ): { primera: string; ilustraciones: number; videos: number; audios: number } {
     const tituloTxt = textoPlano(tituloCrudo)
     let primera: string | null = null
     let k = 0
+
+    // Audio y video: el HTML que va en Apple Books, y su entrada en el indice.
+    let videos = 0
+    let audios = 0
+    const medio: ResolverMedio = (b) => {
+      const reg = this.medios.buscar(b.clase, b.nombre, donde, this.imagenes)
+      if (!reg) return null
+      const n = b.clase === 'video' ? ++videos : ++audios
+      const id = `${b.clase}-${base}-${String(n).padStart(2, '0')}`
+      if (!b.alt) this.medios.sinDescripcion.push(`${donde} → ${b.nombre}`)
+      // La descripcion va en aria-label: es lo que lee un lector de pantalla
+      // al llegar al reproductor. Sin descripcion, nada (no se inventa una).
+      const aria = b.alt ? ` aria-label="${esc(b.alt)}"` : ''
+      const html =
+        reg.clase === 'video'
+          ? `<div class="medio" id="${id}"><video src="../${reg.href}"` +
+            (reg.poster ? ` poster="../${reg.poster.href}"` : '') +
+            ` controls="controls"${aria}></video></div>`
+          : `<div class="medio" id="${id}"><audio src="../${reg.href}" controls="controls"${aria}></audio></div>`
+      const etiqueta = b.clase === 'video' ? this.t.video : this.t.audio
+      return { html, id, entrada: b.alt ? `${etiqueta}: ${b.alt}` : `${etiqueta} ${n}` }
+    }
+    // Las mismas lineas sin los medios: lo que recibe Kindle.
+    const sinMedios = (t: Extract<Tramo, { tipo: 'texto' }>): readonly string[] =>
+      t.medios ? t.lineas.filter((_, i) => !t.medios?.some((m) => m.linea === i)) : t.lineas
+    const hijos: EntradaIndice[] = []
+    const anotar = (t: Extract<Tramo, { tipo: 'texto' }>, href: string): void => {
+      for (const m of t.medios ?? []) hijos.push({ texto: m.entrada, href: `${href}#${m.id}` })
+    }
 
     // Ilustraciones marcadas ANTES del titulo: van antes de la cabecera, para
     // que un capitulo pueda abrir con un dibujo.
@@ -360,7 +402,7 @@ export class Libro {
     if (num) cab += `<p class="num-capitulo">${esc(num)}</p>\n`
     cab += `<h1 class="titulo-capitulo" id="${hid}">${enLinea(tituloCrudo)}</h1>\n</div>`
 
-    const tramos = secuencia(bloques, this.cfg.separador_de_escena || '* * *')
+    const tramos = secuencia(bloques, this.cfg.separador_de_escena || '* * *', medio)
     const abrir =
       epubType === 'chapter'
         ? `<section epub:type="${epubType}" role="doc-chapter" aria-labelledby="${hid}">`
@@ -368,14 +410,27 @@ export class Libro {
 
     let i = 0
     let cuerpo = cab
+    let cuerpoKindle: string | undefined
     const primerTramo = tramos[0]
     if (primerTramo && primerTramo.tipo === 'texto') {
       cuerpo += '\n' + primerTramo.lineas.join('\n')
+      if (primerTramo.medios) {
+        const resto = sinMedios(primerTramo)
+        cuerpoKindle = resto.length > 0 ? `${cab}\n${resto.join('\n')}` : cab
+      }
       i = 1
     }
 
-    const h = this.agregar(base, tituloTxt, `${abrir}\n${cuerpo}\n</section>`, seccion)
+    const h = this.agregar(
+      base,
+      tituloTxt,
+      `${abrir}\n${cuerpo}\n</section>`,
+      seccion,
+      '',
+      cuerpoKindle === undefined ? undefined : `${abrir}\n${cuerpoKindle}\n</section>`,
+    )
     primera = primera ?? h
+    if (primerTramo && primerTramo.tipo === 'texto') anotar(primerTramo, h)
 
     let parte = 1
     for (const t of tramos.slice(i)) {
@@ -393,20 +448,32 @@ export class Libro {
         }
       } else {
         parte += 1
-        this.agregar(
+        const resto = sinMedios(t)
+        const hp = this.agregar(
           `${base}-${parte}`,
           tituloTxt,
           '<div class="continuacion">\n' + t.lineas.join('\n') + '\n</div>',
           seccion,
+          '',
+          t.medios && resto.length > 0 ? '<div class="continuacion">\n' + resto.join('\n') + '\n</div>' : undefined,
+          '',
+          // Una pagina que solo tenia audio o video no existe en Kindle: le
+          // quedaria un div vacio.
+          resto.length === 0,
         )
+        anotar(t, hp)
       }
     }
 
-    this.indice.push({ texto: num ? `${num}: ${tituloTxt}` : tituloTxt, href: primera })
+    this.indice.push({
+      texto: num ? `${num}: ${tituloTxt}` : tituloTxt,
+      href: primera,
+      ...(hijos.length > 0 ? { hijos } : {}),
+    })
     // El Python declara aqui un n_ilus que solo cuenta las del cuerpo, pero
     // devuelve k (que cuenta todas). La variable muerta se ha borrado y se
     // devuelve el total, que es lo que el reporte usa.
-    return { primera, ilustraciones: k }
+    return { primera, ilustraciones: k, videos, audios }
   }
 
   capitulos(): void {
@@ -464,7 +531,7 @@ export class Libro {
       }
 
       const base = nombreSeguro(p.stem)
-      const { primera, ilustraciones } = this.seccionConTitulo(
+      const { primera, ilustraciones, videos, audios } = this.seccionConTitulo(
         base,
         tit,
         num,
@@ -480,6 +547,8 @@ export class Libro {
         titulo: textoPlano(titulo),
         parrafos: bloques.filter((b) => b.tipo === 'p').length,
         ilustraciones,
+        videos,
+        audios,
       })
     }
   }
@@ -500,8 +569,10 @@ export class Libro {
     }
   }
 
-  nav(conPortada: boolean): string {
-    return nav(this.indice, this.idioma, conPortada, this.inicioLectura)
+  /** `conMedios`: con las entradas de audio y video. Solo el de Apple Books. */
+  nav(conPortada: boolean, conMedios = false): string {
+    const indice = conMedios ? this.indice : this.indice.map((e) => ({ texto: e.texto, href: e.href }))
+    return nav(indice, this.idioma, conPortada, this.inicioLectura)
   }
 }
 

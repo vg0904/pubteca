@@ -211,6 +211,18 @@ export const ui = {
     arrastrar: 'Arrástrala sobre el título para abrir el capítulo con ella',
   },
 
+  // Audio y video. Solo van en el EPUB de Apple Books, y la tarjeta lo dice
+  // siempre: es lo unico que el autor ve en la app y su lector de Kindle no.
+  medio: {
+    video: 'Video',
+    audio: 'Audio',
+    soloApple: 'Solo va en el EPUB de Apple Books: Kindle no admite audio ni video.',
+    sinDescripcion: 'Sin descripción',
+    sinPoster: 'Falta la imagen de portada del video (el póster): Apple Books la exige.',
+    menu: 'Opciones del audio o del video',
+    quitar: 'Quitar',
+  },
+
   imagen: {
     rechazada: {
       heic: 'Es una foto HEIC (la del iPhone). El EPUB solo admite PNG o JPG: ábrela y expórtala como JPG.',
@@ -621,6 +633,8 @@ export const ui = {
     importando: 'Importando…',
     lineas: (n: string) => `${n} líneas`,
     ilustracion: 'Ilustración',
+    video: 'Video',
+    audio: 'Audio',
     escena: 'Cambio de escena',
     versos: 'Versos',
   },

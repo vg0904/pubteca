@@ -38,8 +38,16 @@ export const OPCIONES_APPLE = `<?xml version="1.0" encoding="UTF-8"?>
 </display_options>
 `
 
-/** Las imagenes: lo unico que puede venir ya comprimido. */
+/** Las imagenes: lo unico que puede venir ya comprimido, ademas de los medios. */
 const IMAGEN = /\.(png|jpe?g|gif)$/iu
+
+/**
+ * Audio y video van SIEMPRE sin comprimir. Ya vienen comprimidos (AAC, H.264),
+ * deflate no les quita nada, y pasar cientos de MB por el compresor congela la
+ * generacion. Y sin comprimir, un lector puede leer el video directamente del
+ * zip sin descomprimirlo entero.
+ */
+const MEDIO = /\.(m4v|m4a|mp4)$/iu
 
 /** Cuanto de la imagen se prueba a comprimir para decidir. */
 const MUESTRA = 64 * 1024
@@ -100,7 +108,7 @@ export function escribirEpub(archivos: readonly EntradaZip[], fecha: Date): Uint
   // el de insercion para claves no numericas, y ninguna ruta del EPUB lo es.
   entradas['mimetype'] = [strToU8(MIMETYPE), { level: 0, mtime }]
   for (const a of archivos) {
-    const comprimir = !IMAGEN.test(a.ruta) || mereceComprimir(a.datos)
+    const comprimir = MEDIO.test(a.ruta) ? false : !IMAGEN.test(a.ruta) || mereceComprimir(a.datos)
     entradas[a.ruta] = [a.datos, { level: comprimir ? 6 : 0, mtime }]
   }
 

@@ -33,6 +33,12 @@ export interface Proyecto {
   readonly portada: readonly Archivo[]
   readonly extras: readonly Archivo[]
   readonly fuentes: readonly Archivo[]
+  /**
+   * Audios, videos y los posters de los videos. Opcional: es de Pubteca (el
+   * Python no tiene esta carpeta), y un proyecto sin ella se construye
+   * exactamente igual que antes.
+   */
+  readonly medios?: readonly Archivo[]
 }
 
 /**

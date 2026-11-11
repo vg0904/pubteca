@@ -66,6 +66,8 @@ function imagenesUsadas(p: Proyecto): { id: string; ir: Problema['ir']; que: str
     for (const a of c.aperturas) usadas.push({ id: a.imagenId, ir: { capitulo: c.id }, que: nombre })
     for (const b of c.bloques) {
       if (b.tipo === 'ilustracion') usadas.push({ id: b.imagenId, ir: { capitulo: c.id }, que: nombre })
+      // El poster de un video es una imagen del almacen como cualquier otra.
+      if (b.tipo === 'video' && b.posterId !== null) usadas.push({ id: b.posterId, ir: { capitulo: c.id }, que: nombre })
     }
   }
   for (const x of p.extras) {
@@ -225,6 +227,7 @@ export function rolesDeImagenes(p: Proyecto): Map<string, RolImagen> {
   for (const c of p.capitulos) {
     for (const a of c.aperturas) poner(a.imagenId, 'ilustracion')
     for (const b of c.bloques) if (b.tipo === 'ilustracion') poner(b.imagenId, 'ilustracion')
+    for (const b of c.bloques) if (b.tipo === 'video' && b.posterId !== null) poner(b.posterId, 'poster')
   }
   for (const x of p.extras) {
     for (const b of x.bloques) if (b.tipo === 'ilustracion') poner(b.imagenId, 'ilustracion')

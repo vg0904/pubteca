@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 
 import { entrarEn, vecino } from '../editor-dom'
 import { objetivoVerso, type Donde, type Foco } from '../estado'
 import { crearId } from '../ids'
-import type { Bloque, Imagen, Tramo } from '../modelo'
+import { esMedio, type Bloque, type BloqueMedio as BloqueMedioModelo, type Imagen, type Tramo } from '../modelo'
 import { porTienda, TIENDAS, type Grupo, type Tienda } from '../avisos'
 import { avisosDeImagen } from '../revision'
 import {
@@ -529,6 +529,71 @@ const BloqueIlustracion = memo(function BloqueIlustracion({
   )
 })
 
+/**
+ * Un audio o un video, tal como esta en el capitulo.
+ *
+ * De momento solo se ENSEÑA: se ve que esta, que es, su descripcion y que solo
+ * va en Apple Books, y se puede mover o quitar. Subirlo, convertirlo y elegir
+ * el poster es el hito M3 (plan.md); hasta entonces un medio solo llega por
+ * una copia (.zip) o una carpeta con medios/.
+ */
+const BloqueMedio = memo(function BloqueMedio({
+  donde,
+  bloque,
+  foco,
+  indice,
+  total,
+}: {
+  donde: Donde
+  bloque: BloqueMedioModelo
+  foco: Foco | null
+  indice: number
+  total: number
+}) {
+  const ui = useTextos()
+  const despachar = useDespacho()
+  const ref = useFocoDeTarjeta(foco)
+  return (
+    <div
+      ref={ref}
+      className={`bloque bloque-medio bloque-${bloque.tipo}`}
+      data-bloque={bloque.id}
+      data-navegable=""
+      data-objetivo={bloque.id}
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget) navegarConFlechas(e)
+      }}
+      onFocus={() => despachar({ tipo: 'activarBloque', bloque: bloque.id })}
+    >
+      <div className="ilus-cuerpo">
+        <div className="ilus-campos">
+          <p className="medio-tipo">
+            <span aria-hidden="true">{bloque.tipo === 'video' ? '▶ ' : '♪ '}</span>
+            {bloque.tipo === 'video' ? ui.medio.video : ui.medio.audio}
+            {': '}
+            {bloque.alt || ui.medio.sinDescripcion}
+          </p>
+          {bloque.tipo === 'video' && bloque.posterId === null && <p className="aviso-medio">{ui.medio.sinPoster}</p>}
+          <p className="ayuda-bloque">{ui.medio.soloApple}</p>
+        </div>
+        <Menu
+          etiqueta={ui.medio.menu}
+          opciones={[
+            { etiqueta: ui.ilustracion.subir, desactivada: indice === 0, accion: () => despachar({ tipo: 'moverBloque', donde, bloque: bloque.id, delta: -1 }) },
+            {
+              etiqueta: ui.ilustracion.bajar,
+              desactivada: indice === total - 1,
+              accion: () => despachar({ tipo: 'moverBloque', donde, bloque: bloque.id, delta: 1 }),
+            },
+            { etiqueta: ui.medio.quitar, peligro: true, accion: () => despachar({ tipo: 'borrarBloque', donde, bloque: bloque.id }) },
+          ]}
+        />
+      </div>
+    </div>
+  )
+})
+
 // ---------------------------------------------------------------------------
 // Huecos de insercion
 // ---------------------------------------------------------------------------
@@ -817,7 +882,8 @@ export function EditorBloques({
   // Una ilustracion NO lo reinicia: el texto sigue el mismo hilo.
   const sinSangria = bloques.reduce<{ previo: boolean; marcas: boolean[] }>(
     (acc, b) => ({
-      previo: b.tipo === 'parrafo' ? false : b.tipo === 'ilustracion' ? acc.previo : true,
+      // Un audio o un video tampoco: van dentro del texto, como en el motor.
+      previo: b.tipo === 'parrafo' ? false : b.tipo === 'ilustracion' || esMedio(b) ? acc.previo : true,
       marcas: [...acc.marcas, b.tipo === 'parrafo' && acc.previo],
     }),
     { previo: true, marcas: [] },
@@ -833,6 +899,8 @@ export function EditorBloques({
             <BloqueEscena donde={donde} bloque={b} foco={focoPara(foco, b.id)} indice={i} separador={separador} />
           ) : b.tipo === 'versos' ? (
             <BloqueVersos donde={donde} bloque={b} foco={focoPara(foco, b.id)} />
+          ) : esMedio(b) ? (
+            <BloqueMedio donde={donde} bloque={b} foco={focoPara(foco, b.id)} indice={i} total={bloques.length} />
           ) : (
             <BloqueIlustracion donde={donde} bloque={b} foco={focoPara(foco, b.id)} indice={i} total={bloques.length} />
           )}

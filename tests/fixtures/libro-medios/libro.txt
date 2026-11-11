@@ -1,0 +1,19 @@
+# Libro de prueba INVENTADO, con audio y video. Ni una linea sale de un libro real.
+# Existe para que CI meta medios de verdad en el EPUB de Apple Books y lo pase
+# por EPUBCheck, y para fijar que el de Kindle sale sin ellos. Ver tests/README.md.
+
+titulo: La voz del faro
+autor: Ana Ruiz Mendoza
+sello: Ediciones Pubteca
+idioma: es
+
+descripcion: Una grabación encontrada en un faro. Libro de prueba con audio y video.
+
+isbn:
+fecha_publicacion: 2026-11-11
+
+derechos: © {año} {autor}. Todos los derechos reservados.
+
+incluir_contraportada: no
+separador_de_escena: * * *
+fuente: Baskerville
