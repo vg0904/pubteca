@@ -54,6 +54,10 @@ proteger. Un test que nunca falla no protege nada.
 | `segmentos.test.ts` | El CRC-32, el zip en segmentos con un hueco por medio (rellenado, lo da por bueno `unzip -t`, que comprueba cada CRC) y que el EPUB armado con los medios como ficha es EXACTAMENTE el mismo que con sus bytes |
 | `medios-conversion.test.ts` | Añadir audio o video: el plan de cada archivo (valido, convertible o imposible, y por que), el negro, el poster, la lectura real con Mediabunny de `fixtures/medios-sueltos`, el perro guardian del hilo con un Worker de mentira, y como lo dicen el reductor, la revision y los avisos |
 | `medios-almacen.test.ts` | El almacen de medios en IndexedDB (y su subida de esquema), la copia `.zip` con `medios/` de ida y vuelta sin leer los videos, y el peso: aviso a 500 MB, bloqueo a 2 GB |
+| `impreso-fuente.test.ts` | Leer Source Serif 4: metricas, kerning de GPOS, ligaduras de GSUB (la mas larga primero), lo que falta, lo que permite su `fsType`, y que un `Buffer` de Node se copia |
+| `impreso-guiones.test.ts` | La particion: una lista de palabras con su division de la RAE, y sus reglas sobre muchas palabras (nunca dos vocales separadas, nunca una letra sola) |
+| `impreso-parrafo.test.ts` | Knuth-Plass y las reglas del parrafo, sobre cientos de parrafos inventados a medidas estrechas: nunca tres guiones seguidos, la ultima palabra entera, la raya pegada, nada dentro de una ligadura, recomponer sin un guion |
+| `impreso-paginar.test.ts` | Las reglas de la pagina sobre un libro inventado de doce capitulos: capitulo en impar, viudas, huerfanas, impar sin guion al pie, el cambio de escena siempre con adorno en el borde, subtitulos, versos, ilustraciones, cabeceras y folios |
 
 Las mutaciones de H5 (38, todas detectadas) se corrieron con un script fuera
 del repo: cambia una linea, corre el test que la protege y comprueba que
@@ -62,6 +66,14 @@ todas detectadas. Las de M2 (segmentos, almacen, copia, peso): 21; una no se
 detectaba porque protegia una regla que nunca se usaba, y se quito la regla.
 Las de M3 (añadir audio y video): 22; una no se detectaba (un AAC 5.1 a la
 frecuencia del libro) y se añadio su caso.
+Las de M4 (el compositor del impreso): 40, todas detectadas al final. Cinco no
+se detectaban a la primera: el cambio de escena en blanco se comprobaba en los
+metadatos y no en lo pintado; recomponer no comprobaba el texto; y faltaban
+subtitulos y versos largos cerca del corte de pagina. Otra dejo de detectarse
+al cambiar el libro de prueba (el adorno partido entre dos paginas): dependia
+de la suerte, y ahora un test pone el cambio de escena en cada renglon del pie.
+Una se descarto por equivalente (una raya entre dos letras en español no
+separa la raya de su palabra).
 
 La CONVERSION de verdad no se puede probar aqui: necesita WebCodecs. Se probo
 con un arnes desechable que corre los modulos reales en Safari 27.2 y Chromium
@@ -82,3 +94,10 @@ genera en un archivo temporal (y borra): el motor lo recibe como ficha, el
 EPUB se escribe a disco por trozos, `unzip -t` lo comprueba y la memoria del
 proceso no puede pasar de 250 MB. Va dentro de `npm run epubs`, asi que CI lo
 pasa tambien por EPUBCheck.
+
+## El texto del impreso
+
+Los tests del impreso no usan un libro: `impreso/ayuda.ts` inventa parrafos con
+un generador con semilla y un vocabulario hecho para esto, asi que cada vuelta
+compone exactamente lo mismo. Las fuentes son las del repo
+(`public/fuentes/impreso/`).

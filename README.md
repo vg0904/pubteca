@@ -56,6 +56,13 @@ dentro de los EPUB de Apple Books va bajo la SIL Open Font License; su
 obliga a mantener su codigo fuente disponible tal cual: se usa sin modificar,
 desde npm, y su licencia viaja con el paquete.
 
+Para el libro impreso: Source Serif 4 (Adobe, SIL Open Font License; su
+`OFL.txt` esta en `public/fuentes/impreso/`) y los patrones de particion de
+hyph-utf8, el español de Javier Bezos (MIT) y el ingles de Gerard Kuiken
+(licencia permisiva de una frase); los dos llevan su aviso dentro de
+`src/core/impreso/patrones/`. Los genera `scripts/impreso-recursos.py` desde un
+commit fijo y comprobado.
+
 Pubteca no esta asociado ni respaldado por Amazon, Kindle Direct Publishing ni
 Apple. Los nombres de esas tiendas se usan solo para describir a que formato va
 dirigido cada archivo.

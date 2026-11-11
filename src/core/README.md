@@ -13,3 +13,22 @@ Esta frontera es lo que hace posibles las tres cosas que el proyecto necesita:
 
 Si el core se vuelve `async` por un inflate o un hash, los golden tests dejan de
 ser deterministas y el `await` se contagia a todo el pipeline. No lo vuelvas async.
+
+## `impreso/`: el libro en papel
+
+El compositor del PDF interior, igual de puro y sincrono. La app le pasa las
+fuentes ya leidas (`Fuente` sobre sus bytes) y los bloques del parser; el core
+no carga nada.
+
+- `sfnt.ts` lee una fuente TrueType: `cmap`, avances, kerning de GPOS y
+  ligaduras de GSUB, y si su licencia deja incrustarla (`fsType`).
+- `guiones.ts` parte palabras: Liang con los patrones de `patrones/` (generados,
+  no se editan a mano) y encima las reglas de la RAE.
+- `parrafo.ts` compone un parrafo con Knuth y Plass: nunca tres guiones
+  seguidos, la ultima palabra entera, la raya pegada a su palabra.
+- `paginar.ts` corta en paginas sobre una reticula: capitulos en impar, sin
+  viudas ni huerfanas, impar sin guion al pie, el cambio de escena siempre
+  visible, ilustraciones en su pagina, cabeceras y folios.
+- `tipos.ts`: lo que sale es una LISTA DE OPERACIONES por pagina (glifos
+  colocados, imagenes). La pintan el PDF y la vista previa: lo que se ve es lo
+  que se imprime.
