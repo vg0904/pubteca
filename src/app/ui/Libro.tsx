@@ -27,6 +27,8 @@ export type EstadoGuardado = 'guardado' | 'guardando' | 'error' | 'sinAlmacen' |
  * de particion y el escritor de PDF, y quien no imprime no los descarga.
  */
 const PantallaImpreso = lazy(() => import('./Impreso'))
+/** La cubierta, igual: sus letras y su compositor solo los descarga quien entra. */
+const PantallaCubierta = lazy(() => import('./Cubierta'))
 
 /** Dias a partir de los cuales la copia se marca en ambar. */
 const DIAS_COPIA_VIEJA = 7
@@ -193,7 +195,7 @@ export function PantallaLibro({
   const capitulo = capituloActual(estado)
   const extra = extraActual(estado)
   const separador = p.datos.separadorDeEscena || '* * *'
-  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar', 'impreso']
+  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar', 'impreso', 'cubierta']
 
   // Al cambiar de capitulo o de seccion se empieza por arriba, como al pasar
   // de pagina; si no, se hereda el desplazamiento del anterior.
@@ -304,6 +306,11 @@ export function PantallaLibro({
           {estado.seccion === 'impreso' && (
             <Suspense fallback={<p className="ayuda">{ui.impreso.medida.componiendo}</p>}>
               <PantallaImpreso estado={estado} />
+            </Suspense>
+          )}
+          {estado.seccion === 'cubierta' && (
+            <Suspense fallback={<p className="ayuda">{ui.cubierta.componiendo}</p>}>
+              <PantallaCubierta estado={estado} />
             </Suspense>
           )}
         </main>

@@ -21,6 +21,7 @@
  */
 import type { KindlePropio } from './imagen-ajuste'
 import type { ConfigImpreso } from '../core/impreso/config'
+import type { ConfigCubierta } from '../core/impreso/cubierta-config'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -169,7 +170,15 @@ export interface Medio {
 /** Los datos del medio que dependen de lo que es: los opcionales de `Medio`. */
 export type DetallesMedio = Pick<Medio, 'hz' | 'canales' | 'ancho' | 'alto'>
 
-export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco'
+/**
+ * Los papeles de las imagenes de la portada. El sello y su isotipo (con su
+ * version clara, para fondos oscuros) solo van en la cubierta impresa: el
+ * motor del EPUB no los busca.
+ */
+export type RolPortada = 'portada' | 'contraportada' | 'logo' | 'logoBlanco' | 'sello' | 'selloBlanco' | 'isotipo' | 'isotipoBlanco'
+
+/** Los del sello, que solo usa la cubierta. */
+export const ROLES_DEL_SELLO: readonly RolPortada[] = ['sello', 'selloBlanco', 'isotipo', 'isotipoBlanco']
 
 /**
  * Como se entregan las imagenes a Kindle.
@@ -269,6 +278,8 @@ export interface Proyecto {
    * por sus ids (ver `ExtraImpreso`).
    */
   readonly impreso?: ConfigImpreso
+  /** Como sale la cubierta impresa: estilo, codigo, lomo, encuadre... Solo si el autor toco algo. */
+  readonly cubierta?: ConfigCubierta
   /**
    * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
    * interfaz la ensena siempre: el navegador puede borrar lo que guarda.
@@ -305,11 +316,14 @@ export interface Proyecto {
  *   3 · `impreso`, las opciones del libro impreso. Tampoco migra nada: es un
  *       campo opcional. Pero una version 2 de la app lo tiraria al abrir una
  *       copia, y el autor perderia su maquetacion sin enterarse.
+ *   4 · `cubierta` y las imagenes del sello (`sello`, `isotipo` y sus
+ *       versiones claras). Lo mismo: una version 3 los tiraria de la copia.
  */
-export const VERSION_PROYECTO = 3
+export const VERSION_PROYECTO = 4
 
 /** La version minima con la que hay que guardar este libro. */
-export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso'>>): number {
+export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada'>>): number {
+  if (p.cubierta || ROLES_DEL_SELLO.some((r) => p.portada?.[r] !== undefined)) return 4
   if (p.impreso) return 3
   const conMedios = [...p.capitulos, ...p.extras].some((c) => c.bloques.some(esMedio))
   return conMedios ? 2 : 1

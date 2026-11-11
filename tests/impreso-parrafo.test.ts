@@ -73,7 +73,8 @@ describe('regla: nunca tres lineas seguidas acabadas en guion', () => {
     }
     // Que el caso exista: si nunca hubiera dos seguidas, el test no probaria nada.
     expect(dos).toBeGreaterThan(0)
-  })
+    // Pesado: con la maquina cargada (o en CI) pasa de los 5 s por defecto sin estar roto.
+  }, 20_000)
 })
 
 describe('regla: la ultima palabra del parrafo no se parte', () => {

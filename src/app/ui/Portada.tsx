@@ -124,6 +124,29 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
     }
   }
 
+  /**
+   * El sello y su isotipo, para la cubierta impresa: como el logo del titulo,
+   * con su version clara hecha aqui si tiene transparencia (la cubierta elige
+   * la que se lee sobre lo que tenga debajo).
+   */
+  const ponerConClaro = async (rol: 'sello' | 'isotipo', archivos: File[]): Promise<void> => {
+    const claro = rol === 'sello' ? 'selloBlanco' : 'isotipoBlanco'
+    const [img] = await subir(archivos)
+    if (!img) return
+    const blob = repo?.blob(img.id)
+    const sinClaro = (): void => despachar({ tipo: 'portada', cambios: { [rol]: img.id, [claro]: null } })
+    if (!img.alfa || !blob) return sinClaro()
+    try {
+      const blanco = await logoEnBlanco(blob)
+      if (!blanco) return sinClaro()
+      const nombre = img.nombreOriginal.replace(/\.(png|jpe?g)$/iu, '') + '-claro.png'
+      const [b] = await subir([new File([blanco], nombre, { type: 'image/png' })])
+      despachar({ tipo: 'portada', cambios: { [rol]: img.id, [claro]: b?.id ?? null } })
+    } catch {
+      sinClaro()
+    }
+  }
+
   const logo = p.logo ? imagenes.get(p.logo) : undefined
   const diseno = proyecto.datos.portadilla
   const esLogo = diseno === 'logo'
@@ -256,6 +279,33 @@ export function PantallaPortada({ proyecto }: { proyecto: Proyecto }) {
           {ui.portada.anadirLamina}
         </button>
       </section>
+
+      <h2 className="seccion-impreso">{ui.portada.paraLaCubierta}</h2>
+      <p className="ayuda">{ui.portada.paraLaCubiertaAyuda}</p>
+      {(['sello', 'isotipo'] as const).map((rol) => {
+        const id = p[rol]
+        const claro = p[rol === 'sello' ? 'selloBlanco' : 'isotipoBlanco']
+        const img = id ? imagenes.get(id) : undefined
+        return (
+          <Ranura
+            key={rol}
+            titulo={ui.portada[rol]}
+            ayuda={ui.portada[rol === 'sello' ? 'selloAyuda' : 'isotipoAyuda']}
+            imagenId={id}
+            rolAvisos="logo"
+            alElegir={(a) => void ponerConClaro(rol, a)}
+            alQuitar={() => despachar({ tipo: 'portada', cambios: { [rol]: null } })}
+          >
+            {img && !img.alfa && <p className="alerta nivel-nota compacta">{ui.portada.selloOpaco}</p>}
+            {img && claro && (
+              <div className="logo-oscuro">
+                <p className="rotulo">{ui.portada.selloClaro}</p>
+                <div className="ranura-imagen oscura">{repo?.url(claro) && <img src={repo.url(claro)} alt="" />}</div>
+              </div>
+            )}
+          </Ranura>
+        )
+      })}
     </div>
   )
 }

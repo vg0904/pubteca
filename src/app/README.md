@@ -114,3 +114,25 @@ proyecto, con sus golden tests intactos.
 Las opciones viven en `Proyecto.impreso`, opcional: un libro que nunca las
 toco se guarda igual que antes, y uno que si, como formato 3 (ver
 `VERSION_PROYECTO`).
+
+## La cubierta
+
+`ui/Cubierta.tsx`, tambien con `import()`, y `cubierta/`:
+
+- `preparar.ts` (puro): lo que lee la cubierta del core. El corte, el papel,
+  el destino y el ISBN salen de las opciones del impreso; las paginas, del
+  interior ya compuesto en su hilo: por eso el lomo cambia solo.
+- `medir.ts`: la luminancia de cada dibujo en una rejilla pequeña (con ella el
+  core elige la tinta de cada pieza) y el color del borde de abajo a la
+  izquierda de la portada (el que sigue en el lomo).
+- `pintar.ts`: las capas del fondo y el texto en vectores sobre un lienzo. Lo
+  usan la vista previa (con guias), el PNG y la imagen del fondo del PDF (solo
+  capas, a 300 ppi; el texto lo pone el PDF).
+- `fuentes.ts` trae las cinco letras de `public/fuentes/cubierta/`.
+- `avisos.ts`, sus avisos con su nivel.
+
+El logo del sello y su isotipo son papeles nuevos de la portada (`sello`,
+`isotipo`, con su version clara hecha al subirlos). Solo los usa la cubierta:
+el EPUB no los busca, pero la copia (.zip) si los guarda. Con ellos, o con
+opciones de cubierta, el libro se guarda como formato 4.
+

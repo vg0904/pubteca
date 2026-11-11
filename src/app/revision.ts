@@ -175,6 +175,10 @@ export function nombresLegibles(
     contraportada: 'La contraportada',
     logo: 'El logo',
     logoBlanco: 'El logo para modo oscuro',
+    sello: 'El logo del sello',
+    selloBlanco: 'El logo del sello, en claro',
+    isotipo: 'El isotipo del sello',
+    isotipoBlanco: 'El isotipo del sello, en claro',
   }
   for (const [rol, id] of Object.entries(p.portada)) {
     const nombre = nombres.get(id)

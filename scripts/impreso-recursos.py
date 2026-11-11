@@ -6,6 +6,9 @@
                             negrita cursiva) de cada familia de la lista,
                             estaticas, con el OFL de cada una
                             (`OFL-<Familia>.txt`)
+  public/fuentes/cubierta/  una cara de cada letra de los estilos de portada
+                            (Jost, Playfair Display, Cormorant Garamond, Bebas
+                            Neue y Oswald), con su OFL
   src/core/impreso/patrones/es.ts, en.ts
                             los patrones de particion de hyph-utf8, como datos
 
@@ -82,6 +85,22 @@ FAMILIAS = [
     },
 ]
 
+# Las letras de la CUBIERTA (M7): una cara de cada una, las de los bocetos de los
+# seis estilos. Van a public/fuentes/cubierta/. Bebas Neue no es variable.
+CUBIERTA = [
+    {"salida": "Jost-Regular", "carpeta": "jost", "archivo": ("Jost[wght].ttf", "6343b70971000b04c5d401c96ae08ce371086135e999d5e1e1413039c0213076"), "ejes": {"wght": 400},
+     "ofl": "1af3438a4d5f0ed2bdbc5751a5a67ebf6d537334161184b7fbb68503ef0ea0c5"},
+    {"salida": "PlayfairDisplay-Regular", "carpeta": "playfairdisplay", "archivo": ("PlayfairDisplay[wght].ttf", "c40f2293766a503bc70cce9e512ef844a4ccb7cbcde792fe2ea31d191917d8d6"), "ejes": {"wght": 400},
+     "ofl": "566be814f8e96e93dfa16101331557eb6b5467e9e03f627c0910fe93ca12300e"},
+    {"salida": "CormorantGaramond-Light", "carpeta": "cormorantgaramond", "archivo": ("CormorantGaramond[wght].ttf", "b20b7d9626dd956b2c5e558692ad328b1f19e3275e2782db4fa07670d83f35e0"), "ejes": {"wght": 300},
+     "ofl": "60700d351cac4650c51f3f9db318d2a420f8b45052dba2715eb5fec41f0f6956"},
+    {"salida": "BebasNeue-Regular", "carpeta": "bebasneue", "archivo": ("BebasNeue-Regular.ttf", "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73"), "ejes": None,
+     "ofl": "72082f6cb4d04be2ecf7cc7d9e1e7d73787f0af8a5a278a47cade70c16b78341"},
+    {"salida": "Oswald-Regular", "carpeta": "oswald", "archivo": ("Oswald[wght].ttf", "5b38c246e255a12f5712d640d56bcced0472466fc68983d2d0410ec0457c2817"), "ejes": {"wght": 400},
+     "ofl": "0fd731a904b729a4e02eaf5e8ebd06783edd9abe400e8882760160230675b652"},
+]
+CUBIERTA_DIR = RAIZ / "public" / "fuentes" / "cubierta"
+
 DESCARGAS = {
     "es": ("https://raw.githubusercontent.com/hyphenation/tex-hyphen/673f7b33e664b141432ba6d78d2caa686ea5317f/"
            "hyph-utf8/tex/generic/hyph-utf8/patterns/tex/hyph-es.tex",
@@ -153,6 +172,32 @@ def fuentes() -> None:
         (FUENTES / f"OFL-{fam['prefijo']}.txt").write_bytes(de_google(fam["carpeta"], "OFL.txt", fam["ofl"]))
 
 
+def cubierta() -> None:
+    from fontTools.ttLib import TTFont
+    from fontTools.varLib.instancer import instantiateVariableFont
+    from fontTools import subset
+    CUBIERTA_DIR.mkdir(parents=True, exist_ok=True)
+    for f in CUBIERTA:
+        datos = de_google(f["carpeta"], *f["archivo"])
+        original = TTFont(io.BytesIO(datos))
+        fuente = instantiateVariableFont(original, f["ejes"], inplace=False, updateFontNames=True) if f["ejes"] else TTFont(io.BytesIO(datos))
+        opciones = subset.Options()
+        opciones.layout_features = CARACTERISTICAS
+        opciones.hinting = False
+        opciones.name_IDs = ["*"]
+        opciones.name_languages = ["*"]
+        opciones.notdef_outline = True
+        sub = subset.Subsetter(opciones)
+        sub.populate(unicodes=UNICODES)
+        sub.subset(fuente)
+        salida = CUBIERTA_DIR / f"{f['salida']}.ttf"
+        fuente.recalcTimestamp = False
+        fuente["head"].modified = original["head"].modified
+        fuente.save(salida)
+        print(f"  {salida.relative_to(RAIZ)}  {salida.stat().st_size} bytes")
+        (CUBIERTA_DIR / f"OFL-{f['salida'].split('-')[0]}.txt").write_bytes(de_google(f["carpeta"], "OFL.txt", f["ofl"]))
+
+
 def patrones() -> None:
     PATRONES.mkdir(parents=True, exist_ok=True)
     for idioma, comentario in (("es", "español"), ("en", "inglés de Estados Unidos")):
@@ -190,6 +235,7 @@ export const EXCEPCIONES = '{excepciones}'
 def main() -> int:
     patrones()
     fuentes()
+    cubierta()
     return 0
 
 

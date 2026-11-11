@@ -21,8 +21,9 @@ fuentes ya leidas (`Fuente` sobre sus bytes) y el proyecto del motor; el core
 no carga nada.
 
 - `sfnt.ts` lee una fuente TrueType: `cmap`, avances, kerning de GPOS y
-  ligaduras de GSUB, si su licencia deja incrustarla (`fsType`), y el
-  contorno de cada glifo como trazado SVG (con el pinta la vista previa).
+  ligaduras de GSUB, si su licencia deja incrustarla (`fsType`), el contorno
+  de cada glifo como trazado SVG (con el pinta la vista previa) y la caja que
+  declara cada glifo (lo que de verdad suben los acentos).
 - `guiones.ts` parte palabras: Liang con los patrones de `patrones/` (generados,
   no se editan a mano) y encima las reglas de la RAE.
 - `parrafo.ts` compone un parrafo con Knuth y Plass: nunca tres guiones
@@ -51,3 +52,14 @@ no carga nada.
   y lo compone entero con los margenes del destino: el medianil de KDP sale
   del numero real de paginas (`buscarMedianil`) y el indice lleva los folios
   reales (dos vueltas).
+- `cubierta.ts` compone la cubierta entera: el lomo por paginas y papel, los
+  seis estilos de portada como DATOS (en fracciones del ancho de la portada y
+  milimetros fijos), la contraportada con la caja del codigo y la sinopsis, la
+  tinta de cada pieza por contraste (WCAG) y el velo cuando hace falta. No
+  pinta: da las capas del fondo (que pinta la app) y las operaciones en
+  vectores. Sus opciones viven en `cubierta-config.ts`, ligero, para que el
+  almacen y la copia no carguen el compositor.
+- `ean13.ts`: el codigo de barras de un ISBN, modulo a modulo (las tablas de
+  la norma), y `pdf-cubierta.ts`, el PDF de la cubierta con las piezas del
+  escritor del interior: varias letras, texto girado, rectangulos y el fondo en
+  sRGB (no es PDF/X-1a: ver plan.md, decision 11).

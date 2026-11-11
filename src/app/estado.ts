@@ -18,6 +18,7 @@
  *     una vez.
  */
 import { CONFIG_IMPRESO_POR_DEFECTO, conFuente, normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
+import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type ConfigCubierta } from '../core/impreso/cubierta-config'
 import { nombreSeguro } from '../core/texto'
 import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
@@ -44,7 +45,7 @@ import { canonicos, igualesTramos, limpiarTexto, longitud, partir, plano, prefij
 import type { PosVerso } from './versos'
 
 export type Pantalla = 'inicio' | 'importar' | 'libro'
-export type Seccion = 'capitulos' | 'portada' | 'extras' | 'descargar' | 'impreso'
+export type Seccion = 'capitulos' | 'portada' | 'extras' | 'descargar' | 'impreso' | 'cubierta'
 
 /** El contenedor de una lista de bloques: un capitulo o un extra. */
 export type Donde =
@@ -225,6 +226,8 @@ export type Accion =
   // datos del libro
   | { readonly tipo: 'dato'; readonly campo: keyof DatosLibro; readonly valor: string | boolean; readonly ahora: number }
   | { readonly tipo: 'entregaKindle'; readonly cambios: Partial<EntregaKindle>; readonly ahora: number }
+  /** Las opciones de la cubierta impresa. */
+  | { readonly tipo: 'cubierta'; readonly cambios: Partial<ConfigCubierta>; readonly ahora: number }
   /** Las opciones del libro impreso. Cambiar de letra arrastra su cuerpo recomendado (ver `conFuente`). */
   | { readonly tipo: 'impreso'; readonly cambios: Partial<ConfigImpreso>; readonly ahora: number }
   // El ajuste propio de UNA imagen para Kindle. `cambios` a null lo quita y
@@ -1007,6 +1010,8 @@ export function reducir(e: Estado, a: Accion): Estado {
       }
       // Sin logo no hay version blanca que valga.
       if (!portada.logo) delete portada.logoBlanco
+      if (!portada.sello) delete portada.selloBlanco
+      if (!portada.isotipo) delete portada.isotipoBlanco
       return cambiar(e, { ...p, portada })
     }
     /**
@@ -1144,6 +1149,12 @@ export function reducir(e: Estado, a: Accion): Estado {
       // Como el deslizador de Kindle: arrastrar el cuerpo es un solo paso.
       const grupo = `impreso:${Object.keys(a.cambios).sort().join(',')}`
       return cambiar(e, { ...p, impreso }, { grupo, ahora: a.ahora })
+    }
+    case 'cubierta': {
+      const antes = p.cubierta ?? CONFIG_CUBIERTA_POR_DEFECTO
+      const cubierta = normalizarCubierta({ ...antes, ...a.cambios, tintas: { ...antes.tintas, ...(a.cambios.tintas ?? {}) } })
+      if (JSON.stringify(cubierta) === JSON.stringify(antes)) return e
+      return cambiar(e, { ...p, cubierta }, { grupo: `cubierta:${Object.keys(a.cambios).sort().join(',')}`, ahora: a.ahora })
     }
     case 'kindleDeImagen': {
       const propios = { ...(p.kindlePorImagen ?? {}) }

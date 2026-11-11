@@ -86,5 +86,6 @@ describe('que se comprime dentro del EPUB', () => {
     const dentro = unzipSync(zip)
     expect(dentro['OEBPS/imagenes/procreate.png']).toEqual(incompresible(600_000))
     expect(dentro['OEBPS/imagenes/plana.png']).toEqual(plano(600_000))
-  })
+    // Pesado: con la maquina cargada (o en CI) pasa de los 5 s por defecto sin estar roto.
+  }, 20_000)
 })

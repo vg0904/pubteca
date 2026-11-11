@@ -452,7 +452,8 @@ export function textosPintados(p: PdfLeido) {
         cuerpo = Number(m[2])
         continue
       }
-      m = /^1 0 0 1 (\S+) (\S+) Tm$/u.exec(linea)
+      // La matriz del texto: de ella, el origen (x, y). La cubierta gira el del lomo.
+      m = /^\S+ \S+ \S+ \S+ (\S+) (\S+) Tm$/u.exec(linea)
       if (m) {
         x = Number(m[1])
         y = Number(m[2])

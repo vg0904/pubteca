@@ -224,6 +224,11 @@ export function exportar(
     contraportada: 'contraportada',
     logo: 'logo',
     logoBlanco: 'logo-blanco',
+    // Solo para la cubierta impresa; el EPUB no los busca, pero la copia (.zip) si los guarda.
+    sello: 'sello',
+    selloBlanco: 'sello-blanco',
+    isotipo: 'isotipo',
+    isotipoBlanco: 'isotipo-blanco',
   }
   const portada: Archivo[] = []
   for (const [rol, base] of Object.entries(ROLES) as [RolPortada, string][]) {

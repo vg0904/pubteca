@@ -30,6 +30,7 @@ import { crc32 } from '../core/crc32'
 import { claseDe } from '../core/medios'
 import { CONFIG_DEFAULT, leerConfig, si } from '../core/config'
 import { normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
+import { normalizarCubierta } from '../core/impreso/cubierta-config'
 import { inspeccionarImagen, type InfoImagen } from '../core/imagen-inspeccion'
 import { Imagenes } from '../core/imagenes'
 import { EXT_EXTRA, EXT_IMG, EXT_TEXTO } from '../core/libro'
@@ -568,7 +569,10 @@ function desdeCarpetas(
 
   // Portada, contraportada y logos, por su nombre.
   const portada: Partial<Record<RolPortada, string>> = {}
-  const roles: [RolPortada, string][] = [['portada', 'portada'], ['contraportada', 'contraportada'], ['logo', 'logo'], ['logoBlanco', 'logo-blanco']]
+  const roles: [RolPortada, string][] = [
+    ['portada', 'portada'], ['contraportada', 'contraportada'], ['logo', 'logo'], ['logoBlanco', 'logo-blanco'],
+    ['sello', 'sello'], ['selloBlanco', 'sello-blanco'], ['isotipo', 'isotipo'], ['isotipoBlanco', 'isotipo-blanco'],
+  ]
   for (const [rol, base] of roles) {
     const a = buscarEn(pm.portada, base, EXT_IMG)
     const id = a ? recogida.id(a) : null
@@ -747,7 +751,7 @@ function proyectoDeJson(
 
   const portada: Partial<Record<RolPortada, string>> = {}
   if (esObjeto(x['portada'])) {
-    for (const rol of ['portada', 'contraportada', 'logo', 'logoBlanco'] as const) {
+    for (const rol of ['portada', 'contraportada', 'logo', 'logoBlanco', 'sello', 'selloBlanco', 'isotipo', 'isotipoBlanco'] as const) {
       const v = x['portada'][rol]
       if (typeof v === 'string') portada[rol] = imagenId(v)
     }
@@ -762,9 +766,10 @@ function proyectoDeJson(
   // Las opciones del impreso, si las hay, campo a campo como todo lo demas; un
   // extra que ya no esta se queda fuera del orden (ver `ordenDeExtras`).
   const impreso = x['impreso'] !== undefined ? normalizarConfig(x['impreso'], (v) => idsDeExtras.get(v) ?? `perdido-${v}`) : undefined
+  const cubierta = x['cubierta'] !== undefined ? normalizarCubierta(x['cubierta']) : undefined
   return {
     id: nuevoId('libro'),
-    version: versionNecesaria({ capitulos, extras, impreso }),
+    version: versionNecesaria({ capitulos, extras, impreso, cubierta, portada }),
     datos: { ...datos, idioma: idioma ?? 'es', portadilla },
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),
@@ -774,6 +779,7 @@ function proyectoDeJson(
     kindlePorImagen: kindlePorImagenDe(x['kindlePorImagen'], imagenId),
     ...(descargado ? { descargado } : {}),
     ...(impreso ? { impreso } : {}),
+    ...(cubierta ? { cubierta } : {}),
   }
 }
 
@@ -975,7 +981,9 @@ export function leerCopia(
           ...(creada !== null ? { ultimaCopia: creada } : {}),
           // El impreso no depende del texto, salvo el orden de los extras, que
           // va por ids que los archivos no tienen: ese vuelve al del EPUB.
-          ...(proyecto.impreso ? { impreso: sinOrdenDeExtras(proyecto.impreso), version: 3 } : {}),
+          ...(proyecto.impreso ? { impreso: sinOrdenDeExtras(proyecto.impreso) } : {}),
+          ...(proyecto.cubierta ? { cubierta: proyecto.cubierta } : {}),
+          version: versionNecesaria({ ...dePapel, impreso: proyecto.impreso, cubierta: proyecto.cubierta }),
         },
         avisos: [{ clave: 'editadaFuera', detalle: '' }, ...r.copia.avisos],
         creada,

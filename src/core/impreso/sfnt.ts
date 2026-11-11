@@ -404,6 +404,23 @@ export class Fuente {
     return c
   }
 
+  /**
+   * La caja que el glifo declara en su cabecera (xMin, yMin, xMax, yMax), en
+   * unidades de la fuente; null si no tiene contorno (el espacio). Con ella se
+   * sabe lo que de verdad sube una «Í» o baja una «g»: la altura de las
+   * mayusculas no cuenta los acentos.
+   */
+  limites(g: number): readonly [number, number, number, number] | null {
+    const loca = this.tablas.get('loca')
+    const glyf = this.tablas.get('glyf')
+    if (!loca || !glyf || g < 0 || g >= this.numGlifos) return null
+    const dv = this.dv
+    const pos = (i: number): number => (this.locaLarga ? dv.getUint32(loca.off + i * 4) : dv.getUint16(loca.off + i * 2) * 2)
+    const a = glyf.off + pos(g)
+    if (glyf.off + pos(g + 1) <= a) return null
+    return [dv.getInt16(a + 2), dv.getInt16(a + 4), dv.getInt16(a + 6), dv.getInt16(a + 8)]
+  }
+
   /** Los contornos de un glifo; los de un compuesto, con cada pieza ya movida y escalada. */
   private puntos(g: number, profundidad: number): Punto[][] {
     const loca = this.tablas.get('loca')

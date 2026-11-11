@@ -982,3 +982,21 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .ver-pagina { max-width: min(600px, calc(100vw - 2rem)); }
 .ver-pagina-hoja { display: flex; justify-content: center; margin: 0.6rem 0; }
 .ver-pagina-mandos { display: flex; justify-content: space-between; gap: 0.6rem; }
+
+/* ---------------------------------------------------------------------------
+   Cubierta: los estilos sobre el dibujo del autor, y la cubierta entera.
+   --------------------------------------------------------------------------- */
+.pantalla-cubierta { max-width: 76rem; }
+.pantalla-cubierta > section { margin-top: 1.2rem; }
+.estilos-portada { list-style: none; margin: 0.6rem 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.8rem; }
+.estilo-portada { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 0.6rem; border: 1px solid var(--borde); border-radius: 10px; background: var(--papel); color: inherit; font: inherit; text-align: center; cursor: pointer; }
+.estilo-portada:hover, .estilo-portada:focus-visible { border-color: var(--borde-fuerte); }
+.estilo-portada.elegido { border-color: var(--acento); box-shadow: 0 0 0 2px var(--acento); }
+.estilo-portada .ayuda { font-size: 0.78rem; }
+.lienzo-cubierta { display: block; max-width: 100%; height: auto !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(60, 40, 20, 0.15); }
+.cubierta-entera { overflow-x: auto; margin: 0.6rem 0; padding-bottom: 0.3rem; }
+.cubierta-entera .lienzo-cubierta { max-width: none; }
+.campo-en-linea { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.campo-en-linea select { width: auto; }
+.seccion-impreso { margin-top: 2rem; }
+.pantalla-cubierta .medida-en-vivo { position: static; margin-top: 0.6rem; }

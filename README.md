@@ -3,8 +3,9 @@
 **Tu libro, listo para las tiendas.**
 
 Convierte tus capitulos en dos EPUB listos para publicar: uno para **Kindle (KDP)**
-y otro para **Apple Books**, y en el **PDF interior del libro impreso** para KDP,
-IngramSpark o una imprenta. Corre entero en el navegador: tu manuscrito nunca
+y otro para **Apple Books**, y en el **libro impreso**: el PDF interior y la
+cubierta entera (contraportada, lomo y portada) para KDP, IngramSpark o una
+imprenta. Corre entero en el navegador: tu manuscrito nunca
 sale de tu equipo.
 
 > En construccion. Ahora mismo se esta portando el motor de generacion.
@@ -63,8 +64,10 @@ desde npm, y su licencia viaja con el paquete.
 Para el libro impreso: seis letras de libro con la SIL Open Font License,
 Source Serif 4, EB Garamond, Literata, Crimson Pro, Alegreya y Libre
 Baskerville, cada una con su `OFL-<Familia>.txt` en `public/fuentes/impreso/`
-(solo las descarga quien abre «Libro impreso» y elige esa letra); y los
-patrones de particion de
+(solo las descarga quien abre «Libro impreso» y elige esa letra); para la
+cubierta, Jost, Playfair Display, Cormorant Garamond, Bebas Neue y Oswald, una
+cara de cada una, tambien OFL y con su licencia en `public/fuentes/cubierta/`; y
+los patrones de particion de
 hyph-utf8, el español de Javier Bezos (MIT) y el ingles de Gerard Kuiken
 (licencia permisiva de una frase); los dos llevan su aviso dentro de
 `src/core/impreso/patrones/`. Los genera `scripts/impreso-recursos.py` desde un

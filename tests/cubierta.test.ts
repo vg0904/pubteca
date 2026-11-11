@@ -1,0 +1,371 @@
+import { describe, expect, it } from 'vitest'
+import {
+  CAJA_CODIGO,
+  CONFIG_CUBIERTA_POR_DEFECTO,
+  ESTILOS_ORDEN,
+  contraste,
+  luminanciaDe,
+  medidasCubierta,
+  normalizarCubierta,
+  TINTA_CLARA,
+  TINTA_OSCURA,
+  type Caja,
+  type CubiertaCompuesta,
+  type EstiloId,
+  type OpCubierta,
+} from '../src/core/impreso/cubierta'
+import { barrasEan13, cifrasDeIsbn, modulosEan13 } from '../src/core/impreso/ean13'
+import { CORTES } from '../src/core/impreso/formatos'
+import { componerImpreso } from '../src/core/impreso/plan'
+import { CONFIG_IMPRESO_POR_DEFECTO } from '../src/core/impreso/config'
+import { contenidoDePrueba } from '../scripts/impreso-prueba'
+import { cubiertaDePrueba, datosDePrueba, fuentesCubiertaDelRepo, pdfDeCubierta } from '../scripts/cubierta-prueba'
+import { dic, leerPdf, lista, nombreDe, numero, paginas, textosPintados } from '../scripts/leer-pdf'
+import { fuentes } from './impreso/ayuda'
+
+// La cubierta (M7): las medidas con el lomo, el codigo de barras, que ninguna
+// pieza de ningun estilo invade la caja del codigo ni sale de lo seguro, la
+// tinta que se elige por contraste, y el PDF. Que un lector de codigos lee el
+// EAN-13 lo comprueba CI con zbarimg (y se comprobo con ZXing: ver plan.md).
+
+const MM = 72 / 25.4
+const IN = 72
+const F = fuentesCubiertaDelRepo()
+
+/**
+ * La caja de lo que pinta una operacion, girada si va girada: a lo largo, lo
+ * que avanzan sus glifos; a lo alto, lo que declara la caja de cada glifo en
+ * la fuente (los acentos incluidos).
+ */
+function cajaDe(op: OpCubierta): Caja {
+  if (op.op === 'rect') return { x: op.x, y: op.y, ancho: op.ancho, alto: op.alto }
+  const f = op.letra === 'libro' ? F.libro[op.cara] : F[op.letra]
+  const k = op.cuerpo / f.upm
+  const largo = op.glifos.reduce((s, g) => s + g.avance * k, 0)
+  const cajas = op.glifos.flatMap((g) => (f.limites(g.id) ? [f.limites(g.id) as readonly number[]] : []))
+  const sube = Math.max(0, ...cajas.map((c) => c[3] as number)) * k
+  const baja = Math.max(0, ...cajas.map((c) => -(c[1] as number))) * k
+  if (op.giro === 90) return { x: op.x - baja, y: op.y, ancho: sube + baja, alto: largo }
+  if (op.giro === -90) return { x: op.x - sube, y: op.y - largo, ancho: sube + baja, alto: largo }
+  return { x: op.x, y: op.y - sube, ancho: largo, alto: sube + baja }
+}
+
+const corta = (a: Caja, b: Caja): boolean => a.x < b.x + b.ancho - 1e-6 && b.x < a.x + a.ancho - 1e-6 && a.y < b.y + b.alto - 1e-6 && b.y < a.y + a.alto - 1e-6
+const dentro = (a: Caja, b: Caja): boolean => a.x >= b.x - 1e-6 && a.y >= b.y - 1e-6 && a.x + a.ancho <= b.x + b.ancho + 1e-6 && a.y + a.alto <= b.y + b.alto + 1e-6
+const encoger = (c: Caja, dx: number, dy = dx): Caja => ({ x: c.x + dx, y: c.y + dy, ancho: c.ancho - 2 * dx, alto: c.alto - 2 * dy })
+
+describe('las medidas: el caso de M7', () => {
+  it('6 × 9 in, 212 paginas, crema: 12,78 × 9,25 in con lomo de 13,5 mm e isotipo', () => {
+    const c = cubiertaDePrueba({}, { imagenes: { ...datosDePrueba().imagenes, isotipo: { ancho: 400, alto: 400 } } })
+    expect(c.medidas.ancho / IN).toBeCloseTo(12.78, 6)
+    expect(c.medidas.alto / IN).toBeCloseTo(9.25, 6)
+    expect(c.medidas.lomo / MM).toBeCloseTo(13.46, 2)
+    expect(c.piezas.some((p) => p.que === 'isotipo')).toBe(true)
+    expect(c.capas.filter((x) => x.que === 'logo').map((x) => (x.que === 'logo' ? x.rol : ''))).toContain('isotipo')
+  })
+
+  it('el lomo sale del papel y del numero de paginas: blanco 0,002252 in por pagina, crema 0,0025', () => {
+    expect(medidasCubierta({ ancho: 432, alto: 648 }, 300, 'blanco').lomo / IN).toBeCloseTo(0.6756, 6)
+    expect(medidasCubierta({ ancho: 432, alto: 648 }, 300, 'crema').lomo / IN).toBeCloseTo(0.75, 6)
+  })
+
+  it('al quitar un capitulo el lomo cambia solo: sale de las paginas del interior compuesto', () => {
+    const contenido = contenidoDePrueba()
+    const corte = { ancho: 432, alto: 648 }
+    const entero = componerImpreso(contenido, CONFIG_IMPRESO_POR_DEFECTO, fuentes()).paginas.length
+    const sinUno = componerImpreso({ ...contenido, capitulos: contenido.capitulos.slice(0, -1) }, CONFIG_IMPRESO_POR_DEFECTO, fuentes()).paginas.length
+    expect(sinUno).toBeLessThan(entero)
+    const a = medidasCubierta(corte, entero, 'crema')
+    const b = medidasCubierta(corte, sinUno, 'crema')
+    expect(a.lomo - b.lomo).toBeCloseTo((entero - sinUno) * 0.0025 * IN, 9)
+    expect(a.ancho - b.ancho).toBeCloseTo(a.lomo - b.lomo, 9)
+    // Y la portada se corre con el lomo: lo que hay en ella va con ella.
+    expect(a.portada.x - b.portada.x).toBeCloseTo(a.lomo - b.lomo, 9)
+  })
+
+  it('con la plantilla de IngramSpark manda su lomo; sin el, se avisa', () => {
+    const c = cubiertaDePrueba({ lomoManual: 15 }, { destino: 'ingram' })
+    expect(c.medidas.lomo / MM).toBeCloseTo(15, 9)
+    expect(cubiertaDePrueba({}, { destino: 'ingram' }).avisos).toContainEqual({ codigo: 'lomoDeIngram' })
+  })
+})
+
+describe('el codigo de barras EAN-13', () => {
+  // Los modulos de referencia los escribio el codificador de ZXing (Zint), no este codigo.
+  const ZXING: Readonly<Record<string, string>> = {
+    '9788409123452': '10101110110001001000100101000110100111000101101010110011011011001000010101110010011101101100101',
+    '9780306406157': '10101110110001001010011101111010100111010111101010101110011100101010000110011010011101000100101',
+    '4006381333931': '10100011010100111010111101111010001001011001101010100001010000101000010111010010000101100110101',
+  }
+
+  it('da los mismos 95 modulos que el codificador de ZXing', () => {
+    for (const [cifras, esperado] of Object.entries(ZXING)) expect(modulosEan13(cifras).map((b) => (b ? '1' : '0')).join(''), cifras).toBe(esperado)
+  })
+
+  it('del ISBN: el de 13 si cuadra, el de 10 pasado a 978, y nada si no cuadra', () => {
+    expect(cifrasDeIsbn('978-84-09-12345-2')).toBe('9788409123452')
+    expect(cifrasDeIsbn('0-306-40615-2')).toBe('9780306406157')
+    expect(cifrasDeIsbn('978-84-09-12345-3')).toBeNull()
+    expect(cifrasDeIsbn('0-306-40615-3')).toBeNull()
+  })
+
+  it('se pinta en su caja, en vectores: la caja blanca y una barra por cada tramo negro', () => {
+    const c = cubiertaDePrueba()
+    const rects = c.ops.filter((o) => o.op === 'rect')
+    expect(rects[0]).toMatchObject({ x: c.codigo.x, y: c.codigo.y, ancho: c.codigo.ancho, alto: c.codigo.alto, gris: 1 })
+    expect(rects.length - 1).toBe(barrasEan13('9788409123452').length)
+    for (const r of rects.slice(1)) expect(dentro(cajaDe(r), c.codigo)).toBe(true)
+  })
+
+  it('la caja: 50,8 × 30,5 mm, a 19 mm del pie y a 1/10 A del lomo (al menos 6 mm de la bisagra)', () => {
+    for (const corte of CORTES) {
+      const m = medidasCubierta({ ancho: corte.ancho * IN, alto: corte.alto * IN }, 200, 'blanco')
+      const c = cubiertaDePrueba({}, { corte: { ancho: corte.ancho * IN, alto: corte.alto * IN }, paginas: 200 })
+      expect(c.codigo.ancho).toBeCloseTo(CAJA_CODIGO.ancho, 9)
+      expect(c.codigo.alto).toBeCloseTo(CAJA_CODIGO.alto, 9)
+      expect(m.contra.y + m.contra.alto - (c.codigo.y + c.codigo.alto)).toBeCloseTo(19 * MM, 9)
+      expect(m.espina.x - (c.codigo.x + c.codigo.ancho)).toBeCloseTo(m.contra.ancho / 10, 9)
+      expect(m.espina.x - (c.codigo.x + c.codigo.ancho)).toBeGreaterThanOrEqual(6 * MM)
+    }
+  })
+
+  it('con «el de KDP» no se dibuja nada en la caja; sin un ISBN valido, tampoco, y se dice', () => {
+    const kdp = cubiertaDePrueba({ codigo: 'kdp' })
+    expect(kdp.ops.filter((o) => corta(cajaDe(o), kdp.codigo))).toEqual([])
+    expect(kdp.avisos).toContainEqual({ codigo: 'codigoKdp' })
+    const malo = cubiertaDePrueba({}, { isbn: '978-84-09-12345-3' })
+    expect(malo.avisos).toContainEqual({ codigo: 'codigoSinIsbn' })
+    expect(malo.ops.some((o) => o.op === 'rect')).toBe(false)
+  })
+})
+
+describe('ninguna pieza de ningun estilo invade la caja del codigo ni sale de lo seguro', () => {
+  const largo = { titulo: 'La extraordinaria y verdadera historia del faro que nadie quiso apagar', autor: 'María de los Ángeles Etxeberria Villanueva', sello: 'Ediciones del Faro y la Marea' }
+  const logos = { sello: { ancho: 900, alto: 300 }, selloBlanco: { ancho: 900, alto: 300 }, isotipo: { ancho: 300, alto: 300 } }
+  const comprobar = (c: CubiertaCompuesta, donde: string): void => {
+    const m = c.medidas
+    const delCodigo = (o: OpCubierta): boolean => dentro(cajaDe(o), c.codigo) && c.avisos.every((a) => a.codigo !== 'codigoKdp')
+    for (const o of c.ops) {
+      const caja = cajaDe(o)
+      if (!delCodigo(o)) expect(corta(caja, c.codigo), `${donde}: invade la caja del codigo`).toBe(false)
+      if (o.op !== 'texto') continue
+      // El lomo: 1,6 mm libres a cada lado. La portada y la contraportada: 3,2 mm dentro del corte.
+      // Las cifras de KDP escritas a mano: 0,0625 in libres a cada lado del lomo, 0,125 in dentro del corte.
+      const panel = o.giro !== 0 && caja.x >= m.espina.x - 1e-6 && caja.x + caja.ancho <= m.espina.x + m.espina.ancho + 1e-6 ? encoger(m.espina, 0.0625 * IN, 0.125 * IN) : caja.x < m.espina.x ? encoger(m.contra, 0.125 * IN) : encoger(m.portada, 0.125 * IN)
+      expect(dentro(caja, panel), `${donde}: «${o.glifos.map((g) => g.texto).join('')}» fuera de lo seguro`).toBe(true)
+    }
+    for (const capa of c.capas) if (capa.que === 'logo') expect(corta(capa.caja, c.codigo), `${donde}: el logo ${capa.rol} invade el codigo`).toBe(false)
+    // Y las piezas de la portada no se pisan entre si.
+    const portada = c.piezas.filter((p) => p.que === 'titulo' || p.que === 'autor' || p.que === 'sello')
+    for (const [i, a] of portada.entries()) for (const b of portada.slice(i + 1)) expect(corta(a.caja, b.caja), `${donde}: ${a.que} pisa ${b.que}`).toBe(false)
+  }
+
+  for (const estilo of ESTILOS_ORDEN) {
+    it(`${estilo}: todos los cortes de KDP, con textos largos y cortos, con logos y sin ellos`, () => {
+      for (const corte of CORTES) {
+        for (const [paginas, datos] of [
+          [120, {}],
+          [600, { ...largo, imagenes: { ...datosDePrueba().imagenes, ...logos } }],
+        ] as const) {
+          const c = cubiertaDePrueba({ estilo: estilo as EstiloId, titulo: true }, { corte: { ancho: corte.ancho * IN, alto: corte.alto * IN }, paginas, ...datos })
+          comprobar(c, `${estilo} ${corte.id} ${paginas}`)
+        }
+      }
+    })
+  }
+})
+
+describe('el lomo', () => {
+  it('texto solo desde 79 paginas (KDP); por debajo, se dice', () => {
+    const c78 = cubiertaDePrueba({}, { paginas: 78 })
+    expect(c78.piezas.some((p) => p.que === 'lomoTitulo')).toBe(false)
+    expect(c78.avisos).toContainEqual({ codigo: 'lomoSinTexto', paginas: 78, minimo: 79 })
+    expect(cubiertaDePrueba({}, { paginas: 79 }).piezas.some((p) => p.que === 'lomoTitulo')).toBe(true)
+  })
+
+  it('el isotipo solo con mas de 8 mm de lomo (126 paginas en crema)', () => {
+    const conIso = (paginas: number): CubiertaCompuesta => cubiertaDePrueba({}, { paginas, imagenes: { ...datosDePrueba().imagenes, isotipo: { ancho: 300, alto: 300 } } })
+    expect(conIso(125).piezas.some((p) => p.que === 'isotipo')).toBe(false)
+    expect(conIso(125).avisos.some((a) => a.codigo === 'isotipoOmitido')).toBe(true)
+    expect(conIso(127).piezas.some((p) => p.que === 'isotipo')).toBe(true)
+  })
+
+  it('de arriba abajo por defecto; de abajo arriba si se pide', () => {
+    const giros = (c: CubiertaCompuesta): number[] => [...new Set(c.ops.flatMap((o) => (o.op === 'texto' && o.giro !== 0 && o.x > c.medidas.espina.x && o.x < c.medidas.portada.x ? [o.giro] : [])))]
+    expect(giros(cubiertaDePrueba())).toEqual([90])
+    expect(giros(cubiertaDePrueba({ lomo: 'ascendente' }))).toEqual([-90])
+  })
+
+  it('el titulo arriba, en orden de lectura: de arriba abajo empieza arriba; de abajo arriba, abajo', () => {
+    const titulo = (c: CubiertaCompuesta) => c.piezas.find((p) => p.que === 'lomoTitulo') as { caja: Caja }
+    const desc = cubiertaDePrueba()
+    const asc = cubiertaDePrueba({ lomo: 'ascendente' })
+    expect(titulo(desc).caja.y).toBeCloseTo(titulo(asc).caja.y, 6)
+    const primero = (c: CubiertaCompuesta) => c.ops.find((o) => o.op === 'texto' && o.giro !== 0) as Extract<OpCubierta, { op: 'texto' }>
+    expect(primero(desc).y).toBeCloseTo(titulo(desc).caja.y, 6)
+    expect(primero(asc).y).toBeGreaterThan(titulo(asc).caja.y + titulo(asc).caja.alto / 2)
+  })
+})
+
+describe('la tinta se elige por contraste (WCAG)', () => {
+  it('las cuentas de WCAG: blanco 1, negro 0, 21:1', () => {
+    expect(luminanciaDe('#ffffff')).toBeCloseTo(1, 9)
+    expect(luminanciaDe('#000000')).toBe(0)
+    expect(contraste(1, 0)).toBeCloseTo(21, 9)
+  })
+
+  const tintaDe = (c: CubiertaCompuesta, que: string): number[] => {
+    const p = c.piezas.find((x) => x.que === que)
+    return [...new Set(c.ops.filter((o) => o.op === 'texto' && p && dentro(cajaDe(o), encoger(p.caja, -2))).map((o) => (o.op === 'texto' ? o.gris : -1)))]
+  }
+
+  it('el autor sobre el mar oscuro, en claro; el titulo sobre el cielo claro, en oscuro', () => {
+    expect(tintaDe(cubiertaDePrueba(), 'autor')).toEqual([TINTA_CLARA])
+    expect(tintaDe(cubiertaDePrueba({ estilo: 'clasico' }), 'titulo')).toEqual([TINTA_OSCURA])
+  })
+
+  it('si el autor pide una tinta que no se lee, se pone y se le añade el velo justo', () => {
+    const c = cubiertaDePrueba({ estilo: 'clasico', tintas: { titulo: 'clara' } })
+    expect(tintaDe(c, 'titulo')).toEqual([TINTA_CLARA])
+    const velo = c.capas.find((x) => x.que === 'velo')
+    expect(velo).toMatchObject({ que: 'velo', color: 'negro' })
+    expect(c.avisos).toContainEqual({ codigo: 'velo', pieza: 'titulo' })
+  })
+
+  it('la franja crece hasta cubrir su texto: el titulo no queda sobre el dibujo', () => {
+    const c = cubiertaDePrueba({ estilo: 'franja' })
+    const franja = c.capas.filter((x) => x.que === 'color').at(-1)
+    const titulo = c.piezas.find((p) => p.que === 'titulo')
+    if (franja?.que !== 'color' || !titulo) throw new Error('falta la franja o el titulo')
+    expect(titulo.caja.y).toBeGreaterThan(franja.caja.y)
+    expect(c.capas.some((x) => x.que === 'velo')).toBe(false)
+  })
+})
+
+describe('la sinopsis', () => {
+  it('arriba en la contraportada, y nunca baja a la caja del codigo ni al logo', () => {
+    const c = cubiertaDePrueba({}, { descripcion: 'Una frase que no se acaba. '.repeat(400) })
+    const s = c.piezas.find((p) => p.que === 'sinopsis')
+    expect(s).toBeDefined()
+    expect((s?.caja.y ?? 0) + (s?.caja.alto ?? 0)).toBeLessThan(c.codigo.y)
+    expect(c.avisos).toContainEqual({ codigo: 'sinopsisCortada' })
+  })
+})
+
+describe('la configuracion de la cubierta', () => {
+  it('lo que no se entiende toma su valor por defecto', () => {
+    expect(normalizarCubierta(null)).toEqual(CONFIG_CUBIERTA_POR_DEFECTO)
+    const c = normalizarCubierta({ estilo: 'barroco', lomoManual: -3, encuadre: { x: 7 }, fondo: 'rojo', tintas: { autor: 'clara', titulo: 'fucsia' }, codigo: 'kdp' })
+    expect(c.estilo).toBe('papiro')
+    expect(c.lomoManual).toBe(0)
+    expect(c.encuadre).toEqual({ x: 1, y: 0.5 })
+    expect(c.fondo).toBe('')
+    expect(c.tintas).toEqual({ autor: 'clara' })
+    expect(c.codigo).toBe('kdp')
+  })
+})
+
+describe('el PDF de la cubierta', () => {
+  const c = cubiertaDePrueba()
+  const bytes = pdfDeCubierta(c, 30)
+  const pdf = leerPdf(bytes)
+
+  it('una pagina: la hoja con su sangrado, y el corte 1/8 in dentro', () => {
+    const [p] = paginas(pdf)
+    expect(lista(p?.get('MediaBox')).map(numero)).toEqual([0, 0, 920.16, 666])
+    expect(lista(p?.get('TrimBox')).map(numero)).toEqual([9, 9, 911.16, 657])
+  })
+
+  it('el texto va en vectores: lo que se pinta es lo que la cubierta compuso, girado el del lomo', () => {
+    const pintado = textosPintados(pdf)[0]?.map((x) => x.texto).join('') ?? ''
+    const compuesto = c.ops.flatMap((o) => (o.op === 'texto' ? o.glifos.map((g) => g.texto) : [])).join('')
+    expect(pintado).toBe(compuesto)
+    expect(pintado).toContain('LUCÍAFERRERONDARRA')
+  })
+
+  it('dos generaciones con el mismo reloj dan los mismos bytes', () => {
+    expect(pdfDeCubierta(cubiertaDePrueba(), 30)).toEqual(bytes)
+  })
+})
+
+describe('la plantilla del autor (Papiro), al milimetro', () => {
+  it('el sello en la linea base de 13 mm, de 1/6 A; el autor, 1/10 A por encima del sello', () => {
+    const c = cubiertaDePrueba({}, { imagenes: { ...datosDePrueba().imagenes, sello: { ancho: 900, alto: 300 } } })
+    const m = c.medidas
+    const A = m.portada.ancho
+    const sello = c.piezas.find((p) => p.que === 'sello')?.caja as Caja
+    const pie = m.portada.y + m.portada.alto
+    expect(pie - (sello.y + sello.alto)).toBeCloseTo(13 * MM, 9)
+    expect(sello.ancho).toBeCloseTo(A / 6, 9)
+    const autor = c.ops.find((o) => o.op === 'texto' && o.y < sello.y && o.x > m.portada.x) as Extract<OpCubierta, { op: 'texto' }>
+    expect(sello.y - autor.y).toBeCloseTo(A / 10, 9)
+    // Centrados en la portada.
+    expect(sello.x + sello.ancho / 2).toBeCloseTo(m.portada.x + A / 2, 6)
+  })
+
+  it('el logo de la contraportada: 1/3 A, a 1/10 A del borde de fuera, sobre la linea base', () => {
+    const c = cubiertaDePrueba({}, { imagenes: { ...datosDePrueba().imagenes, sello: { ancho: 900, alto: 300 } } })
+    const m = c.medidas
+    const logo = c.piezas.find((p) => p.que === 'selloContra')?.caja as Caja
+    expect(logo.ancho).toBeCloseTo(m.contra.ancho / 3, 9)
+    expect(logo.x - m.contra.x).toBeCloseTo(m.contra.ancho / 10, 9)
+    expect(m.contra.y + m.contra.alto - (logo.y + logo.alto)).toBeCloseTo(13 * MM, 9)
+  })
+})
+
+describe('el dibujo y su resolucion', () => {
+  it('se avisa con numeros: a que ppi sale y cuantos pixeles hacen falta para 300', () => {
+    const c = cubiertaDePrueba({}, { imagenes: { portada: { ancho: 1600, alto: 2560 } } })
+    expect(c.avisos).toContainEqual({ codigo: 'resolucionArte', rol: 'portada', ppi: 261, pixeles: { ancho: 1838, alto: 2775 } })
+    expect(cubiertaDePrueba().avisos.some((a) => a.codigo === 'resolucionArte')).toBe(false)
+  })
+
+  it('el velo deja el contraste un 5 % por encima del umbral, no justo en el (el redondeo lo dejaria debajo)', () => {
+    // Un dibujo gris liso, de luminancia 0,6, y el titulo en claro a la fuerza: hace falta velo.
+    const gris = { ancho: 1838, alto: 2775, luz: { ancho: 1, alto: 1, valores: [0.6] } }
+    const c = cubiertaDePrueba({ estilo: 'clasico', tintas: { titulo: 'clara' } }, { imagenes: { portada: gris } })
+    const velo = c.capas.find((x) => x.que === 'velo')
+    if (velo?.que !== 'velo') throw new Error('sin velo')
+    const logrado = contraste(1, 0.6 * (1 - velo.alfa))
+    expect(logrado).toBeGreaterThanOrEqual(3 * 1.05 - 0.02)
+    expect(logrado).toBeLessThan(3 * 1.05 + 0.1)
+  })
+
+  it('el velo lleva el contraste un poco por encima del umbral: el titulo vertical se lee sin aviso', () => {
+    expect(cubiertaDePrueba({ estilo: 'vertical' }).avisos.some((a) => a.codigo === 'contrasteBajo')).toBe(false)
+  })
+})
+
+describe('el codigo, por dentro', () => {
+  it('las barras de guarda bajan cinco modulos mas que las de las cifras', () => {
+    const c = cubiertaDePrueba()
+    const barras = c.ops.filter((o): o is Extract<OpCubierta, { op: 'rect' }> => o.op === 'rect' && o.gris === 0)
+    const altos = [...new Set(barras.map((b) => Math.round(b.alto * 1000) / 1000))].sort((a, b) => a - b)
+    expect(altos).toHaveLength(2)
+    expect((altos[1] as number) - (altos[0] as number)).toBeCloseTo(5 * 0.33 * 0.9 * MM, 2)
+    expect(barras.filter((b) => b.alto > (altos[0] as number) + 0.01)).toHaveLength(6)
+  })
+})
+
+describe('el PDF de la cubierta, por dentro', () => {
+  const c = cubiertaDePrueba()
+  const pdf = leerPdf(pdfDeCubierta(c, 30))
+  const contenido = (): string => {
+    const [p] = paginas(pdf)
+    const ref = p?.get('Contents')
+    const o = ref?.t === 'ref' ? pdf.objetos.get(ref.v) : undefined
+    return o?.flujo ? String.fromCharCode(...o.flujo) : ''
+  }
+
+  it('el lomo de arriba abajo lleva la matriz girada (0 -1 1 0); el texto derecho, la de siempre', () => {
+    const s = contenido()
+    expect(s).toMatch(/^0 -1 1 0 \S+ \S+ Tm$/mu)
+    expect(s).toMatch(/^1 0 0 1 \S+ \S+ Tm$/mu)
+    expect(s).not.toMatch(/^0 1 -1 0 \S+ \S+ Tm$/mu)
+  })
+
+  it('el fondo va en RGB, como se subio el dibujo', () => {
+    const imagenes = [...pdf.objetos.values()].filter((o) => o.flujo && dic(o.dic).get('Subtype')?.t === 'nombre' && nombreDe(dic(o.dic).get('Subtype')) === 'Image')
+    expect(imagenes.map((o) => nombreDe(dic(o.dic).get('ColorSpace')))).toEqual(['DeviceRGB'])
+  })
+})

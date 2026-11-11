@@ -86,7 +86,7 @@ export function num(v: number): string {
 }
 
 /** Todo lo que se escribe como texto del PDF es ASCII; lo demas va en hexadecimal. */
-function ascii(s: string): Uint8Array {
+export function ascii(s: string): Uint8Array {
   const r = new Uint8Array(s.length)
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i)
@@ -118,7 +118,7 @@ export function nombre(s: string): string {
   return s.replace(/[^A-Za-z0-9+\-_.]/gu, (c) => `#${c.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0')}`)
 }
 
-function fechaPdf(d: Date): string {
+export function fechaPdf(d: Date): string {
   const p = (n: number): string => String(n).padStart(2, '0')
   return `D:${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}+00'00'`
 }
@@ -135,7 +135,7 @@ function concatenar(partes: readonly Uint8Array[]): Uint8Array {
   return r
 }
 
-class Objetos {
+export class Objetos {
   private readonly cuerpos: (Uint8Array | null)[] = []
 
   reservar(): number {
@@ -196,7 +196,7 @@ function anchoPdf(f: Fuente, g: number): number {
   return Math.round(((f.avance(g) * 1000) / f.upm) * 1000) / 1000
 }
 
-function incrustar(o: Objetos, f: Fuente, cara: Cara, usados: ReadonlyMap<number, string>): number {
+export function incrustar(o: Objetos, f: Fuente, cara: Cara, usados: ReadonlyMap<number, string>): number {
   const permiso = f.incrustable()
   if (!permiso.puede) {
     throw new Error(`La licencia de la fuente ${f.nombre} no deja incrustarla en un PDF (fsType ${f.fsType}): elige otra.`)
@@ -240,7 +240,7 @@ function incrustar(o: Objetos, f: Fuente, cara: Cara, usados: ReadonlyMap<number
 }
 
 /** Los glifos de una operacion como argumento de TJ: ids en hexadecimal y, entre medias, lo que el kerning cambia el avance. */
-function tj(f: Fuente, glifos: readonly Glifo[]): string {
+export function tj(f: Fuente, glifos: readonly Glifo[]): string {
   let r = ''
   let corrido = ''
   for (const g of glifos) {
