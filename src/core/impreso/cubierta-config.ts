@@ -47,7 +47,15 @@ export interface ConfigCubierta {
   readonly mover: Movidas
   /** La portada con su texto tambien en los dos EPUB, en vez del dibujo limpio (decision 12). */
   readonly enEpub: boolean
+  /**
+   * El color del PDF de la cubierta: RGB (para pantallas; KDP lo convierte al
+   * imprimir) o CMYK (separado con el perfil de imprenta, PDF/X-1a). null: el
+   * que conviene al destino (`colorDe`).
+   */
+  readonly color: ColorCubierta | null
 }
+
+export type ColorCubierta = 'rgb' | 'cmyk'
 
 export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
   estilo: 'papiro',
@@ -62,6 +70,7 @@ export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
   tintas: {},
   mover: {},
   enEpub: false,
+  color: null,
 }
 
 const esObjeto = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -88,6 +97,7 @@ export function normalizarCubierta(x: unknown): ConfigCubierta {
     tintas,
     mover: normalizarMovidas(x['mover']),
     enEpub: x['enEpub'] === true,
+    color: x['color'] === 'rgb' || x['color'] === 'cmyk' ? x['color'] : null,
   }
 }
 
@@ -111,3 +121,12 @@ function normalizarMovidas(x: unknown): Movidas {
 
 /** Si el autor movio alguna pieza en algun estilo. */
 export const hayMovidas = (m: Movidas): boolean => Object.values(m).some((del) => del && Object.keys(del).length > 0)
+
+/**
+ * El color que toca: el que eligio el autor o, si no eligio, el del destino.
+ * KDP acepta RGB y lo convierte el; IngramSpark e imprentas piden CMYK.
+ */
+export const colorDe = (c: Pick<ConfigCubierta, 'color'>, destino: 'kdp' | 'ingram' | 'imprenta'): ColorCubierta => c.color ?? (destino === 'kdp' ? 'rgb' : 'cmyk')
+
+/** La tinta maxima (C + M + Y + K) del CMYK: IngramSpark pide 240 %; el perfil da 300 %. */
+export const LIMITE_TINTA: Readonly<Record<'kdp' | 'ingram' | 'imprenta', number>> = { kdp: 3, ingram: 2.4, imprenta: 3 }

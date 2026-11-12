@@ -9,12 +9,16 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { componerCubierta, ESTILOS_ORDEN, type CubiertaCompuesta, type FuentesCubierta, type RolCubierta } from '../../core/impreso/cubierta'
-import type { ConfigCubierta, EstiloId, Punto, QuePieza, Tono } from '../../core/impreso/cubierta-config'
+import { colorDe, LIMITE_TINTA, type ColorCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza, type Tono } from '../../core/impreso/cubierta-config'
+import { probarFilas, pruebaEnPantalla, type RejillaRgb } from '../../core/impreso/color'
 import { escribirCubierta } from '../../core/impreso/pdf-cubierta'
 import { nombreSeguro } from '../../core/texto'
 import { descargar } from '../copia'
 import { codigoSuelto, muestraDelCodigo } from '../cubierta/codigo'
 import { jpegDelEbook, medidasDelEbook } from '../cubierta/epub'
+import { separarEnHilo } from '../cubierta/cmyk'
+import { separacionDe } from '../cubierta/cmyk-motor'
+import { CONDICION_PERFIL, perfilCmyk } from '../cubierta/perfil'
 import { arrastrada, direccionDeTecla, movibles, movidaDe, paso, piezaEn, type Direccion } from '../cubierta/mover'
 import { avisosDeCubierta } from '../cubierta/avisos'
 import { fuentesDeCubierta } from '../cubierta/fuentes'
@@ -74,6 +78,7 @@ function VistaMovible({
   elegida,
   alElegir,
   alMover,
+  prueba,
 }: {
   c: CubiertaCompuesta
   pintar: ParaPintarCubierta | null
@@ -82,6 +87,8 @@ function VistaMovible({
   elegida: QuePieza | null
   alElegir: (q: QuePieza | null) => void
   alMover: (q: QuePieza, a: Punto) => void
+  /** La prueba de CMYK: los colores como saldran impresos. */
+  prueba: RejillaRgb | null
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
   const px = 760
@@ -100,8 +107,20 @@ function VistaMovible({
     el.width = Math.round(px * dpr)
     el.height = Math.round(altoPx * dpr)
     const ctx = el.getContext('2d')
-    if (ctx) pintarCubierta(ctx, c, el.width / c.medidas.ancho, pintar, marco ? { ...que, marcar: marco } : que)
-  }, [c, altoPx, pintar, que, marco])
+    if (!ctx) return
+    const escala = el.width / c.medidas.ancho
+    const encima = { capas: false, texto: false, guias: que.guias ?? false, sinFondo: true, ...(marco ? { marcar: marco } : {}) }
+    if (!prueba) {
+      pintarCubierta(ctx, c, escala, pintar, { ...que, ...encima, capas: que.capas, texto: que.texto, sinFondo: false })
+      return
+    }
+    // Con la prueba: la cubierta, sus pixeles pasados por el papel, y las guias y el marco encima, sin pasar.
+    pintarCubierta(ctx, c, escala, pintar, { ...que, guias: false })
+    const img = ctx.getImageData(0, 0, el.width, el.height)
+    probarFilas(prueba, img.data, el.width, 0, el.height)
+    ctx.putImageData(img, 0, 0)
+    pintarCubierta(ctx, c, escala, pintar, encima)
+  }, [c, altoPx, pintar, que, marco, prueba])
 
   const enHoja = (e: { clientX: number; clientY: number }): { x: number; y: number } => {
     const r = (ref.current as HTMLCanvasElement).getBoundingClientRect()
@@ -333,6 +352,24 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
   )
   const movidasDelEstilo = c.mover[c.estilo] ?? {}
 
+  // -- el color del PDF: RGB o CMYK, y la prueba de como sale impreso -----------------------
+  const color: ColorCubierta = colorDe(c, impreso.destino)
+  const [verPrueba, setVerPrueba] = useState(true)
+  const [prueba, setPrueba] = useState<{ limite: number; rejilla: RejillaRgb } | null>(null)
+  const limite = LIMITE_TINTA[impreso.destino]
+  useEffect(() => {
+    if (color !== 'cmyk' || (prueba && prueba.limite === limite)) return undefined
+    let vivo = true
+    perfilCmyk().then(
+      ({ perfil }) => vivo && setPrueba({ limite, rejilla: pruebaEnPantalla(perfil, separacionDe(perfil, limite)) }),
+      () => vivo && setError(t.color.sinPerfil),
+    )
+    return () => {
+      vivo = false
+    }
+  }, [color, limite, prueba, t])
+  const pruebaVista = color === 'cmyk' && verPrueba && prueba && prueba.limite === limite ? prueba.rejilla : null
+
   // -- la portada del ebook ---------------------------------------------------------------
   const [ebook, setEbook] = useState<{ blob: Blob; de: CubiertaCompuesta } | null>(null)
   const [preparandoEbook, setPreparandoEbook] = useState(false)
@@ -377,7 +414,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
   // -- PDF y PNG ---------------------------------------------------------------------
   // El PDF y el PNG se preparan juntos y se bajan con su boton: Safari tira
   // una descarga que llega mas de un segundo despues del clic.
-  const [pdf, setPdf] = useState<{ blob: Blob; png: Blob; de: CubiertaCompuesta } | null>(null)
+  const [pdf, setPdf] = useState<{ blob: Blob; png: Blob; de: CubiertaCompuesta; color: ColorCubierta } | null>(null)
   const [preparando, setPreparando] = useState(false)
   const nombre = (ext: string): string => `${nombreSeguro(p.datos.titulo) || 'libro'}-cubierta.${ext}`
   const nombreEbook = `${nombreSeguro(p.datos.titulo) || 'libro'}-portada-ebook.jpg`
@@ -393,8 +430,19 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
       const ctx = l.getContext('2d') as CanvasRenderingContext2D | null
       if (!ctx) throw new Error('canvas')
       pintarCubierta(ctx, compuesta, k, pintar, { capas: true, texto: false })
-      const jpeg = new Uint8Array(await (await blobDe(l, 'image/jpeg', 0.92)).arrayBuffer())
-      const bytes = escribirCubierta(compuesta, { fuentes: fuentes.f, fondo: { jpeg, ancho: w, alto: h }, titulo: p.datos.titulo, autor: p.datos.autor, fecha: new Date() })
+      const fondo =
+        color === 'cmyk'
+          ? // En CMYK: los pixeles del lienzo, separados con el perfil en su hilo (tarda segundos).
+            { cmykComprimido: await separarEnHilo(ctx.getImageData(0, 0, w, h).data, w, h, limite), ancho: w, alto: h }
+          : { jpeg: new Uint8Array(await (await blobDe(l, 'image/jpeg', 0.92)).arrayBuffer()), ancho: w, alto: h }
+      const bytes = escribirCubierta(compuesta, {
+        fuentes: fuentes.f,
+        fondo,
+        titulo: p.datos.titulo,
+        autor: p.datos.autor,
+        fecha: new Date(),
+        ...(color === 'cmyk' ? { condicion: CONDICION_PERFIL } : {}),
+      })
       // La vista previa: la misma cubierta con su texto, a 150 ppi.
       const kp = 150 / 72
       const lp = lienzoDe(Math.round(compuesta.medidas.ancho * kp), Math.round(compuesta.medidas.alto * kp))
@@ -402,7 +450,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
       if (!cp) throw new Error('canvas')
       pintarCubierta(cp, compuesta, kp, pintar, { capas: true, texto: true })
       const png = new Blob([conPpi(new Uint8Array(await (await blobDe(lp, 'image/png')).arrayBuffer()), 150) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
-      setPdf({ blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), png, de: compuesta })
+      setPdf({ blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), png, de: compuesta, color })
     } catch (e) {
       setError(t.error(e instanceof Error ? e.message : String(e)))
     } finally {
@@ -422,7 +470,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
       <header className="impreso-cabecera">
         <h1>{t.titulo}</h1>
         <p className="ayuda">{t.intro}</p>
-        <p className="alerta nivel-nota compacta">{t.rgb}</p>
+        <p className="alerta nivel-nota compacta">{color === 'cmyk' ? t.color.notaCmyk(f(limite * 100, 0)) : t.rgb}</p>
       </header>
 
       <div className="medida-en-vivo" role="status" aria-live="polite">
@@ -460,7 +508,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
             {t.vista.guias}
           </label>
           <div className="cubierta-entera">
-            <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} />
+            <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} prueba={pruebaVista} />
           </div>
           {guias && <p className="ayuda">{t.vista.ayuda}</p>}
           {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
@@ -614,23 +662,43 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
           <section className="pdf-impreso">
             <h2>{t.pdf.titulo}</h2>
             <p className="ayuda">{t.pdf.ayuda}</p>
+            <fieldset className="opciones-impreso color-pdf">
+              <legend>{t.color.titulo}</legend>
+              {(['rgb', 'cmyk'] as const).map((v) => (
+                <div key={v}>
+                  <label className="casilla">
+                    <input type="radio" name={`${nombreFondo}-color`} checked={color === v} onChange={() => cambiar({ color: v })} />
+                    <strong>{t.color.nombres[v]}</strong>
+                    {colorDe({ color: null }, impreso.destino) === v && <span className="ayuda"> · {t.color.recomendado(t.color.destinos[impreso.destino])}</span>}
+                  </label>
+                  <p className="ayuda">{v === 'rgb' ? t.color.ayudaRgb : t.color.ayudaCmyk(f(limite * 100, 0))}</p>
+                </div>
+              ))}
+              {color === 'cmyk' && (
+                <label className="casilla">
+                  <input type="checkbox" checked={verPrueba} onChange={(e) => setVerPrueba(e.target.checked)} />
+                  {t.color.prueba}
+                </label>
+              )}
+              <p className="ayuda">{t.color.pantallas}</p>
+            </fieldset>
             <div className="descargas">
               <button type="button" className="boton-principal" disabled={!compuesta || !pintar || preparando} onClick={() => void prepararPdf()}>
-                {preparando ? t.pdf.preparando : t.pdf.preparar}
+                {preparando ? (color === 'cmyk' ? t.color.preparando : t.pdf.preparando) : t.pdf.preparar}
               </button>
-              {pdf && pdf.de === compuesta && (
+              {pdf && pdf.de === compuesta && pdf.color === color && (
                 <button type="button" className="boton-descarga" onClick={() => descargar(pdf.blob, nombre('pdf'), 'application/pdf')}>
                   <strong>{t.pdf.descargar(ui.formato.tamano(pdf.blob.size))}</strong>
                   <span>{nombre('pdf')}</span>
                 </button>
               )}
-              {pdf && pdf.de === compuesta && (
+              {pdf && pdf.de === compuesta && pdf.color === color && (
                 <button type="button" className="boton-secundario" onClick={() => descargar(pdf.png, nombre('png'), 'image/png')}>
                   {t.pdf.png}
                 </button>
               )}
             </div>
-            {pdf && pdf.de !== compuesta && <p className="alerta nivel-aviso compacta">{t.pdf.desactualizado}</p>}
+            {pdf && (pdf.de !== compuesta || pdf.color !== color) && <p className="alerta nivel-aviso compacta">{t.pdf.desactualizado}</p>}
           </section>
           <section className="pdf-impreso">
             <h2>{t.ebook.titulo}</h2>

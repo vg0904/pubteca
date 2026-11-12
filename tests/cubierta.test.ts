@@ -17,14 +17,14 @@ import {
 } from '../src/core/impreso/cubierta'
 import { ALTO_BARRAS, MODULO, SILENCIO, componerCodigo, izquierdaDeBarras, svgDelCodigo } from '../src/core/impreso/codigo'
 import { barrasEan13, cifrasDeIsbn, controlEan, modulosEan13, revisarIsbn } from '../src/core/impreso/ean13'
-import { hayMovidas, PIEZAS_PORTADA, type QuePieza } from '../src/core/impreso/cubierta-config'
+import { colorDe, hayMovidas, LIMITE_TINTA, PIEZAS_PORTADA, type QuePieza } from '../src/core/impreso/cubierta-config'
 import { isbnValido } from '../src/core/impreso/config'
 import { CORTES } from '../src/core/impreso/formatos'
 import { componerImpreso } from '../src/core/impreso/plan'
 import { CONFIG_IMPRESO_POR_DEFECTO } from '../src/core/impreso/config'
 import { contenidoDePrueba } from '../scripts/impreso-prueba'
-import { cubiertaDePrueba, datosDePrueba, fuentesCubiertaDelRepo, pdfDeCubierta } from '../scripts/cubierta-prueba'
-import { dic, leerPdf, lista, nombreDe, numero, paginas, textosPintados } from '../scripts/leer-pdf'
+import { cubiertaDePrueba, datosDePrueba, fuentesCubiertaDelRepo, pdfDeCubierta, pdfDeCubiertaCmyk } from '../scripts/cubierta-prueba'
+import { comprobarPdfx, dic, leerPdf, lista, nombreDe, numero, paginas, textosPintados } from '../scripts/leer-pdf'
 import { fuentes } from './impreso/ayuda'
 
 // La cubierta (M7): las medidas con el lomo, el codigo de barras, que ninguna
@@ -383,6 +383,43 @@ describe('las piezas de la portada, movidas a mano', () => {
     expect(normalizarCubierta({ enEpub: true }).enEpub).toBe(true)
     expect(hayMovidas(c.mover)).toBe(true)
     expect(hayMovidas({ cartel: {} })).toBe(false)
+  })
+})
+
+describe('el PDF de la cubierta en CMYK (M10)', () => {
+  const c = cubiertaDePrueba()
+  const cmyk = pdfDeCubiertaCmyk(c, 40)
+  const rgb = pdfDeCubierta(c, 40)
+  const texto = (b: Uint8Array): string => new TextDecoder('latin1').decode(b)
+
+  it('pasa nuestra lista de PDF/X-1a: el fondo en CMYK, el texto en gris, el OutputIntent de FOGRA39', () => {
+    expect(comprobarPdfx(leerPdf(cmyk))).toEqual([])
+    const t = texto(cmyk)
+    expect(t).toMatch(/\/ColorSpace \/DeviceCMYK \/Filter \/FlateDecode \/DecodeParms << \/Predictor 15 \/Colors 4 \/BitsPerComponent 8 \/Columns \d+ >>/u)
+    expect(t).toContain('/OutputConditionIdentifier (FOGRA39)')
+    expect(t).toContain('/GTS_PDFXConformance (PDF/X-1a:2001)')
+    expect(t).not.toContain('/DeviceRGB')
+  })
+
+  it('en RGB sigue como era: sin OutputIntent, que no es PDF/X', () => {
+    expect(texto(rgb)).not.toContain('/OutputIntents')
+    expect(comprobarPdfx(leerPdf(rgb)).length).toBeGreaterThan(0)
+  })
+
+  it('el texto y el codigo son los mismos en los dos: solo cambia el fondo', () => {
+    expect(textosPintados(leerPdf(cmyk))).toEqual(textosPintados(leerPdf(rgb)))
+    expect(textosPintados(leerPdf(cmyk))[0]?.length).toBeGreaterThan(10)
+  })
+
+  it('el color: el que se elija; si no, el del destino. La tinta: 240 % para IngramSpark', () => {
+    expect(colorDe({ color: null }, 'kdp')).toBe('rgb')
+    expect(colorDe({ color: null }, 'ingram')).toBe('cmyk')
+    expect(colorDe({ color: null }, 'imprenta')).toBe('cmyk')
+    expect(colorDe({ color: 'cmyk' }, 'kdp')).toBe('cmyk')
+    expect(colorDe({ color: 'rgb' }, 'ingram')).toBe('rgb')
+    expect(LIMITE_TINTA).toEqual({ kdp: 3, ingram: 2.4, imprenta: 3 })
+    expect(normalizarCubierta({ color: 'cmyk' }).color).toBe('cmyk')
+    expect(normalizarCubierta({ color: 'p3' }).color).toBeNull()
   })
 })
 

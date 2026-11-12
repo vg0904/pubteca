@@ -1024,6 +1024,20 @@ export const ui: Ui = {
       aSuSitio: 'Back in place',
       todas: 'All back in place',
     },
+    color: {
+      titulo: 'PDF colour',
+      nombres: { rgb: 'RGB, like the artwork', cmyk: 'CMYK, ready for print' },
+      recomendado: (destino: string) => `recommended for ${destino}`,
+      destinos: { kdp: 'KDP', ingram: 'IngramSpark', imprenta: 'a print shop' },
+      ayudaRgb: 'Best for digital copies and screens: it keeps the most vivid colours. KDP accepts it and converts it to CMYK when printing.',
+      ayudaCmyk: (tinta: string) =>
+        `Best for print: the background goes in the four inks, separated with a press profile (ISO Coated v2, FOGRA39), and the PDF is PDF/X-1a. No surprises at conversion: what you see in the proof is what the paper gives. Maximum ink, ${tinta}%.`,
+      prueba: 'Show in the preview how it prints',
+      pantallas: 'The PNG preview and the ebook cover are always RGB: they are for screens.',
+      notaCmyk: (tinta: string) => `The PDF is CMYK (basICColor ISO Coated v2 300% profile, FOGRA39), PDF/X-1a, with at most ${tinta}% ink. Very vivid screen colours print duller: it is what the paper can give.`,
+      preparando: 'Separating into CMYK…',
+      sinPerfil: 'The CMYK profile could not be downloaded (offline?). Try again when you are connected.',
+    },
     ebook: {
       titulo: 'The ebook cover',
       ayuda: 'The front cover as you see it here, with its text and without the bleed.',

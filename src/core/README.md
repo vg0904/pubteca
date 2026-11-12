@@ -70,4 +70,9 @@ no carga nada.
   texto en contornos; lo usan la contraportada, la muestra de la pantalla y el
   codigo suelto. `pdf-cubierta.ts`, el PDF de la cubierta con las piezas del
   escritor del interior: varias letras, texto girado, rectangulos y el fondo en
-  sRGB (no es PDF/X-1a: ver plan.md, decision 11).
+  sRGB (no es PDF/X-1a: ver plan.md, decision 11) o, si el autor lo pide, en
+  CMYK y PDF/X-1a:2001 con su OutputIntent.
+- `icc.ts` lee un perfil ICC de la version 2 y aplica sus tablas (mft1/mft2:
+  curvas, rejilla en tetraedros o multilineal); `color.ts` separa el sRGB en
+  CMYK con la tabla perceptual del perfil (en una rejilla de 33³ sobre el RGB),
+  con el limite de tinta, y hace la prueba en pantalla. Sin WASM: TypeScript.

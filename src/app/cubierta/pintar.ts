@@ -51,6 +51,8 @@ export interface QuePintar {
   readonly extra?: readonly OpCubierta[]
   /** La pieza elegida para moverla: un marco a su alrededor, solo en pantalla. */
   readonly marcar?: Caja
+  /** Sin el blanco de debajo: para pintar guias y marco encima de lo ya pintado (la prueba de CMYK). */
+  readonly sinFondo?: boolean
 }
 
 type Base = (a: number, b: number, c: number, d: number, e: number, f: number) => void
@@ -100,8 +102,10 @@ export function pintarCubierta(ctx: PincelCubierta, c: CubiertaCompuesta, escala
   const r = que.region ?? { x: 0, y: 0, ancho: c.medidas.ancho, alto: c.medidas.alto }
   const base = baseDe(ctx, r, escala)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(0, 0, r.ancho * escala, r.alto * escala)
+  if (!que.sinFondo) {
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, r.ancho * escala, r.alto * escala)
+  }
 
   if (que.capas) {
     for (const capa of c.capas) {

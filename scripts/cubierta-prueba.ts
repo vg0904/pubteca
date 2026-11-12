@@ -17,6 +17,9 @@ import { ARCHIVOS_CUBIERTA, CAJA_CODIGO, componerCubierta, CONFIG_CUBIERTA_POR_D
 import { componerCodigo, svgDelCodigo } from '../src/core/impreso/codigo.ts'
 import { cifrasDeIsbn, isbnLegible } from '../src/core/impreso/ean13.ts'
 import { escribirCubierta } from '../src/core/impreso/pdf-cubierta.ts'
+import { separacion, separarFilas, type Separacion } from '../src/core/impreso/color.ts'
+import { leerPerfil, type Perfil } from '../src/core/impreso/icc.ts'
+import { comprobarPdfx, leerPdf } from './leer-pdf.ts'
 import { Fuente } from '../src/core/impreso/sfnt.ts'
 import { FECHA, fuentesDelRepo } from './impreso-prueba.ts'
 
@@ -159,9 +162,38 @@ export function pdfDeCubierta(c: CubiertaCompuesta, ppi = 100): Uint8Array {
   return escribirCubierta(c, { fuentes: fuentesCubiertaDelRepo(), fondo, titulo: 'El faro de las mareas quietas', autor: 'Lucía Ferrer Ondarra', fecha: FECHA })
 }
 
+let perfil: Perfil | null = null
+/** El perfil CMYK del repo (public/perfiles), leido una vez. */
+export function perfilDelRepo(): Perfil {
+  perfil ??= leerPerfil(new Uint8Array(readFileSync(join(RAIZ, 'public', 'perfiles', 'ISOcoated_v2_300_bas.icc'))))
+  return perfil
+}
+
+const separaciones = new Map<number, Separacion>()
+/** El fondo de prueba separado en CMYK, como lo hace el hilo de la app. */
+export function fondoCmyk(f: Rgb, limite = 3): { cmyk: Uint8Array; ancho: number; alto: number } {
+  let s = separaciones.get(limite)
+  if (!s) separaciones.set(limite, (s = separacion(perfilDelRepo(), limite)))
+  const rgba = new Uint8Array(f.ancho * f.alto * 4)
+  for (let i = 0; i < f.ancho * f.alto; i++) {
+    rgba[i * 4] = f.rgb[i * 3] as number
+    rgba[i * 4 + 1] = f.rgb[i * 3 + 1] as number
+    rgba[i * 4 + 2] = f.rgb[i * 3 + 2] as number
+    rgba[i * 4 + 3] = 255
+  }
+  const cmyk = new Uint8Array(f.ancho * f.alto * 4)
+  separarFilas(s, rgba, f.ancho, 0, f.alto, cmyk)
+  return { cmyk, ancho: f.ancho, alto: f.alto }
+}
+
+/** La cubierta de prueba en CMYK: PDF/X-1a con el OutputIntent del perfil. */
+export function pdfDeCubiertaCmyk(c: CubiertaCompuesta, ppi = 100, limite = 3): Uint8Array {
+  return escribirCubierta(c, { fuentes: fuentesCubiertaDelRepo(), fondo: fondoCmyk(pintarFondo(c, ppi), limite), titulo: 'El faro de las mareas quietas', autor: 'Lucía Ferrer Ondarra', fecha: FECHA, condicion: 'FOGRA39' })
+}
+
 /**
  *   tsx scripts/cubierta-prueba.ts tmp/pdfs     escribe la cubierta de prueba en dos estilos,
- *                                               y el codigo suelto en SVG
+ *                                               otra en CMYK (PDF/X-1a) y el codigo suelto en SVG
  *
  * CI las pasa por qpdf y pdffonts con las del interior, y ademas las pinta a
  * 300 ppi y le pide a zbarimg que lea el codigo de barras; el SVG lo pinta
@@ -176,6 +208,19 @@ function main(argv: readonly string[]): number {
     const ruta = join(salida, `cubierta-${estilo}.pdf`)
     writeFileSync(ruta, pdf)
     console.log(`${ruta}: ${(c.medidas.ancho / 72).toFixed(3)} × ${(c.medidas.alto / 72).toFixed(3)} in, lomo ${((c.medidas.lomo / 72) * 25.4).toFixed(2)} mm, ${pdf.length} bytes`)
+  }
+  // La misma en CMYK, PDF/X-1a: tiene que pasar nuestra lista, y CI la pasa por qpdf, pdffonts y zbarimg.
+  {
+    const c = cubiertaDePrueba({ estilo: 'papiro', titulo: true })
+    const pdf = pdfDeCubiertaCmyk(c, 150)
+    const problemas = comprobarPdfx(leerPdf(pdf))
+    if (problemas.length) {
+      console.error(`cubierta-cmyk.pdf no pasa la lista de PDF/X-1a:\n  ${problemas.join('\n  ')}`)
+      return 1
+    }
+    const ruta = join(salida, 'cubierta-cmyk.pdf')
+    writeFileSync(ruta, pdf)
+    console.log(`${ruta}: CMYK (FOGRA39), PDF/X-1a, ${pdf.length} bytes`)
   }
   const caja = { x: 0, y: 0, ancho: CAJA_CODIGO.ancho, alto: CAJA_CODIGO.alto }
   const isbn = datosDePrueba().isbn

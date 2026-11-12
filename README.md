@@ -66,8 +66,11 @@ Source Serif 4, EB Garamond, Literata, Crimson Pro, Alegreya y Libre
 Baskerville, cada una con su `OFL-<Familia>.txt` en `public/fuentes/impreso/`
 (solo las descarga quien abre «Libro impreso» y elige esa letra); para la
 cubierta, Jost, Playfair Display, Cormorant Garamond, Bebas Neue y Oswald, una
-cara de cada una, tambien OFL y con su licencia en `public/fuentes/cubierta/`; y
-los patrones de particion de
+cara de cada una, tambien OFL y con su licencia en `public/fuentes/cubierta/`;
+para la cubierta en CMYK, el perfil ISO Coated v2 300 % de basICColor (datos
+FOGRA39), sin modificar, con la licencia zlib/libpng que lleva dentro y copiada en
+`public/perfiles/LICENCIA-ISOcoated_v2_300_bas.txt` (solo lo descarga quien elige
+CMYK); y los patrones de particion de
 hyph-utf8, el español de Javier Bezos (MIT) y el ingles de Gerard Kuiken
 (licencia permisiva de una frase); los dos llevan su aviso dentro de
 `src/core/impreso/patrones/`. Los genera `scripts/impreso-recursos.py` desde un

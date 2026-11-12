@@ -11,6 +11,10 @@
                             Neue y Oswald), con su OFL
   src/core/impreso/patrones/es.ts, en.ts
                             los patrones de particion de hyph-utf8, como datos
+  public/perfiles/          el perfil CMYK de la cubierta en CMYK: ISO Coated
+                            v2 300% de basICColor (datos FOGRA39), licencia
+                            zlib/libpng, y su licencia en texto, sacada del
+                            propio perfil (`LICENCIA-ISOcoated_v2_300_bas.txt`)
 
 Todo se descarga de un commit FIJO y se comprueba su sha256: si el origen
 cambia, el script se para en vez de meter otra cosa en el repo.
@@ -26,6 +30,8 @@ src/core/impreso/familias.ts (nombre, archivos y cuerpo recomendado).
 Necesita fontTools solo para regenerarlos (los archivos se commitean):
   python3 -m venv /tmp/v && /tmp/v/bin/pip install fonttools==4.68.0
   /tmp/v/bin/python -I scripts/impreso-recursos.py
+Solo el perfil, sin fontTools:
+  python3 -I scripts/impreso-recursos.py perfiles
 """
 
 import hashlib
@@ -38,6 +44,15 @@ from urllib.parse import quote
 
 RAIZ = Path(__file__).resolve().parent.parent
 FUENTES = RAIZ / "public" / "fuentes" / "impreso"
+PERFILES = RAIZ / "public" / "perfiles"
+
+# El perfil CMYK, de la copia que Apache FOP guarda en sus pruebas (etiqueta
+# fop-2_1): Gitiles lo da en base64 con ?format=TEXT. El sha256 es el del
+# perfil ya decodificado.
+PERFIL_CMYK = (
+    "https://apache.googlesource.com/xmlgraphics-fop/+/refs/tags/fop-2_1/test/resources/color/ISOcoated_v2_300_bas.icc?format=TEXT",
+    "27140d88340e07f0c75e55d42455a471970531a9d4ffd2560ce681cf48a7285e",
+)
 PATRONES = RAIZ / "src" / "core" / "impreso" / "patrones"
 
 GOOGLE = "https://raw.githubusercontent.com/google/fonts/08dc85da6bca7ae308a6f1d38d0b137465646071/ofl/"
@@ -232,12 +247,44 @@ export const EXCEPCIONES = '{excepciones}'
         print(f"  {destino.relative_to(RAIZ)}  {destino.stat().st_size} bytes")
 
 
-def main() -> int:
-    patrones()
-    fuentes()
-    cubierta()
+def perfiles() -> None:
+    import base64
+    import struct
+
+    url, esperado = PERFIL_CMYK
+    texto = subprocess.run(["curl", "-sSfL", "--max-time", "120", url], check=True, capture_output=True).stdout
+    datos = base64.b64decode(texto)
+    real = hashlib.sha256(datos).hexdigest()
+    if real != esperado:
+        sys.exit(f"perfil CMYK: el sha256 no coincide ({real}). El origen cambio: no se sigue.")
+    # La licencia va dentro del perfil, en su etiqueta cprt (tipo text).
+    licencia = None
+    n = struct.unpack(">I", datos[128:132])[0]
+    for i in range(n):
+        firma, desde, largo = struct.unpack(">4sII", datos[132 + 12 * i : 144 + 12 * i])
+        if firma == b"cprt" and datos[desde : desde + 4] == b"text":
+            licencia = datos[desde + 8 : desde + largo].split(b"\0")[0].decode("latin-1")
+    if not licencia or "zlib/libpng" not in licencia:
+        sys.exit("perfil CMYK: no trae la licencia zlib/libpng que se esperaba.")
+    PERFILES.mkdir(parents=True, exist_ok=True)
+    (PERFILES / "ISOcoated_v2_300_bas.icc").write_bytes(datos)
+    (PERFILES / "LICENCIA-ISOcoated_v2_300_bas.txt").write_text(
+        "ISO Coated v2 300% (basICColor), el perfil CMYK de la cubierta en CMYK.\n"
+        "Sin modificar. Origen: http://www.freedesktop.org/wiki/OpenIcc/ProfilePackages/\n"
+        "(copia tomada de Apache FOP, etiqueta fop-2_1). Su aviso de copyright y su licencia,\n"
+        "tal como los lleva el propio perfil:\n\n" + licencia.replace("\r\n", "\n").strip() + "\n",
+        encoding="utf-8",
+    )
+    print(f"  public/perfiles/ISOcoated_v2_300_bas.icc  {len(datos)} bytes")
+
+
+def main(argv: list[str]) -> int:
+    # Sin argumentos, todo; con nombres, solo esos pasos (el perfil no necesita fontTools).
+    pasos = {"patrones": patrones, "fuentes": fuentes, "cubierta": cubierta, "perfiles": perfiles}
+    for nombre in argv or list(pasos):
+        pasos[nombre]()
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

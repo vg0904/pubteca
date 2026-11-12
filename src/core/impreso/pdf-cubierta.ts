@@ -6,21 +6,30 @@
  * cubierta necesita: varias letras, texto girado (el lomo), rectangulos (la
  * caja y las barras del codigo) y una imagen en COLOR, la del fondo.
  *
- * NO es PDF/X-1a: el fondo va en sRGB tal cual (plan.md, decision 11: «sRGB
- * tal cual, con aviso de que la imprenta convierte»). Lo demas si sigue la
- * regla del interior: el texto y las barras en negro de una tinta (gris), sin
- * transparencias (los velos van cocidos en la imagen), sin anotaciones.
+ * Dos formas, segun el color que elija el autor (M10):
+ *   - RGB: el fondo en sRGB tal cual, para que la imprenta (o KDP) lo
+ *     convierta. No es PDF/X-1a.
+ *   - CMYK: el fondo ya separado con el perfil de imprenta (color.ts), y el
+ *     PDF entero PDF/X-1a:2001, como el interior: su OutputIntent (FOGRA39,
+ *     los datos del perfil), /Trapped y la version en el Info.
+ * En las dos, lo demas sigue la regla del interior: el texto y las barras en
+ * negro de una tinta (gris), sin transparencias (los velos van cocidos en la
+ * imagen), sin anotaciones.
  */
 import { zlibSync } from 'fflate'
 import type { CubiertaCompuesta, FuentesCubierta, LetraCubierta } from './cubierta'
-import { ascii, cadena, fechaPdf, incrustar, num, Objetos, tj } from './pdf'
+import { ascii, cadena, CONDICIONES, fechaPdf, incrustar, num, Objetos, tj } from './pdf'
 import type { Fuente } from './sfnt'
 import type { Cara } from './tipos'
 
-/** La imagen del fondo: un JPEG tal cual (lo que da el lienzo del navegador), o pixeles RGB. */
+/** La imagen del fondo: un JPEG tal cual (lo que da el lienzo del navegador), pixeles RGB, o CMYK ya separado. */
 export type FondoCubierta =
   | { readonly jpeg: Uint8Array; readonly ancho: number; readonly alto: number }
   | { readonly rgb: Uint8Array; readonly ancho: number; readonly alto: number }
+  /** C, M, Y, K de 8 bits por pixel (255 es el 100 % de tinta): el PDF sale PDF/X-1a. */
+  | { readonly cmyk: Uint8Array; readonly ancho: number; readonly alto: number }
+  /** Lo mismo, ya pasado por `comprimirCmyk` (lo hace el hilo de la app: tarda segundos). */
+  | { readonly cmykComprimido: Uint8Array; readonly ancho: number; readonly alto: number }
 
 export interface OpcionesCubierta {
   readonly fuentes: FuentesCubierta
@@ -28,6 +37,8 @@ export interface OpcionesCubierta {
   readonly titulo: string
   readonly autor: string
   readonly fecha: Date
+  /** Con el fondo en CMYK: la condicion de impresion del OutputIntent (la del perfil con que se separo). */
+  readonly condicion?: keyof typeof CONDICIONES
 }
 
 const fuenteDe = (f: FuentesCubierta, letra: LetraCubierta, cara: Cara): Fuente => (letra === 'libro' ? f.libro[cara] : f[letra])
@@ -55,15 +66,21 @@ export function escribirCubierta(c: CubiertaCompuesta, o: OpcionesCubierta): Uin
   }
 
   let imagen = ''
+  const enCmyk = o.fondo !== undefined && ('cmyk' in o.fondo || 'cmykComprimido' in o.fondo)
   if (o.fondo) {
     const f = o.fondo
-    const n =
-      'jpeg' in f
-        ? obj.nuevo(concatenarFlujo(` /Type /XObject /Subtype /Image /Width ${f.ancho} /Height ${f.alto} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, f.jpeg))
-        : (() => {
-            if (f.rgb.length !== f.ancho * f.alto * 3) throw new Error(`El fondo no mide ${f.ancho} × ${f.alto} pixeles RGB.`)
-            return obj.nuevo(concatenarFlujo(` /Type /XObject /Subtype /Image /Width ${f.ancho} /Height ${f.alto} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode`, zlibSync(f.rgb, { level: 9 })))
-          })()
+    const dic = ` /Type /XObject /Subtype /Image /Width ${f.ancho} /Height ${f.alto} /BitsPerComponent 8`
+    let n: number
+    if ('jpeg' in f) n = obj.nuevo(concatenarFlujo(`${dic} /ColorSpace /DeviceRGB /Filter /DCTDecode`, f.jpeg))
+    else if ('rgb' in f) {
+      if (f.rgb.length !== f.ancho * f.alto * 3) throw new Error(`El fondo no mide ${f.ancho} × ${f.alto} pixeles RGB.`)
+      n = obj.nuevo(concatenarFlujo(`${dic} /ColorSpace /DeviceRGB /Filter /FlateDecode`, zlibSync(f.rgb, { level: 9 })))
+    } else {
+      const datos = 'cmyk' in f ? comprimirCmyk(f.cmyk, f.ancho, f.alto) : f.cmykComprimido
+      n = obj.nuevo(
+        concatenarFlujo(`${dic} /ColorSpace /DeviceCMYK /Filter /FlateDecode /DecodeParms << /Predictor 15 /Colors 4 /BitsPerComponent 8 /Columns ${f.ancho} >>`, datos),
+      )
+    }
     imagen = `/Fondo ${n} 0 R`
   }
   const recursos = obj.nuevo(
@@ -100,12 +117,84 @@ export function escribirCubierta(c: CubiertaCompuesta, o: OpcionesCubierta): Uin
       ` /TrimBox ${caja(m.sangrado, m.sangrado, m.ancho - m.sangrado, m.alto - m.sangrado)} /Resources ${recursos} 0 R /Contents ${contenido} 0 R >>`,
   )
   obj.poner(arbol, `<< /Type /Pages /Count 1 /Kids [${pagina} 0 R] >>`)
-  const catalogo = obj.nuevo(`<< /Type /Catalog /Pages ${arbol} 0 R >>`)
   const fecha = fechaPdf(o.fecha)
+  if (!enCmyk) {
+    const catalogo = obj.nuevo(`<< /Type /Catalog /Pages ${arbol} 0 R >>`)
+    const info = obj.nuevo(
+      `<< /Title ${cadena(o.titulo)} /Author ${cadena(o.autor)} /Creator (Pubteca) /Producer (Pubteca) /CreationDate (${fecha}) /ModDate (${fecha}) /Trapped /False >>`,
+    )
+    return obj.bytes(catalogo, info)
+  }
+  // En CMYK, PDF/X-1a:2001, como el interior.
+  const condicion = o.condicion ?? 'FOGRA39'
+  const intento = obj.nuevo(
+    `<< /Type /OutputIntent /S /GTS_PDFX /OutputConditionIdentifier ${cadena(condicion)}` + ` /RegistryName (http://www.color.org) /Info ${cadena(CONDICIONES[condicion])} >>`,
+  )
+  const catalogo = obj.nuevo(`<< /Type /Catalog /Pages ${arbol} 0 R /OutputIntents [${intento} 0 R] >>`)
   const info = obj.nuevo(
-    `<< /Title ${cadena(o.titulo)} /Author ${cadena(o.autor)} /Creator (Pubteca) /Producer (Pubteca) /CreationDate (${fecha}) /ModDate (${fecha}) /Trapped /False >>`,
+    `<< /Title ${cadena(o.titulo)} /Author ${cadena(o.autor)} /Creator (Pubteca) /Producer (Pubteca)` +
+      ` /CreationDate (${fecha}) /ModDate (${fecha}) /Trapped /False` +
+      ` /GTS_PDFXVersion (PDF/X-1:2001) /GTS_PDFXConformance (PDF/X-1a:2001) >>`,
   )
   return obj.bytes(catalogo, info)
+}
+
+/** El fondo CMYK como va en el PDF: los filtros de PNG por fila y zlib. Un dibujo pesa la mitad o menos que comprimido a pelo. */
+export function comprimirCmyk(cmyk: Uint8Array, ancho: number, alto: number): Uint8Array {
+  if (cmyk.length !== ancho * alto * 4) throw new Error(`El fondo no mide ${ancho} × ${alto} pixeles CMYK.`)
+  return zlibSync(predictorPng(cmyk, ancho, alto, 4), { level: 6 })
+}
+
+/**
+ * Los filtros de PNG por fila (Predictor 15 de FlateDecode): cada fila lleva
+ * delante el filtro que deja los numeros mas pequeños (None, Sub, Up, Average
+ * o Paeth), la heuristica de libpng. Sin perdida.
+ */
+export function predictorPng(datos: Uint8Array, ancho: number, alto: number, canales: number): Uint8Array {
+  const fila = ancho * canales
+  const r = new Uint8Array(alto * (fila + 1))
+  const prueba = new Uint8Array(fila)
+  const mejor = new Uint8Array(fila)
+  for (let y = 0; y < alto; y++) {
+    const a = y * fila
+    const arriba = y > 0 ? a - fila : -1
+    let menor = Infinity
+    let tipo = 0
+    for (let t = 0; t < 5; t++) {
+      let suma = 0
+      for (let i = 0; i < fila; i++) {
+        const x = datos[a + i] as number
+        const izq = i >= canales ? (datos[a + i - canales] as number) : 0
+        const sup = arriba >= 0 ? (datos[arriba + i] as number) : 0
+        const diag = arriba >= 0 && i >= canales ? (datos[arriba + i - canales] as number) : 0
+        let p: number
+        if (t === 0) p = 0
+        else if (t === 1) p = izq
+        else if (t === 2) p = sup
+        else if (t === 3) p = (izq + sup) >> 1
+        else {
+          const q = izq + sup - diag
+          const pa = Math.abs(q - izq)
+          const pb = Math.abs(q - sup)
+          const pc = Math.abs(q - diag)
+          p = pa <= pb && pa <= pc ? izq : pb <= pc ? sup : diag
+        }
+        const v = (x - p) & 0xff
+        prueba[i] = v
+        suma += v < 128 ? v : 256 - v
+        if (suma >= menor) break
+      }
+      if (suma < menor) {
+        menor = suma
+        tipo = t
+        mejor.set(prueba)
+      }
+    }
+    const o = y * (fila + 1)
+    r[o] = tipo
+    r.set(mejor, o + 1)
+  }
+  return r
 }
 
 /** Un flujo ya filtrado, con su diccionario. */

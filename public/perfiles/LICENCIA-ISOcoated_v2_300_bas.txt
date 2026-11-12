@@ -1,0 +1,22 @@
+ISO Coated v2 300% (basICColor), el perfil CMYK de la cubierta en CMYK.
+Sin modificar. Origen: http://www.freedesktop.org/wiki/OpenIcc/ProfilePackages/
+(copia tomada de Apache FOP, etiqueta fop-2_1). Su aviso de copyright y su licencia,
+tal como los lleva el propio perfil:
+
+basICColor CMYKick v1.2 - Copyright (c) 2006-2007 Color Solutions, All Rights Reserved. 
+
+http://www.freedesktop.org/wiki/OpenIcc/ProfilePackages/
+
+The zlib/libpng License
+
+Copyright (c) 2007-2010, basICColor GmbH
+
+This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, and acknowlegement in the product documentation would be appreciated but is not required.
+
+2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+
+3. This notice may not be removed or altered from any source distribution.

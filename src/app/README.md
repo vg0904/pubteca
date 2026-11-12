@@ -138,6 +138,11 @@ toco se guarda igual que antes, y uno que si, como formato 3 (ver
   pide, `generar.ts` la compone al generar y la pone en el EPUB de Apple Books
   en lugar del dibujo limpio, sin tocar el proyecto (el de Kindle no lleva
   portada dentro). Se carga con `import()` solo entonces.
+- `perfil.ts` trae el perfil CMYK (1 MB) la primera vez que se elige CMYK;
+  `cmyk.ts` separa el fondo de la cubierta en su hilo (`cmyk.worker.ts`), con
+  el mismo motor que la pagina usa si el hilo no se abre (`cmyk-motor.ts`):
+  unos segundos a 300 ppi, sin congelar la pagina. La prueba en pantalla (como
+  sale impreso) se pinta en la vista con la misma separacion.
 - `codigo.ts` (puro): la muestra del codigo cuando la caja queda libre (sin
   ISBN, o para el de KDP), que solo se pinta en pantalla, en gris y con las
   barras de un numero que ningun lector acepta; y el codigo suelto en SVG y en

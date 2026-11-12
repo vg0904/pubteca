@@ -365,6 +365,12 @@ describe('las piezas movidas a mano y la portada del ebook, en el modelo', () =>
     expect(mover(e, 'sello', { x: 0.1, y: 0 }, 2000, 'papiro').proyecto?.cubierta?.mover).toMatchObject({ clasico: { titulo: { x: 0.03, y: 0 }, autor: { x: 0, y: 0.02 } }, papiro: { sello: { x: 0.1, y: 0 } } })
   })
 
+  it('elegir a mano el color del PDF pide formato 6 (un 5 lo tiraria y volveria al del destino)', () => {
+    const e = reducir(e0, { tipo: 'cubierta', cambios: { color: 'cmyk' }, ahora: 0 })
+    expect(versionNecesaria(e.proyecto as Proyecto)).toBe(6)
+    expect(versionNecesaria(reducir(e, { tipo: 'cubierta', cambios: { color: null }, ahora: 9000 }).proyecto as Proyecto)).toBe(4)
+  })
+
   it('la portada en los EPUB tambien pide formato 5', () => {
     const e = reducir(e0, { tipo: 'cubierta', cambios: { enEpub: true }, ahora: 0 })
     expect(versionNecesaria(e.proyecto as Proyecto)).toBe(5)

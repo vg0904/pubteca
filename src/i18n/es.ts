@@ -1041,6 +1041,20 @@ export const ui = {
       aSuSitio: 'A su sitio',
       todas: 'Todas a su sitio',
     },
+    color: {
+      titulo: 'Color del PDF',
+      nombres: { rgb: 'RGB, como el dibujo', cmyk: 'CMYK, listo para imprenta' },
+      recomendado: (destino: string) => `lo recomendado para ${destino}`,
+      destinos: { kdp: 'KDP', ingram: 'IngramSpark', imprenta: 'una imprenta' },
+      ayudaRgb: 'Lo mejor para copias digitales y pantallas: conserva los colores más vivos. KDP lo acepta y lo convierte a CMYK al imprimir.',
+      ayudaCmyk: (tinta: string) =>
+        `Lo mejor para imprimir: el fondo va en las cuatro tintas, separado con un perfil de imprenta (ISO Coated v2, FOGRA39), y el PDF es PDF/X-1a. Sin sorpresas al convertir: lo que ves en la prueba es lo que da el papel. Tinta máxima, ${tinta} %.`,
+      prueba: 'Ver en la vista cómo sale impreso',
+      pantallas: 'La vista previa en PNG y la portada del ebook van siempre en RGB: son para pantallas.',
+      notaCmyk: (tinta: string) => `El PDF va en CMYK (perfil ISO Coated v2 300 % de basICColor, FOGRA39), en PDF/X-1a, con un ${tinta} % de tinta como máximo. Los colores muy vivos de pantalla salen más apagados: es lo que el papel puede dar.`,
+      preparando: 'Separando en CMYK…',
+      sinPerfil: 'No se pudo traer el perfil CMYK (¿sin conexión?). Vuelve a intentarlo cuando haya red.',
+    },
     ebook: {
       titulo: 'La portada del ebook',
       ayuda: 'La portada tal como se ve aquí, con su texto y sin el sangrado.',

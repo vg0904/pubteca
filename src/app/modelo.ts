@@ -321,11 +321,14 @@ export interface Proyecto {
  *   5 · en `cubierta`, las piezas movidas a mano (`mover`) y la portada con su
  *       texto en los EPUB (`enEpub`). Una version 4 abriria la cubierta y, al
  *       normalizarla, perderia las dos cosas sin decir nada.
+ *   6 · en `cubierta`, el color del PDF elegido a mano (`color`, RGB o CMYK).
+ *       Una version 5 lo tiraria al normalizar y volveria al del destino.
  */
-export const VERSION_PROYECTO = 5
+export const VERSION_PROYECTO = 6
 
 /** La version minima con la que hay que guardar este libro. */
 export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada'>>): number {
+  if (p.cubierta && p.cubierta.color !== null && p.cubierta.color !== undefined) return 6
   if (p.cubierta && (p.cubierta.enEpub || hayMovidas(p.cubierta.mover))) return 5
   if (p.cubierta || ROLES_DEL_SELLO.some((r) => p.portada?.[r] !== undefined)) return 4
   if (p.impreso) return 3
