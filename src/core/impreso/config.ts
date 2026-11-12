@@ -8,6 +8,7 @@
  * su rango. Nada de lo que venga de un archivo puede costarle el libro al
  * autor (la misma regla que la entrega de Kindle).
  */
+import { revisarIsbn } from './ean13'
 import { CORTE_POR_DEFECTO, CORTES, DESTINOS, type Destino, type Papel } from './formatos'
 import { FAMILIA_POR_DEFECTO, FAMILIAS, familia } from './familias'
 
@@ -196,16 +197,10 @@ export function interlineaDe(c: Pick<ConfigImpreso, 'cuerpo' | 'interlineado'>):
   return Math.round(c.cuerpo * c.interlineado) / 100
 }
 
-/** Comprueba un ISBN-13 (o un ISBN-10) por su digito de control. Guiones y espacios no cuentan. */
+/**
+ * Un ISBN-13 de libro (978 o 979) o un ISBN-10, con su digito de control bien.
+ * Guiones y espacios no cuentan. Lo que falla, con detalle: `revisarIsbn`.
+ */
 export function isbnValido(isbn: string): boolean {
-  const s = isbn.replace(/[\s-]/gu, '').toUpperCase()
-  if (/^\d{13}$/u.test(s)) {
-    const suma = [...s].reduce((n, ch, i) => n + Number(ch) * (i % 2 === 0 ? 1 : 3), 0)
-    return suma % 10 === 0
-  }
-  if (/^\d{9}[\dX]$/u.test(s)) {
-    const suma = [...s].reduce((n, ch, i) => n + (ch === 'X' ? 10 : Number(ch)) * (10 - i), 0)
-    return suma % 11 === 0
-  }
-  return false
+  return revisarIsbn(isbn).estado === 'bien'
 }

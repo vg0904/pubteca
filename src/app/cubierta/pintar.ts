@@ -4,14 +4,16 @@
  * en vectores que escribe el PDF (texto con los contornos de sus glifos,
  * girado el del lomo; la caja y las barras del codigo).
  *
- * Tres usos: la vista previa (con las guias de corte, lomo y codigo), el PNG
- * que se descarga, y la imagen del fondo del PDF (solo las capas, a 300 ppi:
- * el texto lo pone el PDF en vectores).
+ * Tres usos: la vista previa (con las guias de corte, lomo y codigo, y la
+ * muestra del codigo si la caja queda libre), el PNG que se descarga, y la
+ * imagen del fondo del PDF (solo las capas, a 300 ppi: el texto lo pone el
+ * PDF en vectores). Aparte, `pintarSueltas` pinta unas operaciones solas: el
+ * codigo de barras suelto, en PNG.
  *
  * El contexto se recibe por su interfaz minima: los tests le pasan uno que
  * apunta lo que se le pide.
  */
-import type { Caja, CubiertaCompuesta, FuentesCubierta, LetraCubierta, RolCubierta } from '../../core/impreso/cubierta'
+import type { Caja, CubiertaCompuesta, FuentesCubierta, LetraCubierta, OpCubierta, RolCubierta } from '../../core/impreso/cubierta'
 import type { Fuente } from '../../core/impreso/sfnt'
 import type { Cara } from '../../core/impreso/tipos'
 
@@ -45,7 +47,44 @@ export interface QuePintar {
   readonly guias?: boolean
   /** Solo un trozo de la hoja (la portada, para las miniaturas de los estilos). */
   readonly region?: Caja
+  /** Operaciones que solo se ven en pantalla, encima del texto: la muestra del codigo. */
+  readonly extra?: readonly OpCubierta[]
 }
+
+type Base = (a: number, b: number, c: number, d: number, e: number, f: number) => void
+
+function pintarOps(ctx: PincelCubierta, ops: readonly OpCubierta[], base: Base, p: Pick<ParaPintarCubierta, 'fuentes' | 'trazo'>): void {
+  for (const op of ops) {
+    if (op.op === 'rect') {
+      base(1, 0, 0, 1, 0, 0)
+      ctx.fillStyle = gris(op.gris)
+      ctx.fillRect(op.x, op.y, op.ancho, op.alto)
+      continue
+    }
+    ctx.fillStyle = gris(op.gris)
+    const f = fuenteDe(p.fuentes, op.letra, op.cara)
+    const k = op.cuerpo / f.upm
+    let a = 0
+    for (const g of op.glifos) {
+      const t = p.trazo(op.letra, op.cara, g.id)
+      if (t) {
+        // La fuente mide con la y hacia arriba. Girado 90: la linea va hacia abajo y lo alto de
+        // las letras mira a la derecha; -90, hacia arriba y a la izquierda.
+        if (op.giro === 90) base(0, k, k, 0, op.x, op.y + a)
+        else if (op.giro === -90) base(0, -k, -k, 0, op.x, op.y - a)
+        else base(k, 0, 0, -k, op.x + a, op.y)
+        ctx.fill(t)
+      }
+      a += g.avance * k
+    }
+  }
+}
+
+/** Coordenadas de la hoja (puntos) a pixeles del lienzo, desde la esquina de `r`. */
+const baseDe =
+  (ctx: PincelCubierta, r: Caja, escala: number): Base =>
+  (a, b, c, d, e, f) =>
+    ctx.setTransform(a * escala, b * escala, c * escala, d * escala, (e - r.x) * escala, (f - r.y) * escala)
 
 export const fuenteDe = (f: FuentesCubierta, letra: LetraCubierta, cara: Cara): Fuente => (letra === 'libro' ? f.libro[cara] : f[letra])
 
@@ -57,8 +96,7 @@ const gris = (g: number): string => {
 /** Pinta la cubierta con `escala` pixeles por punto. */
 export function pintarCubierta(ctx: PincelCubierta, c: CubiertaCompuesta, escala: number, p: ParaPintarCubierta, que: QuePintar): void {
   const r = que.region ?? { x: 0, y: 0, ancho: c.medidas.ancho, alto: c.medidas.alto }
-  // Coordenadas de la hoja (puntos) a pixeles del lienzo.
-  const base = (a: number, b: number, cc: number, d: number, e: number, f: number): void => ctx.setTransform(a * escala, b * escala, cc * escala, d * escala, (e - r.x) * escala, (f - r.y) * escala)
+  const base = baseDe(ctx, r, escala)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(0, 0, r.ancho * escala, r.alto * escala)
@@ -93,32 +131,8 @@ export function pintarCubierta(ctx: PincelCubierta, c: CubiertaCompuesta, escala
     }
   }
 
-  if (que.texto) {
-    for (const op of c.ops) {
-      if (op.op === 'rect') {
-        base(1, 0, 0, 1, 0, 0)
-        ctx.fillStyle = gris(op.gris)
-        ctx.fillRect(op.x, op.y, op.ancho, op.alto)
-        continue
-      }
-      ctx.fillStyle = gris(op.gris)
-      const f = fuenteDe(p.fuentes, op.letra, op.cara)
-      const k = op.cuerpo / f.upm
-      let a = 0
-      for (const g of op.glifos) {
-        const t = p.trazo(op.letra, op.cara, g.id)
-        if (t) {
-          // La fuente mide con la y hacia arriba. Girado 90: la linea va hacia abajo y lo alto de
-          // las letras mira a la derecha; -90, hacia arriba y a la izquierda.
-          if (op.giro === 90) base(0, k, k, 0, op.x, op.y + a)
-          else if (op.giro === -90) base(0, -k, -k, 0, op.x, op.y - a)
-          else base(k, 0, 0, -k, op.x + a, op.y)
-          ctx.fill(t)
-        }
-        a += g.avance * k
-      }
-    }
-  }
+  if (que.texto) pintarOps(ctx, c.ops, base, p)
+  if (que.extra) pintarOps(ctx, que.extra, base, p)
 
   if (que.guias) {
     const m = c.medidas
@@ -132,6 +146,15 @@ export function pintarCubierta(ctx: PincelCubierta, c: CubiertaCompuesta, escala
     ctx.strokeRect(c.codigo.x, c.codigo.y, c.codigo.ancho, c.codigo.alto)
     ctx.setLineDash([])
   }
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+}
+
+/** Solo unas operaciones, sobre blanco, en la region `r` de la hoja: el codigo suelto. */
+export function pintarSueltas(ctx: PincelCubierta, ops: readonly OpCubierta[], r: Caja, escala: number, p: Pick<ParaPintarCubierta, 'fuentes' | 'trazo'>): void {
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, r.ancho * escala, r.alto * escala)
+  pintarOps(ctx, ops, baseDe(ctx, r, escala), p)
   ctx.setTransform(1, 0, 0, 1, 0, 0)
 }
 

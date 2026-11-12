@@ -1,5 +1,7 @@
 import 'fake-indexeddb/auto'
 import { readdirSync, readFileSync } from 'node:fs'
+import { crc32 as crcDeNode } from 'node:zlib'
+import { zlibSync } from 'fflate'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { archivosDeZip, leerCopia } from '../src/app/abrir-copia'
@@ -7,7 +9,12 @@ import { abrirAlmacen, guardarProyecto, leerProyecto } from '../src/app/almacen'
 import { zipDeCopia } from '../src/app/copia'
 import { avisosDeCubierta } from '../src/app/cubierta/avisos'
 import { colorMedio, luminanciasDe } from '../src/app/cubierta/medir'
-import { pintarCubierta, trazosDeCubierta, type PincelCubierta } from '../src/app/cubierta/pintar'
+import { CIFRAS_MUESTRA, GRIS_MUESTRA, codigoSuelto, muestraDelCodigo } from '../src/app/cubierta/codigo'
+import { pintarCubierta, pintarSueltas, trazosDeCubierta, type PincelCubierta } from '../src/app/cubierta/pintar'
+import { motivoIsbn } from '../src/app/isbn'
+import { controlEan } from '../src/core/impreso/ean13'
+import { conPpi, pixelesPorMetro } from '../src/core/png'
+import { ui as es } from '../src/i18n/es'
 import { configCubiertaDe, datosDeCubierta } from '../src/app/cubierta/preparar'
 import { ESTADO_INICIAL, reducir, type Accion, type Estado } from '../src/app/estado'
 import { exportar } from '../src/app/exportar'
@@ -204,5 +211,127 @@ describe('los avisos de la cubierta', () => {
       ['sinPortada', 'aviso'],
       ['codigoKdp', 'nota'],
     ])
+  })
+})
+
+describe('el codigo en la pantalla: la muestra y el codigo suelto', () => {
+  const f = fuentesCubiertaDelRepo()
+  const rotulos = { sinIsbn: 'MUESTRA · FALTA EL ISBN', kdp: 'AQUÍ PONE KDP EL SUYO' }
+  const dentro = (o: { x: number; y: number }, c: { x: number; y: number; ancho: number; alto: number }): boolean => o.x >= c.x - 1e-6 && o.x <= c.x + c.ancho + 1e-6 && o.y >= c.y - 1e-6 && o.y <= c.y + c.alto + 1e-6
+
+  it('con el codigo de verdad no hay muestra; sin ISBN, o con la caja para KDP, si, en gris y con su rotulo', () => {
+    expect(muestraDelCodigo(cubiertaDePrueba(), rotulos, f)).toEqual([])
+    const sin = cubiertaDePrueba({}, { isbn: '' })
+    const m = muestraDelCodigo(sin, rotulos, f)
+    expect(m.length).toBeGreaterThan(20)
+    for (const o of m) expect(dentro(o, sin.codigo)).toBe(true)
+    expect(m.filter((o) => o.op === 'rect' && o.gris !== 1).every((o) => o.gris === GRIS_MUESTRA)).toBe(true)
+    // Sin cifras debajo: el unico texto es el rotulo, encima de las barras.
+    const textos = m.filter((o) => o.op === 'texto')
+    const glifos = textos.flatMap((o) => (o.op === 'texto' ? o.glifos : []))
+    expect(glifos.length).toBe(f.jost.formar(rotulos.sinIsbn.replace(/ /gu, '')).glifos.length)
+    const kdp = muestraDelCodigo(cubiertaDePrueba({ codigo: 'kdp' }), rotulos, f)
+    expect(kdp.filter((o) => o.op === 'texto').flatMap((o) => (o.op === 'texto' ? o.glifos : [])).length).toBe(f.jost.formar(rotulos.kdp.replace(/ /gu, '')).glifos.length)
+  })
+
+  it('las barras de la muestra no las acepta ningun lector: su digito de control esta mal', () => {
+    expect(controlEan(CIFRAS_MUESTRA.slice(0, 12))).not.toBe(Number(CIFRAS_MUESTRA[12]))
+  })
+
+  it('la muestra va en gris medio: se ve que esta, y que no es el codigo de verdad (negro)', () => {
+    expect(GRIS_MUESTRA).toBeGreaterThanOrEqual(0.35)
+    expect(GRIS_MUESTRA).toBeLessThanOrEqual(0.65)
+  })
+
+  it('la muestra solo se pinta si se pide: ni el PDF ni el PNG la llevan', () => {
+    const c = cubiertaDePrueba({}, { isbn: '' })
+    const m = muestraDelCodigo(c, rotulos, f)
+    const pinta = (extra?: typeof m) => {
+      const fills: unknown[][] = []
+      const ctx = { setTransform: () => undefined, fillRect: (...a: number[]) => void fills.push(a), strokeRect: () => undefined, fill: () => undefined, drawImage: () => undefined, setLineDash: () => undefined, save: () => undefined, restore: () => undefined } as unknown as PincelCubierta
+      pintarCubierta(ctx, c, 1, { fuentes: f, trazo: trazosDeCubierta(f, (d) => ({ d }) as unknown as Path2D), imagen: () => null }, { capas: false, texto: true, ...(extra ? { extra } : {}) })
+      return fills
+    }
+    const barras = m.filter((o) => o.op === 'rect' && o.gris === GRIS_MUESTRA)
+    expect(pinta(m).length - pinta().length).toBe(barras.length + 1)
+  })
+
+  it('el codigo suelto: en el origen, en su caja de KDP, y nada si el ISBN no vale', () => {
+    expect(codigoSuelto('978-84-09-12345-3', f)).toBeNull()
+    expect(codigoSuelto('', f)).toBeNull()
+    const s = codigoSuelto('978-84-09-12345-2', f)
+    if (!s) throw new Error('sin codigo')
+    expect(s.cifras).toBe('9788409123452')
+    expect(s.caja).toMatchObject({ x: 0, y: 0, ancho: 144 })
+    expect(s.caja.alto).toBeCloseTo(86.4, 9)
+    expect(s.svg).toContain('<title>ISBN 978-84-09-12345-2</title>')
+    // Se pinta desde su esquina, a 300 ppi: 600 × 360 pixeles de blanco y luego las barras.
+    const llamadas: number[][] = []
+    const ctx = { setTransform: () => undefined, fillRect: (...a: number[]) => void llamadas.push(a), fill: () => undefined } as unknown as PincelCubierta
+    pintarSueltas(ctx, s.ops, s.caja, 300 / 72, { fuentes: f, trazo: trazosDeCubierta(f, (d) => ({ d }) as unknown as Path2D) })
+    expect(llamadas[0]).toEqual([0, 0, 600, 360])
+  })
+
+  it('lo que falla de un ISBN, dicho al autor', () => {
+    const t = es.impreso.creditos.isbnMal
+    expect(motivoIsbn('', t)).toBeNull()
+    expect(motivoIsbn('978-84-09-12345-2', t)).toBeNull()
+    expect(motivoIsbn('4006381333931', t)).toBe(t.prefijo)
+    expect(motivoIsbn('978-84-09-12345-3', t)).toBe(t.control('2'))
+    expect(motivoIsbn('97884', t)).toBe(t.forma)
+  })
+})
+
+describe('la resolucion de los PNG (pHYs)', () => {
+  const bloque = (tipo: string, datos: Uint8Array): Uint8Array => {
+    const r = new Uint8Array(12 + datos.length)
+    const v = new DataView(r.buffer)
+    v.setUint32(0, datos.length)
+    r.set([...tipo].map((c) => c.charCodeAt(0)), 4)
+    r.set(datos, 8)
+    v.setUint32(8 + datos.length, crcDeNode(r.subarray(4, 8 + datos.length)))
+    return r
+  }
+  // Un PNG de 1 × 1 pixel gris, hecho a mano.
+  const ihdr = new Uint8Array([0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0])
+  const png = (...extra: Uint8Array[]): Uint8Array => {
+    const partes = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), bloque('IHDR', ihdr), ...extra, bloque('IDAT', zlibSync(new Uint8Array([0, 128]))), bloque('IEND', new Uint8Array())]
+    const r = new Uint8Array(partes.reduce((n, p) => n + p.length, 0))
+    let o = 0
+    for (const p of partes) {
+      r.set(p, o)
+      o += p.length
+    }
+    return r
+  }
+  const bloques = (b: Uint8Array): { tipo: string; datos: Uint8Array; crcBien: boolean }[] => {
+    const v = new DataView(b.buffer, b.byteOffset, b.byteLength)
+    const r: { tipo: string; datos: Uint8Array; crcBien: boolean }[] = []
+    for (let i = 8; i < b.length; ) {
+      const n = v.getUint32(i)
+      r.push({ tipo: String.fromCharCode(...b.subarray(i + 4, i + 8)), datos: b.subarray(i + 8, i + 8 + n), crcBien: v.getUint32(i + 8 + n) === crcDeNode(b.subarray(i + 4, i + 8 + n)) })
+      i += 12 + n
+    }
+    return r
+  }
+
+  it('300 ppi son 11 811 pixeles por metro, en los dos ejes, justo despues de IHDR y con su CRC', () => {
+    expect(pixelesPorMetro(300)).toBe(11811)
+    const r = bloques(conPpi(png(), 300))
+    expect(r.map((x) => x.tipo)).toEqual(['IHDR', 'pHYs', 'IDAT', 'IEND'])
+    expect(r.every((x) => x.crcBien)).toBe(true)
+    const d = new DataView((r[1] as (typeof r)[number]).datos.slice().buffer)
+    expect([d.getUint32(0), d.getUint32(4), d.getUint8(8)]).toEqual([11811, 11811, 1])
+  })
+
+  it('si ya traia uno, se cambia: nunca dos', () => {
+    const viejo = bloque('pHYs', new Uint8Array([0, 0, 11, 19, 0, 0, 11, 19, 1]))
+    const r = bloques(conPpi(png(viejo), 150))
+    expect(r.filter((x) => x.tipo === 'pHYs')).toHaveLength(1)
+    expect(new DataView((r[1] as (typeof r)[number]).datos.slice().buffer).getUint32(0)).toBe(5906)
+  })
+
+  it('lo que no es un PNG no se toca', () => {
+    expect(() => conPpi(new Uint8Array(40), 300)).toThrow()
   })
 })

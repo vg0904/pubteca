@@ -60,6 +60,11 @@ no carga nada.
   vectores. Sus opciones viven en `cubierta-config.ts`, ligero, para que el
   almacen y la copia no carguen el compositor.
 - `ean13.ts`: el codigo de barras de un ISBN, modulo a modulo (las tablas de
-  la norma), y `pdf-cubierta.ts`, el PDF de la cubierta con las piezas del
+  la norma), y lo que le pasa a un ISBN que no vale (`revisarIsbn`: la forma,
+  el prefijo 978/979 de los libros o el digito de control, con el que tocaria).
+  `codigo.ts` compone el codigo en su caja (ISBN encima, barras al 90 %, zona
+  de silencio de 11 y 7 modulos, cifras debajo) y lo escribe en SVG con el
+  texto en contornos; lo usan la contraportada, la muestra de la pantalla y el
+  codigo suelto. `pdf-cubierta.ts`, el PDF de la cubierta con las piezas del
   escritor del interior: varias letras, texto girado, rectangulos y el fondo en
   sRGB (no es PDF/X-1a: ver plan.md, decision 11).

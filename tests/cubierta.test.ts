@@ -14,7 +14,9 @@ import {
   type EstiloId,
   type OpCubierta,
 } from '../src/core/impreso/cubierta'
-import { barrasEan13, cifrasDeIsbn, modulosEan13 } from '../src/core/impreso/ean13'
+import { ALTO_BARRAS, MODULO, SILENCIO, componerCodigo, izquierdaDeBarras, svgDelCodigo } from '../src/core/impreso/codigo'
+import { barrasEan13, cifrasDeIsbn, controlEan, modulosEan13, revisarIsbn } from '../src/core/impreso/ean13'
+import { isbnValido } from '../src/core/impreso/config'
 import { CORTES } from '../src/core/impreso/formatos'
 import { componerImpreso } from '../src/core/impreso/plan'
 import { CONFIG_IMPRESO_POR_DEFECTO } from '../src/core/impreso/config'
@@ -333,6 +335,121 @@ describe('el dibujo y su resolucion', () => {
 
   it('el velo lleva el contraste un poco por encima del umbral: el titulo vertical se lee sin aviso', () => {
     expect(cubiertaDePrueba({ estilo: 'vertical' }).avisos.some((a) => a.codigo === 'contrasteBajo')).toBe(false)
+  })
+})
+
+describe('el ISBN, comprobado como lo pide la agencia', () => {
+  it('Bookland: un ISBN de 13 cifras empieza por 978 o 979; un EAN de otra cosa no vale', () => {
+    expect(revisarIsbn('979-10-90636-07-1')).toEqual({ estado: 'bien', cifras: '9791090636071' })
+    // Un EAN-13 con su control bien, pero de un producto, no de un libro.
+    expect(controlEan('400638133393')).toBe(1)
+    expect(revisarIsbn('4006381333931')).toEqual({ estado: 'prefijo' })
+    expect(cifrasDeIsbn('4006381333931')).toBeNull()
+    expect(isbnValido('4006381333931')).toBe(false)
+    expect(isbnValido('978-84-09-12345-2')).toBe(true)
+  })
+
+  it('el digito de control: se dice cual tocaria, en el de 13 y en el de 10 (que puede ser X)', () => {
+    expect(revisarIsbn('978-84-09-12345-3')).toEqual({ estado: 'control', esperado: '2' })
+    expect(revisarIsbn('0-306-40615-3')).toEqual({ estado: 'control', esperado: '2' })
+    expect(revisarIsbn('0-8044-2957-X')).toEqual({ estado: 'bien', cifras: '9780804429573' })
+    expect(revisarIsbn('0-8044-2957-5')).toEqual({ estado: 'control', esperado: 'X' })
+    // Cuando la suma ya es multiplo de 11, el control es 0 (no 11).
+    expect(revisarIsbn('0-306-40616-0').estado).toBe('bien')
+    expect(revisarIsbn('0-306-40616-1')).toEqual({ estado: 'control', esperado: '0' })
+  })
+
+  it('la forma: vacio, o ni 13 ni 10 cifras', () => {
+    expect(revisarIsbn('  ')).toEqual({ estado: 'vacio' })
+    expect(revisarIsbn('978-84-09-1234')).toEqual({ estado: 'forma' })
+    expect(revisarIsbn('ISBN 978-84-09-12345-2')).toEqual({ estado: 'forma' })
+  })
+})
+
+describe('el codigo, segun la norma EAN-13', () => {
+  const barrasDe = (ops: readonly OpCubierta[]) => ops.filter((o): o is Extract<OpCubierta, { op: 'rect' }> => o.op === 'rect' && o.gris === 0)
+
+  it('la zona de silencio: 11 modulos en blanco a la izquierda y 7 a la derecha, dentro de la caja blanca, sin nada encima', () => {
+    for (const c of [cubiertaDePrueba(), cubiertaDePrueba({ estilo: 'franja' }, { corte: { ancho: 5 * IN, alto: 8 * IN }, isbn: '979-10-90636-07-1' })]) {
+      const barras = barrasDe(c.ops)
+      const izq = Math.min(...barras.map((b) => b.x))
+      const der = Math.max(...barras.map((b) => b.x + b.ancho))
+      expect(der - izq).toBeCloseTo(95 * MODULO, 6)
+      const blanca = c.ops.find((o) => o.op === 'rect' && o.gris === 1)
+      if (blanca?.op !== 'rect') throw new Error('sin caja blanca')
+      expect(izq - blanca.x).toBeGreaterThanOrEqual(SILENCIO.izquierda * MODULO)
+      expect(blanca.x + blanca.ancho - der).toBeGreaterThanOrEqual(SILENCIO.derecha * MODULO)
+      // A la altura de las barras de las cifras, en la zona de silencio no hay nada mas que blanco.
+      const y = Math.min(...barras.map((b) => b.y))
+      const zonas = [
+        { x: izq - SILENCIO.izquierda * MODULO, y, ancho: SILENCIO.izquierda * MODULO, alto: ALTO_BARRAS },
+        { x: der, y, ancho: SILENCIO.derecha * MODULO, alto: ALTO_BARRAS },
+      ]
+      for (const z of zonas) expect(c.ops.filter((o) => o !== blanca && corta(cajaDe(o), z))).toEqual([])
+      // Ninguna cifra pisa una barra; la primera va a la izquierda de la guarda, en la zona de silencio.
+      const cifras = c.ops.filter((o) => o.op === 'texto' && o.cuerpo === 8.5)
+      expect(cifras).toHaveLength(13)
+      for (const t of cifras) for (const b of barras) expect(corta(cajaDe(t), cajaDe(b))).toBe(false)
+      const primera = cajaDe(cifras[0] as OpCubierta)
+      expect(primera.x + primera.ancho).toBeLessThan(izq)
+      expect(primera.x).toBeGreaterThan(izq - SILENCIO.izquierda * MODULO)
+    }
+  })
+
+  it('la contraportada y el codigo suelto son el mismo codigo, solo que en otro sitio', () => {
+    const c = cubiertaDePrueba()
+    const enCaja = c.ops.filter((o) => dentro(cajaDe(o), c.codigo))
+    const suelto = componerCodigo({ x: 0, y: 0, ancho: c.codigo.ancho, alto: c.codigo.alto }, { cifras: '9788409123452', arriba: 'ISBN 978-84-09-12345-2', conCifras: true, gris: 0 }, F)
+    expect(suelto).toHaveLength(enCaja.length)
+    suelto.forEach((o, i) => {
+      const e = enCaja[i] as OpCubierta
+      expect(o.x + c.codigo.x).toBeCloseTo(e.x, 9)
+      expect(o.y + c.codigo.y).toBeCloseTo(e.y, 9)
+    })
+    expect(izquierdaDeBarras(c.codigo) - c.codigo.x).toBeCloseTo((c.codigo.ancho - 95 * MODULO) / 2, 9)
+  })
+
+  it('el SVG: 50,8 × 30,48 mm, las barras como rectangulos donde las compuso, y el texto en contornos, sin fuentes', () => {
+    const caja = { x: 0, y: 0, ancho: CAJA_CODIGO.ancho, alto: CAJA_CODIGO.alto }
+    const ops = componerCodigo(caja, { cifras: '9788409123452', arriba: 'ISBN 978-84-09-12345-2', conCifras: true, gris: 0 }, F)
+    const svg = svgDelCodigo(ops, caja, F, 'ISBN 978-84-09-12345-2')
+    expect(svg).toMatch(/<svg [^>]*width="50.8mm" height="30.48mm" viewBox="0 0 144 86.4"/u)
+    expect(svg).toContain('<title>ISBN 978-84-09-12345-2</title>')
+    expect(svg).not.toContain('<text')
+    const rects = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)" fill="(#[0-9a-f]{6})"\/>/gu)]
+    expect(rects).toHaveLength(1 + barrasEan13('9788409123452').length)
+    expect(rects[0]?.slice(1)).toEqual(['0', '0', '144', '86.4', '#ffffff'])
+    const barras = barrasDe(ops)
+    rects.slice(1).forEach((r, i) => {
+      const b = barras[i] as (typeof barras)[number]
+      expect(Number(r[1])).toBeCloseTo(b.x, 3)
+      expect(Number(r[3])).toBeCloseTo(b.ancho, 3)
+      expect(r[5]).toBe('#000000')
+    })
+    // Cada glifo, con su escala exacta: 7,5 pt arriba y 8,5 pt en las cifras.
+    const escalas = [...svg.matchAll(/<path transform="matrix\(([-\d.e]+) /gu)].map((m) => Number(m[1]))
+    expect(escalas.filter((k) => Math.abs(k - 8.5 / F.jost.upm) < 1e-7)).toHaveLength(13)
+    expect(escalas.filter((k) => Math.abs(k - 7.5 / F.jost.upm) < 1e-7).length).toBeGreaterThan(15)
+    // La fuente mide con la y hacia arriba y el SVG hacia abajo: la escala vertical va en negativo.
+    for (const m of svg.matchAll(/<path transform="matrix\(([-\d.e]+) ([-\d.e]+) ([-\d.e]+) ([-\d.e]+) /gu)) expect([Number(m[2]), Number(m[3]), Number(m[4])]).toEqual([0, 0, -Number(m[1])])
+  })
+
+  it('el SVG empieza en la esquina de su caja, este donde este la caja en la hoja', () => {
+    const c = cubiertaDePrueba()
+    const enCaja = c.ops.filter((o) => dentro(cajaDe(o), c.codigo))
+    const svg = svgDelCodigo(enCaja, c.codigo, F, 'ISBN')
+    const rects = [...svg.matchAll(/<rect x="([\d.]+)" y="([\d.]+)"/gu)].map((m) => [Number(m[1]), Number(m[2])])
+    expect(rects[0]).toEqual([0, 0])
+    for (const [x, y] of rects) {
+      expect(x).toBeLessThan(c.codigo.ancho)
+      expect(y).toBeLessThan(c.codigo.alto)
+    }
+    const origenes = [...svg.matchAll(/<path transform="matrix\([^ ]+ [^ ]+ [^ ]+ [^ ]+ ([-\d.]+) ([-\d.]+)\)/gu)].map((m) => [Number(m[1]), Number(m[2])])
+    for (const [x, y] of origenes) {
+      expect(x).toBeGreaterThanOrEqual(0)
+      expect(x).toBeLessThan(c.codigo.ancho)
+      expect(y).toBeLessThan(c.codigo.alto)
+    }
   })
 })
 

@@ -127,7 +127,15 @@ toco se guarda igual que antes, y uno que si, como formato 3 (ver
   izquierda de la portada (el que sigue en el lomo).
 - `pintar.ts`: las capas del fondo y el texto en vectores sobre un lienzo. Lo
   usan la vista previa (con guias), el PNG y la imagen del fondo del PDF (solo
-  capas, a 300 ppi; el texto lo pone el PDF).
+  capas, a 300 ppi; el texto lo pone el PDF). `pintarSueltas` pinta unas
+  operaciones solas: el codigo suelto en PNG.
+- `codigo.ts` (puro): la muestra del codigo cuando la caja queda libre (sin
+  ISBN, o para el de KDP), que solo se pinta en pantalla, en gris y con las
+  barras de un numero que ningun lector acepta; y el codigo suelto en SVG y en
+  PNG a 300 ppi (con su bloque pHYs, `core/png.ts`) para quien monta la
+  cubierta en otro programa. El PNG de la cubierta lleva tambien sus 150 ppi.
+  `isbn.ts`, fuera de la carpeta porque lo usa tambien «Libro impreso», dice al
+  autor que le pasa a su ISBN.
 - `fuentes.ts` trae las cinco letras de `public/fuentes/cubierta/`.
 - `avisos.ts`, sus avisos con su nivel.
 

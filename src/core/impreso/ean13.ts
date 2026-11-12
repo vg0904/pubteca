@@ -23,17 +23,46 @@ export function controlEan(doce: string): number {
   return (10 - (suma % 10)) % 10
 }
 
+/**
+ * Lo que le pasa a un ISBN, para decirselo al autor con precision:
+ * - `forma`: no son 13 cifras (ni 10 de un ISBN antiguo), con o sin guiones;
+ * - `prefijo`: 13 cifras que no empiezan por 978 o 979, el prefijo de los
+ *   libros (Bookland): un EAN de otra cosa, no un ISBN;
+ * - `control`: el ultimo digito no cuadra con los anteriores. Se dice cual
+ *   tocaria, pero el error puede estar en cualquier otra cifra: la app pide
+ *   revisar el numero que dio la agencia, no cambiar el ultimo.
+ */
+export type RevisionIsbn =
+  | { readonly estado: 'vacio' }
+  | { readonly estado: 'bien'; readonly cifras: string }
+  | { readonly estado: 'forma' }
+  | { readonly estado: 'prefijo' }
+  | { readonly estado: 'control'; readonly esperado: string }
+
+export function revisarIsbn(isbn: string): RevisionIsbn {
+  const s = isbn.replace(/[\s-]/gu, '').toUpperCase()
+  if (s === '') return { estado: 'vacio' }
+  if (/^\d{13}$/u.test(s)) {
+    if (!/^97[89]/u.test(s)) return { estado: 'prefijo' }
+    const control = controlEan(s.slice(0, 12))
+    return control === Number(s[12]) ? { estado: 'bien', cifras: s } : { estado: 'control', esperado: String(control) }
+  }
+  if (/^\d{9}[\dX]$/u.test(s)) {
+    // ISBN-10: la suma de cada cifra por su peso (10 a 1) es multiplo de 11; un 10 se escribe X.
+    const suma = [...s.slice(0, 9)].reduce((n, ch, i) => n + Number(ch) * (10 - i), 0)
+    const control = (11 - (suma % 11)) % 11
+    const esperado = control === 10 ? 'X' : String(control)
+    if (s[9] !== esperado) return { estado: 'control', esperado }
+    const doce = `978${s.slice(0, 9)}`
+    return { estado: 'bien', cifras: doce + String(controlEan(doce)) }
+  }
+  return { estado: 'forma' }
+}
+
 /** Las 13 cifras del codigo de un ISBN (13, o 10 pasado a 13), o null si no es valido. */
 export function cifrasDeIsbn(isbn: string): string | null {
-  const s = isbn.replace(/[\s-]/gu, '').toUpperCase()
-  if (/^\d{13}$/u.test(s)) return controlEan(s.slice(0, 12)) === Number(s[12]) ? s : null
-  if (/^\d{9}[\dX]$/u.test(s)) {
-    const suma = [...s].reduce((n, ch, i) => n + (ch === 'X' ? 10 : Number(ch)) * (10 - i), 0)
-    if (suma % 11 !== 0) return null
-    const doce = `978${s.slice(0, 9)}`
-    return doce + String(controlEan(doce))
-  }
-  return null
+  const r = revisarIsbn(isbn)
+  return r.estado === 'bien' ? r.cifras : null
 }
 
 /** Los 95 modulos del codigo: true es barra. */

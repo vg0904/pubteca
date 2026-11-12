@@ -11,15 +11,17 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { componerCubierta, ESTILOS_ORDEN, type CubiertaCompuesta, type FuentesCubierta, type RolCubierta } from '../../core/impreso/cubierta'
 import type { ConfigCubierta, EstiloId, QuePieza, Tono } from '../../core/impreso/cubierta-config'
 import { escribirCubierta } from '../../core/impreso/pdf-cubierta'
-import { isbnValido } from '../../core/impreso/config'
 import { nombreSeguro } from '../../core/texto'
 import { descargar } from '../copia'
+import { codigoSuelto, muestraDelCodigo } from '../cubierta/codigo'
 import { avisosDeCubierta } from '../cubierta/avisos'
 import { fuentesDeCubierta } from '../cubierta/fuentes'
 import { medirDibujo } from '../cubierta/medir'
-import { pintarCubierta, trazosDeCubierta, type ParaPintarCubierta, type QuePintar } from '../cubierta/pintar'
+import { pintarCubierta, pintarSueltas, trazosDeCubierta, type ParaPintarCubierta, type QuePintar } from '../cubierta/pintar'
 import { configCubiertaDe, datosDeCubierta, ROLES_CUBIERTA, type Medicion } from '../cubierta/preparar'
 import type { Estado } from '../estado'
+import { motivoIsbn } from '../isbn'
+import { conPpi } from '../../core/png'
 import { bytesDeFamilia } from '../impreso/fuentes'
 import { ColaDeComposicion } from '../impreso/hilo'
 import { configDe, prepararImpreso } from '../impreso/preparar'
@@ -194,6 +196,37 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
     [fuentes, imagenes],
   )
   const [guias, setGuias] = useState(true)
+  // La muestra del codigo cuando la caja queda libre: solo en pantalla.
+  const muestra = useMemo(
+    () => (compuesta && fuentes ? muestraDelCodigo(compuesta, { sinIsbn: t.opciones.muestraSinIsbn, kdp: t.opciones.muestraKdp }, fuentes.f) : []),
+    [compuesta, fuentes, t],
+  )
+  const queVista = useMemo<QuePintar>(() => ({ capas: true, texto: true, guias, extra: muestra }), [guias, muestra])
+
+  // -- el codigo suelto (SVG y PNG a 300 ppi) ------------------------------------------
+  // Se prepara en cuanto hay ISBN y letras, para que el clic baje el archivo al momento.
+  const suelto = useMemo(() => (fuentes ? codigoSuelto(impreso.isbn, fuentes.f) : null), [fuentes, impreso.isbn])
+  const [pngCodigo, setPngCodigo] = useState<{ de: string; blob: Blob } | null>(null)
+  useEffect(() => {
+    if (!suelto || !pintar) return undefined
+    let vivo = true
+    void (async () => {
+      try {
+        const k = 300 / 72
+        const l = lienzoDe(Math.round(suelto.caja.ancho * k), Math.round(suelto.caja.alto * k))
+        const ctx = l.getContext('2d') as CanvasRenderingContext2D | null
+        if (!ctx) return
+        pintarSueltas(ctx, suelto.ops, suelto.caja, k, pintar)
+        const bytes = conPpi(new Uint8Array(await (await blobDe(l, 'image/png')).arrayBuffer()), 300)
+        if (vivo) setPngCodigo({ de: suelto.cifras, blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }) })
+      } catch {
+        // Sin PNG, queda el SVG.
+      }
+    })()
+    return () => {
+      vivo = false
+    }
+  }, [suelto, pintar])
 
   // -- PDF y PNG ---------------------------------------------------------------------
   // El PDF y el PNG se preparan juntos y se bajan con su boton: Safari tira
@@ -221,7 +254,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
       const cp = lp.getContext('2d') as CanvasRenderingContext2D | null
       if (!cp) throw new Error('canvas')
       pintarCubierta(cp, compuesta, kp, pintar, { capas: true, texto: true })
-      const png = await blobDe(lp, 'image/png')
+      const png = new Blob([conPpi(new Uint8Array(await (await blobDe(lp, 'image/png')).arrayBuffer()), 150) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
       setPdf({ blob: new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' }), png, de: compuesta })
     } catch (e) {
       setError(t.error(e instanceof Error ? e.message : String(e)))
@@ -233,7 +266,8 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
   const m = compuesta?.medidas
   const avisos = useMemo(() => (compuesta ? avisosDeCubierta(compuesta.avisos) : []), [compuesta])
   const conTitulo = compuesta?.conTitulo ?? false
-  const isbnBien = impreso.isbn.trim() !== '' && isbnValido(impreso.isbn)
+  const motivo = motivoIsbn(impreso.isbn, ui.impreso.creditos.isbnMal)
+  const nombreCodigo = (ext: string): string => `isbn-${suelto?.cifras ?? ''}.${ext}`
   const tono = (que: QuePieza | 'sinopsis' | 'lomo'): Tono => c.tintas[que] ?? 'auto'
 
   return (
@@ -279,9 +313,10 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
             {t.vista.guias}
           </label>
           <div className="cubierta-entera">
-            <Lienzo c={compuesta} px={760} pintar={pintar} que={{ capas: true, texto: true, guias }} etiqueta={t.vista.titulo} />
+            <Lienzo c={compuesta} px={760} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} />
           </div>
           {guias && <p className="ayuda">{t.vista.ayuda}</p>}
+          {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
         </section>
       )}
 
@@ -307,7 +342,22 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
                   {t.opciones[v]}
                 </label>
               ))}
-              {c.codigo === 'generar' && !isbnBien && <p className="alerta nivel-aviso compacta">{t.opciones.sinIsbn}</p>}
+              {c.codigo === 'generar' && !suelto && <p className="alerta nivel-aviso compacta">{motivo ?? t.opciones.sinIsbn}</p>}
+              {suelto && (
+                <>
+                  <p className="ayuda">{t.opciones.suelto}</p>
+                  <div className="descargas">
+                    <button type="button" className="boton-secundario" onClick={() => descargar(new Blob([suelto.svg], { type: 'image/svg+xml' }), nombreCodigo('svg'), 'image/svg+xml')}>
+                      {t.opciones.svg}
+                    </button>
+                    {pngCodigo && pngCodigo.de === suelto.cifras && (
+                      <button type="button" className="boton-secundario" onClick={() => descargar(pngCodigo.blob, nombreCodigo('png'), 'image/png')}>
+                        {t.opciones.png300}
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
             </fieldset>
             <fieldset className="opciones-impreso">
               <legend>{t.opciones.lomo}</legend>

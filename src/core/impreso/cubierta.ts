@@ -30,7 +30,8 @@
  * pieza, cocido en la imagen del fondo.
  */
 import { CONFIG_CUBIERTA_POR_DEFECTO, ESTILOS_ORDEN, normalizarCubierta, type ConfigCubierta, type EstiloId, type QuePieza, type Tono } from './cubierta-config'
-import { cifrasDeIsbn, barrasEan13, isbnLegible } from './ean13'
+import { componerCodigo } from './codigo'
+import { cifrasDeIsbn, isbnLegible } from './ean13'
 import { PT_POR_MM, type Destino, type Papel } from './formatos'
 import { Componedor, trozosDeHtml, type Linea } from './parrafo'
 import type { Fuente, Glifo } from './sfnt'
@@ -836,31 +837,9 @@ class Cubierta {
     this.piezas.push({ que: 'sinopsis', caja: puesta })
   }
 
-  /** El EAN-13 en vectores, en su caja blanca: el ISBN encima, las barras y las cifras debajo. */
+  /** El EAN-13 en vectores, en su caja blanca: el ISBN encima, las barras y las cifras debajo (codigo.ts). */
   private codigoDeBarras(caja: Caja, cifras: string): void {
-    this.ops.push({ op: 'rect', x: caja.x, y: caja.y, ancho: caja.ancho, alto: caja.alto, gris: 1 })
-    // Al 90 %: modulo de 0,297 mm (el 100 % es 0,33; la norma admite del 80 al 200).
-    const modulo = 0.33 * 0.9 * MM
-    const izq = caja.x + (caja.ancho - 95 * modulo) / 2
-    const textoArriba = this.bloque(isbnLegible(this.d.isbn, cifras), { letra: 'jost', cuerpo: 7.5, ancho: caja.ancho, modo: 'centrado' })
-    this.poner(textoArriba, caja.y + 2.5 * MM + textoArriba.sube, caja.x, caja.x + caja.ancho, 'centro', 0)
-    const yBarras = caja.y + 2.5 * MM + this.altoDe(textoArriba) + 1.2 * MM
-    // Las barras de los digitos, de 22,85 mm al 100 %; las de guarda bajan 5 modulos mas.
-    const altoBarras = 22.85 * 0.9 * MM
-    for (const b of barrasEan13(cifras)) {
-      this.ops.push({ op: 'rect', x: izq + b.desde * modulo, y: yBarras, ancho: b.ancho * modulo, alto: altoBarras + (b.guarda ? 5 * modulo : 0), gris: 0 })
-    }
-    // Las cifras: la primera fuera, en la zona libre de la izquierda; luego seis y seis entre las guardas.
-    const yCifras = yBarras + altoBarras + 3 * MM
-    const fu = this.f.jost
-    const cifra = (t: string, centro: number): void => {
-      const forma = fu.formar(t)
-      const w = (forma.ancho * 8.5) / fu.upm
-      this.ops.push({ op: 'texto', letra: 'jost', cara: 'regular', cuerpo: 8.5, x: centro - w / 2, y: yCifras, glifos: forma.glifos, gris: 0, giro: 0 })
-    }
-    cifra(cifras[0] as string, izq - 4 * modulo)
-    for (let i = 0; i < 6; i++) cifra(cifras[1 + i] as string, izq + (3 + 7 * i + 3.5) * modulo)
-    for (let i = 0; i < 6; i++) cifra(cifras[7 + i] as string, izq + (50 + 7 * i + 3.5) * modulo)
+    this.ops.push(...componerCodigo(caja, { cifras, arriba: isbnLegible(this.d.isbn, cifras), conCifras: true, gris: 0 }, this.f))
   }
 
   componer(): CubiertaCompuesta {

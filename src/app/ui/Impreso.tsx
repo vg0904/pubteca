@@ -10,7 +10,7 @@
  * sale de la ultima composicion, la que el autor esta viendo.
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { RANGOS, interlineaDe, isbnValido, type ConfigImpreso, type ExtraImpreso, type Margenes } from '../../core/impreso/config'
+import { RANGOS, interlineaDe, type ConfigImpreso, type ExtraImpreso, type Margenes } from '../../core/impreso/config'
 import { FAMILIAS } from '../../core/impreso/familias'
 import { CORTES, DESTINOS } from '../../core/impreso/formatos'
 import type { ImagenGris } from '../../core/impreso/pdf'
@@ -19,6 +19,7 @@ import type { AvisoImpreso, Fuentes, PaginaCompuesta } from '../../core/impreso/
 import { nombreSeguro } from '../../core/texto'
 import { descargar } from '../copia'
 import type { Estado } from '../estado'
+import { motivoIsbn } from '../isbn'
 import { agruparAvisos, type GrupoImpreso } from '../impreso/avisos'
 import { bytesDeFamilia, fuentesDeFamilia } from '../impreso/fuentes'
 import { imagenEnGris, pixelesDestino, tamanosImpresos } from '../impreso/grises'
@@ -201,7 +202,7 @@ function textoDeGrupo(g: GrupoImpreso, ui: Ui, nombreImagen: (clave: string) => 
     case 'laminasOmitidas':
       return t.laminasOmitidas(primero.laminas)
     case 'isbnNoValido':
-      return t.isbnNoValido(primero.isbn)
+      return t.isbnNoValido(primero.isbn, motivoIsbn(primero.isbn, ui.impreso.creditos.isbnMal) ?? '')
     case 'sinIsbn':
       return t.sinIsbn
     case 'blancasSeguidas':
@@ -759,12 +760,13 @@ export default function PantallaImpreso({ estado }: { estado: Estado }) {
 function Isbn({ valor, alCambiar }: { valor: string; alCambiar: (v: string) => void }) {
   const ui = useTextos()
   const t = ui.impreso.creditos
-  const malo = valor.trim() !== '' && !isbnValido(valor)
+  const motivo = motivoIsbn(valor, t.isbnMal)
+  const malo = motivo !== null
   return (
     <label className={`campo${malo ? ' falta' : ''}`}>
       <span>{t.isbn}</span>
       <input type="text" inputMode="numeric" autoComplete="off" value={valor} onChange={(e) => alCambiar(e.target.value)} aria-invalid={malo} />
-      <small>{malo ? t.isbnNoValido : t.isbnAyuda}</small>
+      <small>{motivo ?? t.isbnAyuda}</small>
     </label>
   )
 }

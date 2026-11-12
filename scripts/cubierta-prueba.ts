@@ -13,7 +13,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { ARCHIVOS_CUBIERTA, componerCubierta, CONFIG_CUBIERTA_POR_DEFECTO, type Caja, type ConfigCubierta, type CubiertaCompuesta, type DatosCubierta, type FuentesCubierta, type Luminancias } from '../src/core/impreso/cubierta.ts'
+import { ARCHIVOS_CUBIERTA, CAJA_CODIGO, componerCubierta, CONFIG_CUBIERTA_POR_DEFECTO, type Caja, type ConfigCubierta, type CubiertaCompuesta, type DatosCubierta, type FuentesCubierta, type Luminancias } from '../src/core/impreso/cubierta.ts'
+import { componerCodigo, svgDelCodigo } from '../src/core/impreso/codigo.ts'
+import { cifrasDeIsbn, isbnLegible } from '../src/core/impreso/ean13.ts'
 import { escribirCubierta } from '../src/core/impreso/pdf-cubierta.ts'
 import { Fuente } from '../src/core/impreso/sfnt.ts'
 import { FECHA, fuentesDelRepo } from './impreso-prueba.ts'
@@ -158,10 +160,12 @@ export function pdfDeCubierta(c: CubiertaCompuesta, ppi = 100): Uint8Array {
 }
 
 /**
- *   tsx scripts/cubierta-prueba.ts tmp/pdfs     escribe la cubierta de prueba en dos estilos
+ *   tsx scripts/cubierta-prueba.ts tmp/pdfs     escribe la cubierta de prueba en dos estilos,
+ *                                               y el codigo suelto en SVG
  *
  * CI las pasa por qpdf y pdffonts con las del interior, y ademas las pinta a
- * 300 ppi y le pide a zbarimg que lea el codigo de barras.
+ * 300 ppi y le pide a zbarimg que lea el codigo de barras; el SVG lo pinta
+ * rsvg-convert a 300 ppi y zbarimg lo lee tambien.
  */
 function main(argv: readonly string[]): number {
   const salida = argv[0] ?? join(RAIZ, 'tmp', 'pdfs')
@@ -173,6 +177,14 @@ function main(argv: readonly string[]): number {
     writeFileSync(ruta, pdf)
     console.log(`${ruta}: ${(c.medidas.ancho / 72).toFixed(3)} × ${(c.medidas.alto / 72).toFixed(3)} in, lomo ${((c.medidas.lomo / 72) * 25.4).toFixed(2)} mm, ${pdf.length} bytes`)
   }
+  const caja = { x: 0, y: 0, ancho: CAJA_CODIGO.ancho, alto: CAJA_CODIGO.alto }
+  const isbn = datosDePrueba().isbn
+  const cifras = cifrasDeIsbn(isbn) as string
+  const f = fuentesCubiertaDelRepo()
+  const svg = svgDelCodigo(componerCodigo(caja, { cifras, arriba: isbnLegible(isbn, cifras), conCifras: true, gris: 0 }, f), caja, f, isbnLegible(isbn, cifras))
+  const ruta = join(salida, `codigo-${cifras}.svg`)
+  writeFileSync(ruta, svg)
+  console.log(`${ruta}: ${svg.length} bytes`)
   return 0
 }
 
