@@ -49,6 +49,8 @@ export interface QuePintar {
   readonly region?: Caja
   /** Operaciones que solo se ven en pantalla, encima del texto: la muestra del codigo. */
   readonly extra?: readonly OpCubierta[]
+  /** La pieza elegida para moverla: un marco a su alrededor, solo en pantalla. */
+  readonly marcar?: Caja
 }
 
 type Base = (a: number, b: number, c: number, d: number, e: number, f: number) => void
@@ -144,6 +146,21 @@ export function pintarCubierta(ctx: PincelCubierta, c: CubiertaCompuesta, escala
     ctx.strokeRect(m.espina.x, 0, m.espina.ancho, m.alto)
     ctx.strokeStyle = 'rgba(230,60,60,0.95)'
     ctx.strokeRect(c.codigo.x, c.codigo.y, c.codigo.ancho, c.codigo.alto)
+    ctx.setLineDash([])
+  }
+  if (que.marcar) {
+    // Dos trazos, claro y oscuro, para que el marco se vea sobre cualquier dibujo.
+    const k = que.marcar
+    const aire = 3
+    base(1, 0, 0, 1, 0, 0)
+    ctx.lineWidth = 2.2 / escala
+    ctx.setLineDash([])
+    ctx.strokeStyle = 'rgba(0,0,0,0.75)'
+    ctx.strokeRect(k.x - aire, k.y - aire, k.ancho + 2 * aire, k.alto + 2 * aire)
+    ctx.lineWidth = 1.2 / escala
+    ctx.setLineDash([4 / escala, 3 / escala])
+    ctx.strokeStyle = 'rgba(255,200,40,1)'
+    ctx.strokeRect(k.x - aire, k.y - aire, k.ancho + 2 * aire, k.alto + 2 * aire)
     ctx.setLineDash([])
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0)

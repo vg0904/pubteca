@@ -9,11 +9,13 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { componerCubierta, ESTILOS_ORDEN, type CubiertaCompuesta, type FuentesCubierta, type RolCubierta } from '../../core/impreso/cubierta'
-import type { ConfigCubierta, EstiloId, QuePieza, Tono } from '../../core/impreso/cubierta-config'
+import type { ConfigCubierta, EstiloId, Punto, QuePieza, Tono } from '../../core/impreso/cubierta-config'
 import { escribirCubierta } from '../../core/impreso/pdf-cubierta'
 import { nombreSeguro } from '../../core/texto'
 import { descargar } from '../copia'
 import { codigoSuelto, muestraDelCodigo } from '../cubierta/codigo'
+import { jpegDelEbook, medidasDelEbook } from '../cubierta/epub'
+import { arrastrada, direccionDeTecla, movibles, movidaDe, paso, piezaEn, type Direccion } from '../cubierta/mover'
 import { avisosDeCubierta } from '../cubierta/avisos'
 import { fuentesDeCubierta } from '../cubierta/fuentes'
 import { medirDibujo } from '../cubierta/medir'
@@ -58,6 +60,121 @@ function Lienzo({ c, px, pintar, que, etiqueta }: { c: CubiertaCompuesta; px: nu
   return <canvas ref={ref} className="lienzo-cubierta" style={{ width: px, height: altoPx }} role="img" aria-label={etiqueta} />
 }
 
+/**
+ * La cubierta entera, con las piezas de la portada que se arrastran. Con
+ * raton o lapiz se arrastra en el acto; con el dedo, primero se toca la pieza
+ * (asi el dedo sigue desplazando la pagina hasta que el autor elige algo).
+ * Con el teclado: las flechas mueven la elegida 1 mm (5 con Mayusculas).
+ */
+function VistaMovible({
+  c,
+  pintar,
+  que,
+  etiqueta,
+  elegida,
+  alElegir,
+  alMover,
+}: {
+  c: CubiertaCompuesta
+  pintar: ParaPintarCubierta | null
+  que: QuePintar
+  etiqueta: string
+  elegida: QuePieza | null
+  alElegir: (q: QuePieza | null) => void
+  alMover: (q: QuePieza, a: Punto) => void
+}) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  const px = 760
+  const altoPx = Math.round((px * c.medidas.alto) / c.medidas.ancho)
+  // La ultima cubierta compuesta, para soltar en lo que de verdad se movio.
+  const ultima = useRef(c)
+  useEffect(() => {
+    ultima.current = c
+  }, [c])
+  const arrastre = useRef<{ que: QuePieza; id: number; desde: { x: number; y: number }; base: Punto; cuadro: number } | null>(null)
+  const marco = elegida ? movibles(c).find((p) => p.que === elegida)?.caja : undefined
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !pintar) return
+    const dpr = Math.min(3, window.devicePixelRatio || 1)
+    el.width = Math.round(px * dpr)
+    el.height = Math.round(altoPx * dpr)
+    const ctx = el.getContext('2d')
+    if (ctx) pintarCubierta(ctx, c, el.width / c.medidas.ancho, pintar, marco ? { ...que, marcar: marco } : que)
+  }, [c, altoPx, pintar, que, marco])
+
+  const enHoja = (e: { clientX: number; clientY: number }): { x: number; y: number } => {
+    const r = (ref.current as HTMLCanvasElement).getBoundingClientRect()
+    return { x: ((e.clientX - r.left) * c.medidas.ancho) / r.width, y: ((e.clientY - r.top) * c.medidas.alto) / r.height }
+  }
+  const soltar = (): void => {
+    const a = arrastre.current
+    if (!a) return
+    cancelAnimationFrame(a.cuadro)
+    arrastre.current = null
+    // Se guarda lo que de verdad se movio: si se pidio de mas, el borde de lo seguro manda.
+    alMover(a.que, movidaDe(ultima.current, a.que))
+  }
+  const mover = (q: QuePieza, d: Direccion, mm: number): void => alMover(q, paso(c, q, d, mm))
+
+  return (
+    <canvas
+      ref={ref}
+      className={`lienzo-cubierta lienzo-movible${elegida ? ' con-pieza' : ''}`}
+      style={{ width: px, height: altoPx }}
+      role="img"
+      aria-label={etiqueta}
+      tabIndex={0}
+      onPointerDown={(e) => {
+        const pt = enHoja(e)
+        const q = piezaEn(c, pt.x, pt.y)
+        if (!q) {
+          alElegir(null)
+          return
+        }
+        const yaElegida = q === elegida
+        alElegir(q)
+        // El dedo: el primer toque elige; arrastrar, despues (ver touch-action en el CSS).
+        if (e.pointerType === 'touch' && !yaElegida) return
+        e.preventDefault()
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          // Sin captura, el arrastre sigue mientras el puntero no salga del lienzo.
+        }
+        arrastre.current = { que: q, id: e.pointerId, desde: pt, base: movidaDe(c, q), cuadro: 0 }
+      }}
+      onPointerMove={(e) => {
+        const a = arrastre.current
+        if (!a || a.id !== e.pointerId) {
+          if (e.pointerType !== 'touch') {
+            const pt = enHoja(e)
+            e.currentTarget.style.cursor = piezaEn(c, pt.x, pt.y) ? 'grab' : ''
+          }
+          return
+        }
+        e.currentTarget.style.cursor = 'grabbing'
+        const hasta = enHoja(e)
+        // Un movimiento por cuadro: componer y pintar cada evento seria llegar tarde.
+        cancelAnimationFrame(a.cuadro)
+        a.cuadro = requestAnimationFrame(() => alMover(a.que, arrastrada(c, a.base, a.desde, hasta)))
+      }}
+      onPointerUp={soltar}
+      onPointerCancel={soltar}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          alElegir(null)
+          return
+        }
+        const d = direccionDeTecla(e.key)
+        if (!d || !elegida) return
+        e.preventDefault()
+        mover(elegida, d, e.shiftKey ? 5 : 1)
+      }}
+    />
+  )
+}
+
 function textoDeAviso(a: AvisoCubierta, ui: Ui): string {
   const t = ui.cubierta.avisos
   const f = ui.formato.decimal
@@ -86,6 +203,8 @@ function textoDeAviso(a: AvisoCubierta, ui: Ui): string {
       return t.sinopsisCortada
     case 'lomoDeIngram':
       return t.lomoDeIngram
+    case 'piezasSeTocan':
+      return t.piezasSeTocan(t.piezas[a.a], t.piezas[a.b])
     case 'colorRgb':
       return ui.cubierta.rgb
   }
@@ -189,7 +308,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
     () => (datos && fuentes ? ESTILOS_ORDEN.map((e) => ({ e, c: componerCubierta(datos, { ...c, estilo: e, titulo: null }, fuentes.f) })) : []),
     // Las miniaturas no dependen del estilo elegido ni de las tintas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [datos, fuentes, c.encuadre, c.fondo, c.lomo, c.codigo, c.sinopsis, c.lomoManual, c.autor],
+    [datos, fuentes, c.encuadre, c.fondo, c.lomo, c.codigo, c.sinopsis, c.lomoManual, c.autor, c.mover],
   )
   const pintar = useMemo<ParaPintarCubierta | null>(
     () => (fuentes ? { fuentes: fuentes.f, trazo: trazosDeCubierta(fuentes.f), imagen: (rol) => imagenes?.mapa.get(rol) ?? null } : null),
@@ -202,6 +321,33 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
     [compuesta, fuentes, t],
   )
   const queVista = useMemo<QuePintar>(() => ({ capas: true, texto: true, guias, extra: muestra }), [guias, muestra])
+
+  // -- mover las piezas a mano -----------------------------------------------------------
+  const [elegidaPedida, setElegida] = useState<QuePieza | null>(null)
+  const piezasMovibles = useMemo(() => (compuesta ? movibles(compuesta) : []), [compuesta])
+  // Si la pieza elegida ya no esta (otro estilo, sin titulo), no hay elegida.
+  const elegida = elegidaPedida && piezasMovibles.some((x) => x.que === elegidaPedida) ? elegidaPedida : null
+  const moverPieza = useCallback(
+    (pieza: QuePieza, a: Punto | null) => despachar({ tipo: 'moverPieza', estilo: c.estilo, pieza, a, ahora: Date.now() }),
+    [despachar, c.estilo],
+  )
+  const movidasDelEstilo = c.mover[c.estilo] ?? {}
+
+  // -- la portada del ebook ---------------------------------------------------------------
+  const [ebook, setEbook] = useState<{ blob: Blob; de: CubiertaCompuesta } | null>(null)
+  const [preparandoEbook, setPreparandoEbook] = useState(false)
+  const prepararEbook = async (): Promise<void> => {
+    if (!compuesta || !pintar) return
+    setPreparandoEbook(true)
+    try {
+      const j = await jpegDelEbook(compuesta, pintar)
+      setEbook({ blob: new Blob([j.bytes as Uint8Array<ArrayBuffer>], { type: 'image/jpeg' }), de: compuesta })
+    } catch (e) {
+      setError(t.error(e instanceof Error ? e.message : String(e)))
+    } finally {
+      setPreparandoEbook(false)
+    }
+  }
 
   // -- el codigo suelto (SVG y PNG a 300 ppi) ------------------------------------------
   // Se prepara en cuanto hay ISBN y letras, para que el clic baje el archivo al momento.
@@ -234,6 +380,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
   const [pdf, setPdf] = useState<{ blob: Blob; png: Blob; de: CubiertaCompuesta } | null>(null)
   const [preparando, setPreparando] = useState(false)
   const nombre = (ext: string): string => `${nombreSeguro(p.datos.titulo) || 'libro'}-cubierta.${ext}`
+  const nombreEbook = `${nombreSeguro(p.datos.titulo) || 'libro'}-portada-ebook.jpg`
   const prepararPdf = async (): Promise<void> => {
     if (!compuesta || !fuentes || !pintar) return
     setPreparando(true)
@@ -313,10 +460,38 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
             {t.vista.guias}
           </label>
           <div className="cubierta-entera">
-            <Lienzo c={compuesta} px={760} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} />
+            <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} />
           </div>
           {guias && <p className="ayuda">{t.vista.ayuda}</p>}
           {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
+          {piezasMovibles.length > 0 && (
+            <fieldset className="opciones-impreso mover-piezas">
+              <legend>{t.mover.titulo}</legend>
+              <p className="ayuda">{t.mover.ayuda}</p>
+              <div className="fila-opciones" role="radiogroup" aria-label={t.mover.cual}>
+                {piezasMovibles.map(({ que }) => (
+                  <label key={que} className="casilla">
+                    <input type="radio" name={`${nombreFondo}-pieza`} checked={elegida === que} onChange={() => setElegida(que)} />
+                    {t.opciones.piezas[que]}
+                    {movidasDelEstilo[que] && <span className="ayuda"> · {t.mover.movida}</span>}
+                  </label>
+                ))}
+              </div>
+              <div className="flechas" aria-label={t.mover.flechas}>
+                {(['izquierda', 'arriba', 'abajo', 'derecha'] as const).map((d) => (
+                  <button key={d} type="button" className="boton-secundario" disabled={!elegida || !compuesta} aria-label={t.mover.direcciones[d]} onClick={() => elegida && compuesta && moverPieza(elegida, paso(compuesta, elegida, d, 1))}>
+                    <span aria-hidden="true">{({ izquierda: '←', arriba: '↑', abajo: '↓', derecha: '→' } as const)[d]}</span>
+                  </button>
+                ))}
+                <button type="button" className="boton-secundario" disabled={!elegida || !movidasDelEstilo[elegida]} onClick={() => elegida && moverPieza(elegida, null)}>
+                  {t.mover.aSuSitio}
+                </button>
+                <button type="button" className="boton-secundario" disabled={Object.keys(movidasDelEstilo).length === 0} onClick={() => cambiar({ mover: { ...c.mover, [c.estilo]: {} } })}>
+                  {t.mover.todas}
+                </button>
+              </div>
+            </fieldset>
+          )}
         </section>
       )}
 
@@ -456,6 +631,27 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
               )}
             </div>
             {pdf && pdf.de !== compuesta && <p className="alerta nivel-aviso compacta">{t.pdf.desactualizado}</p>}
+          </section>
+          <section className="pdf-impreso">
+            <h2>{t.ebook.titulo}</h2>
+            <p className="ayuda">{t.ebook.ayuda}</p>
+            <label className="casilla">
+              <input type="checkbox" checked={c.enEpub} onChange={(e) => cambiar({ enEpub: e.target.checked })} />
+              {t.ebook.enEpub}
+            </label>
+            <p className="ayuda">{t.ebook.enEpubAyuda}</p>
+            <div className="descargas">
+              <button type="button" className="boton-secundario" disabled={!compuesta || !pintar || preparandoEbook} onClick={() => void prepararEbook()}>
+                {preparandoEbook ? t.ebook.preparando : compuesta ? t.ebook.preparar(medidasDelEbook(compuesta).ancho, medidasDelEbook(compuesta).alto) : t.ebook.preparar(0, 0)}
+              </button>
+              {ebook && ebook.de === compuesta && (
+                <button type="button" className="boton-descarga" onClick={() => descargar(ebook.blob, nombreEbook, 'image/jpeg')}>
+                  <strong>{t.ebook.descargar(ui.formato.tamano(ebook.blob.size))}</strong>
+                  <span>{nombreEbook}</span>
+                </button>
+              )}
+            </div>
+            {ebook && ebook.de !== compuesta && <p className="alerta nivel-aviso compacta">{t.pdf.desactualizado}</p>}
           </section>
         </div>
       </div>

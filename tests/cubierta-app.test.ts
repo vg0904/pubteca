@@ -12,6 +12,8 @@ import { colorMedio, luminanciasDe } from '../src/app/cubierta/medir'
 import { CIFRAS_MUESTRA, GRIS_MUESTRA, codigoSuelto, muestraDelCodigo } from '../src/app/cubierta/codigo'
 import { pintarCubierta, pintarSueltas, trazosDeCubierta, type PincelCubierta } from '../src/app/cubierta/pintar'
 import { motivoIsbn } from '../src/app/isbn'
+import { arrastrada, direccionDeTecla, movibles, movidaDe, paso, piezaEn } from '../src/app/cubierta/mover'
+import { ALTO_EBOOK, medidasDelEbook, pintarEbook } from '../src/app/cubierta/epub'
 import { controlEan } from '../src/core/impreso/ean13'
 import { conPpi, pixelesPorMetro } from '../src/core/png'
 import { ui as es } from '../src/i18n/es'
@@ -333,5 +335,134 @@ describe('la resolucion de los PNG (pHYs)', () => {
 
   it('lo que no es un PNG no se toca', () => {
     expect(() => conPpi(new Uint8Array(40), 300)).toThrow()
+  })
+})
+
+describe('las piezas movidas a mano y la portada del ebook, en el modelo', () => {
+  const e0: Estado = reducir(ESTADO_INICIAL, { tipo: 'abrir', proyecto: libroDeLaApp(), imagenes: [] })
+  const mover = (e: Estado, pieza: 'titulo' | 'autor' | 'sello', a: { x: number; y: number } | null, ahora: number, estilo: 'papiro' | 'clasico' = 'clasico'): Estado =>
+    reducir(e, { tipo: 'moverPieza', estilo, pieza, a, ahora })
+
+  it('mover una pieza la apunta en su estilo, y el libro pasa a formato 5 (un 4 la perderia al normalizar)', () => {
+    const e = mover(e0, 'titulo', { x: 0.1, y: -0.05 }, 1000)
+    expect(e.proyecto?.cubierta?.mover).toEqual({ clasico: { titulo: { x: 0.1, y: -0.05 } } })
+    expect(versionNecesaria(e.proyecto as Proyecto)).toBe(5)
+    // A su sitio: no queda nada movido, y vuelve a bastar el formato 4.
+    const sin = mover(e, 'titulo', null, 5000)
+    expect(sin.proyecto?.cubierta?.mover).toEqual({})
+    expect(versionNecesaria(sin.proyecto as Proyecto)).toBe(4)
+  })
+
+  it('un arrastre es un paso de deshacer; mover otra pieza, otro', () => {
+    let e = mover(e0, 'titulo', { x: 0.01, y: 0 }, 1000)
+    e = mover(e, 'titulo', { x: 0.02, y: 0 }, 1016)
+    e = mover(e, 'titulo', { x: 0.03, y: 0 }, 1032)
+    expect(e.pasado.length - e0.pasado.length).toBe(1)
+    e = mover(e, 'autor', { x: 0, y: 0.02 }, 1048)
+    expect(e.pasado.length - e0.pasado.length).toBe(2)
+    expect(reducir(e, { tipo: 'deshacer' }).proyecto?.cubierta?.mover).toEqual({ clasico: { titulo: { x: 0.03, y: 0 } } })
+    // Lo de otro estilo no se toca.
+    expect(mover(e, 'sello', { x: 0.1, y: 0 }, 2000, 'papiro').proyecto?.cubierta?.mover).toMatchObject({ clasico: { titulo: { x: 0.03, y: 0 }, autor: { x: 0, y: 0.02 } }, papiro: { sello: { x: 0.1, y: 0 } } })
+  })
+
+  it('la portada en los EPUB tambien pide formato 5', () => {
+    const e = reducir(e0, { tipo: 'cubierta', cambios: { enEpub: true }, ahora: 0 })
+    expect(versionNecesaria(e.proyecto as Proyecto)).toBe(5)
+  })
+
+  it('la copia (.zip) devuelve lo movido y la portada en los EPUB, con su formato 5', () => {
+    const p: Proyecto = { ...libroDeLaApp(), cubierta: { ...CONFIG_CUBIERTA_POR_DEFECTO, enEpub: true, mover: { franja: { autor: { x: -0.2, y: 0.1 } } } } }
+    const e = exportar(p, new Map(), new Map())
+    const zip = zipDeCopia(e, p, new Map(), new Date('2026-11-11T12:00:00Z'))
+    const r = leerCopia(archivosDeZip(zip) as Map<string, Uint8Array>, nuevoId)
+    if (!r.ok) throw new Error(r.error)
+    expect(r.copia.proyecto.version).toBe(5)
+    expect(r.copia.proyecto.cubierta).toMatchObject({ enEpub: true, mover: { franja: { autor: { x: -0.2, y: 0.1 } } } })
+  })
+
+  it('IndexedDB: se guarda como 5 y se lee entero', async () => {
+    const db = await abrirAlmacen()
+    const p = { ...libroDeLaApp(), cubierta: { ...CONFIG_CUBIERTA_POR_DEFECTO, mover: { cartel: { titulo: { x: 0, y: 0.3 } } } } }
+    await guardarProyecto(db, p, 2)
+    const leido = await leerProyecto(db, p.id)
+    expect(leido?.version).toBe(5)
+    expect(leido?.cubierta?.mover).toEqual({ cartel: { titulo: { x: 0, y: 0.3 } } })
+    db.close()
+  })
+})
+
+describe('mover con el raton, el dedo o las flechas', () => {
+  const c = cubiertaDePrueba({ estilo: 'clasico' })
+  const A = c.medidas.portada.ancho
+  const centro = (que: string) => {
+    const k = c.piezas.find((p) => p.que === que)?.caja
+    if (!k) throw new Error(que)
+    return { x: k.x + k.ancho / 2, y: k.y + k.alto / 2 }
+  }
+
+  it('las piezas que se mueven son las de la portada: ni el lomo ni la contraportada', () => {
+    expect(movibles(c).map((p) => p.que).sort()).toEqual(['autor', 'sello', 'titulo'])
+  })
+
+  it('bajo el dedo: la pieza que hay, con 2 mm de holgura; fuera de las piezas, ninguna', () => {
+    const t = centro('titulo')
+    expect(piezaEn(c, t.x, t.y)).toBe('titulo')
+    const k = c.piezas.find((p) => p.que === 'autor')?.caja as { x: number; y: number; ancho: number; alto: number }
+    expect(piezaEn(c, k.x - 1.5 * (72 / 25.4), k.y)).toBe('autor')
+    expect(piezaEn(c, k.x - 3 * (72 / 25.4), k.y - 3 * (72 / 25.4))).toBeNull()
+    expect(piezaEn(c, c.medidas.contra.x + 20, c.medidas.contra.y + 20)).toBeNull()
+  })
+
+  it('si dos piezas se pisan, se coge la mas pequeña: la grande no la tapa', () => {
+    const t = c.piezas.find((p) => p.que === 'titulo')?.caja as { x: number; y: number; ancho: number; alto: number }
+    const au = c.piezas.find((p) => p.que === 'autor')?.caja as { x: number; y: number; ancho: number; alto: number }
+    // El autor, movido al centro del titulo.
+    const dy = (t.y + t.alto / 2 - (au.y + au.alto / 2)) / A
+    const encima = cubiertaDePrueba({ estilo: 'clasico', mover: { clasico: { autor: { x: 0, y: dy } } } })
+    const k = encima.piezas.find((p) => p.que === 'autor')?.caja as { x: number; y: number; ancho: number; alto: number }
+    expect(piezaEn(encima, k.x + k.ancho / 2, k.y + k.alto / 2)).toBe('autor')
+  })
+
+  it('arrastrar: lo que se mueve el puntero, en fracciones de A, desde lo que de verdad estaba movido', () => {
+    expect(arrastrada(c, { x: 0.1, y: 0 }, { x: 100, y: 100 }, { x: 100 + A / 4, y: 100 - A / 10 })).toEqual({ x: 0.35, y: -0.1 })
+    const movida = cubiertaDePrueba({ estilo: 'clasico', mover: { clasico: { titulo: { x: 9, y: 0 } } } })
+    // Se pidio de mas: se parte de lo que se movio, no de lo pedido.
+    expect(movidaDe(movida, 'titulo').x).toBeLessThan(1)
+    expect(movidaDe(c, 'titulo')).toEqual({ x: 0, y: 0 })
+  })
+
+  it('las flechas: 1 mm (o los que se pidan) en su direccion', () => {
+    const mm = (72 / 25.4) / A
+    expect(paso(c, 'autor', 'derecha', 1).x).toBeCloseTo(mm, 12)
+    expect(paso(c, 'autor', 'arriba', 5).y).toBeCloseTo(-5 * mm, 12)
+    expect(paso(c, 'autor', 'izquierda', 1).x).toBeCloseTo(-mm, 12)
+    expect(paso(c, 'autor', 'abajo', 1)).toEqual({ x: 0, y: expect.closeTo(mm, 12) })
+    expect(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter'].map(direccionDeTecla)).toEqual(['izquierda', 'derecha', 'arriba', 'abajo', null])
+  })
+})
+
+describe('la portada del ebook', () => {
+  const f = fuentesCubiertaDelRepo()
+  it('por su corte, sin sangrado, a 2560 px de alto: 6 × 9 in da 1707 × 2560', () => {
+    const c = cubiertaDePrueba()
+    expect(medidasDelEbook(c)).toMatchObject({ ancho: 1707, alto: ALTO_EBOOK })
+    const llamadas: number[][] = []
+    const strokes: number[][] = []
+    const ctx = { setTransform: (...a: number[]) => void llamadas.push(a), fillRect: () => undefined, strokeRect: (...a: number[]) => void strokes.push(a), fill: () => undefined, drawImage: () => undefined, setLineDash: () => undefined, save: () => undefined, restore: () => undefined } as unknown as PincelCubierta
+    pintarEbook(ctx, c, { fuentes: f, trazo: trazosDeCubierta(f, (d) => ({ d }) as unknown as Path2D), imagen: () => null })
+    const k = ALTO_EBOOK / c.medidas.portada.alto
+    // Las capas, desde la esquina del corte de la portada; ni guias ni marcos.
+    expect(llamadas).toContainEqual([k, 0, 0, k, -c.medidas.portada.x * k, -c.medidas.portada.y * k])
+    expect(strokes).toEqual([])
+  })
+
+  it('el marco de la pieza elegida solo se pinta si se pide', () => {
+    const c = cubiertaDePrueba()
+    const caja = c.piezas.find((p) => p.que === 'autor')?.caja as { x: number; y: number; ancho: number; alto: number }
+    const strokes: number[][] = []
+    const ctx = { setTransform: () => undefined, fillRect: () => undefined, strokeRect: (...a: number[]) => void strokes.push(a), fill: () => undefined, drawImage: () => undefined, setLineDash: () => undefined, save: () => undefined, restore: () => undefined } as unknown as PincelCubierta
+    pintarCubierta(ctx, c, 1, { fuentes: f, trazo: trazosDeCubierta(f, (d) => ({ d }) as unknown as Path2D), imagen: () => null }, { capas: false, texto: false, marcar: caja })
+    expect(strokes).toHaveLength(2)
+    expect(strokes[0]).toEqual([caja.x - 3, caja.y - 3, caja.ancho + 6, caja.alto + 6])
   })
 })

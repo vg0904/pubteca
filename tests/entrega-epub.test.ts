@@ -44,6 +44,14 @@ function carpeta(raiz: string): Map<string, Uint8Array> {
  * empiezan por la firma de un JPEG, para que el motor los reconozca como tal al
  * volver a inspeccionarlos (es lo que decide el `media-type` del manifiesto).
  */
+/** Unos bytes que empiezan como un JPEG de esas medidas: SOI, APP0 «JFIF» y un SOF0. */
+function falsoJpeg(ancho: number, alto: number, n = 64): Uint8Array {
+  const bytes = new Uint8Array(n)
+  bytes.set([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00], 0)
+  bytes.set([0xff, 0xc0, 0x00, 0x11, 0x08, (alto >> 8) & 0xff, alto & 0xff, (ancho >> 8) & 0xff, ancho & 0xff, 0x03], 11)
+  return bytes
+}
+
 const falso: Codificador = (origen, _imagen, ajuste) => {
   const n = Math.max(32, Math.round(origen.length / 4))
   const bytes = new Uint8Array(n)
@@ -206,5 +214,62 @@ describe('comprimiendo para Kindle', () => {
     const sin = await generarLibros(proyecto, imagenes, repo, AHORA, falso)
     expect(epub(g, 'Kindle').paginas.map((p) => p.ruta)).toEqual(epub(sin, 'Kindle').paginas.map((p) => p.ruta))
     expect(epub(g, 'AppleBooks').paginas.map((p) => p.ruta)).toEqual(epub(sin, 'AppleBooks').paginas.map((p) => p.ruta))
+  })
+})
+
+describe('la portada con su texto en el EPUB (decision 12)', () => {
+  // La portada compuesta, de mentira: sin lienzo en node. Un JPEG que la
+  // inspeccion del motor reconoce, con las medidas de la de verdad.
+  const compuesta = falsoJpeg(1707, 2560)
+  const conTexto = (): Promise<{ imagen: Imagen; bytes: Uint8Array }> =>
+    Promise.resolve({ imagen: { id: 'portada-del-ebook', nombreOriginal: 'portada-del-ebook.jpg', tipo: 'jpeg', bytes: compuesta.length, ancho: 1707, alto: 2560, alfa: false }, bytes: compuesta })
+  const cubierta = (enEpub: boolean) => ({ estilo: 'papiro', titulo: null, autor: true, sinopsis: true, codigo: 'generar', lomo: 'descendente', lomoManual: 0, encuadre: { x: 0.5, y: 0.5 }, fondo: '', tintas: {}, mover: {}, enEpub }) as const
+
+  it('Apple Books lleva la portada compuesta en vez del dibujo limpio, y se dice; Kindle, como siempre, ninguna', async () => {
+    const { proyecto, imagenes, repo } = await libroDePrueba()
+    const g = await generarLibros({ ...proyecto, cubierta: cubierta(true) }, imagenes, repo, AHORA, falso, conTexto)
+    expect(g.portadaConTexto).toBe('puesta')
+    const a = epub(g, 'AppleBooks').archivos
+    expect(a.get('OEBPS/imagenes/portada.jpg')).toEqual(compuesta)
+    expect(a.has('OEBPS/imagenes/portada.png')).toBe(false)
+    // KDP pone la portada que se sube aparte: el EPUB de Kindle no lleva ninguna dentro.
+    expect(imagenesDe(epub(g, 'Kindle').archivos).filter((r) => /\/portada\./u.test(r))).toEqual([])
+  })
+
+  it('el proyecto no cambia: el dibujo limpio sigue en su papel', async () => {
+    const { proyecto, imagenes, repo } = await libroDePrueba()
+    const p = { ...proyecto, cubierta: cubierta(true) }
+    const antes = JSON.stringify(p)
+    await generarLibros(p, imagenes, repo, AHORA, falso, conTexto)
+    expect(JSON.stringify(p)).toBe(antes)
+    expect(imagenes.has('portada-del-ebook')).toBe(false)
+  })
+
+  it('comprimiendo para Kindle, tambien', async () => {
+    const { proyecto, imagenes, repo } = await libroDePrueba()
+    const g = await generarLibros({ ...proyecto, cubierta: cubierta(true), kindle: { comprimir: true, calidad: 70, grises: false } }, imagenes, repo, AHORA, falso, conTexto)
+    expect(epub(g, 'AppleBooks').archivos.get('OEBPS/imagenes/portada.jpg')).toEqual(compuesta)
+    expect(imagenesDe(epub(g, 'Kindle').archivos).filter((r) => /\/portada\./u.test(r))).toEqual([])
+  })
+
+  it('si no se puede componer, van con el dibujo limpio y se dice', async () => {
+    const { proyecto, imagenes, repo } = await libroDePrueba()
+    const g = await generarLibros({ ...proyecto, cubierta: cubierta(true) }, imagenes, repo, AHORA, falso, () => Promise.reject(new Error('sin letras')))
+    expect(g.portadaConTexto).toBe('fallo')
+    expect(epub(g, 'AppleBooks').archivos.has('OEBPS/imagenes/portada.png')).toBe(true)
+  })
+
+  it('sin pedirla, ni se compone: los EPUB son los de siempre', async () => {
+    const { proyecto, imagenes, repo } = await libroDePrueba()
+    let llamadas = 0
+    const contar = (): Promise<{ imagen: Imagen; bytes: Uint8Array }> => {
+      llamadas++
+      return conTexto()
+    }
+    const sin = await generarLibros({ ...proyecto, cubierta: cubierta(false) }, imagenes, repo, AHORA, falso, contar)
+    const nada = await generarLibros(proyecto, imagenes, repo, AHORA, falso, contar)
+    expect(llamadas).toBe(0)
+    expect(sin.portadaConTexto).toBeNull()
+    for (const tienda of ['Kindle', 'AppleBooks'] as const) expect(epub(sin, tienda).archivos).toEqual(epub(nada, tienda).archivos)
   })
 })

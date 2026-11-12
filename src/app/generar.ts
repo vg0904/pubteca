@@ -52,12 +52,24 @@ export async function bytesDelProyecto(p: Proyecto, repo: Repositorio): Promise<
   return bytes
 }
 
+/** Compone la portada con su texto para los EPUB (ver cubierta/epub.ts). */
+export type PortadaConTexto = (p: Proyecto, imagenes: ReadonlyMap<string, Imagen>, repo: Repositorio) => Promise<{ imagen: Imagen; bytes: Uint8Array }>
+
+/** La de verdad: con lienzo, cargada solo cuando hace falta. */
+const portadaDelLienzo: PortadaConTexto = async (p, imagenes, repo) => (await import('./cubierta/epub')).portadaDelEbook(p, imagenes, repo)
+
 export interface Generado {
   readonly exportado: Exportado
   readonly motor: RespuestaMotor
   readonly sinFuentes: boolean
   /** Lo que pesaban y lo que pesan las imagenes de Kindle, si se comprimieron. */
   readonly kindle: { readonly antes: number; readonly ahora: number } | null
+  /**
+   * La portada con su texto (opcion de «Cubierta»): `puesta` si el EPUB de
+   * Apple Books la lleva (el de Kindle no lleva portada dentro), `fallo` si no se pudo componer (sin letras, sin lienzo) y van con
+   * el dibujo limpio, null si el autor no la pidio.
+   */
+  readonly portadaConTexto: 'puesta' | 'fallo' | null
 }
 
 /** El hilo del motor: se abre la primera vez y se reutiliza. null si no se puede. */
@@ -140,13 +152,28 @@ export const conLienzo: Codificador = async (origen, _imagen, ajuste) => {
  * que verlo aunque venga de la vuelta que casi no se mira.
  */
 export async function generarLibros(
-  p: Proyecto,
-  imagenes: ReadonlyMap<string, Imagen>,
+  original: Proyecto,
+  originales: ReadonlyMap<string, Imagen>,
   repo: Repositorio,
   ahora: Date,
   codificar: Codificador = conLienzo,
+  conTexto: PortadaConTexto = portadaDelLienzo,
 ): Promise<Generado> {
-  const [bytes, fuentes] = await Promise.all([bytesDelProyecto(p, repo), cargarFuentes()])
+  const [bytes, fuentes] = await Promise.all([bytesDelProyecto(original, repo), cargarFuentes()])
+  // La portada con su texto, si el autor la pidio: entra en lugar del dibujo
+  // limpio solo en lo que recibe el motor. El proyecto y la copia no cambian.
+  let p = original
+  let imagenes = originales
+  let portadaConTexto: Generado['portadaConTexto'] = null
+  if (original.cubierta?.enEpub) {
+    const hecha = await conTexto(original, originales, repo).catch(() => null)
+    if (hecha) {
+      p = { ...original, portada: { ...original.portada, portada: hecha.imagen.id } }
+      imagenes = new Map(originales).set(hecha.imagen.id, hecha.imagen)
+      bytes.set(hecha.imagen.id, hecha.bytes)
+      portadaConTexto = 'puesta'
+    } else portadaConTexto = 'fallo'
+  }
   // Los audios y videos van como FICHA (tamaño y CRC): el motor nunca recibe
   // sus bytes. Ver blobDelLibro.
   const exportado = exportar(p, imagenes, bytes, fuentes, repo.medios())
@@ -154,7 +181,7 @@ export async function generarLibros(
 
   const k = entregaKindle(p)
   if (!k.comprimir || motor.bloqueado !== null) {
-    return { exportado, motor, sinFuentes: fuentes.length === 0, kindle: null }
+    return { exportado, motor, sinFuentes: fuentes.length === 0, kindle: null, portadaConTexto }
   }
 
   const entrega = await paraKindle(p, imagenes, bytes, k, codificar)
@@ -176,6 +203,7 @@ export async function generarLibros(
       : motor,
     sinFuentes: fuentes.length === 0,
     kindle: { antes: entrega.antes, ahora: entrega.ahora },
+    portadaConTexto,
   }
 }
 

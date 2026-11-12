@@ -10,6 +10,7 @@ const NIVEL: Readonly<Record<AvisoCubierta['codigo'], 'aviso' | 'nota'>> = {
   sinPortada: 'aviso',
   lomoEstrecho: 'aviso',
   codigoSinIsbn: 'aviso',
+  piezasSeTocan: 'aviso',
   contrasteBajo: 'aviso',
   sinopsisCortada: 'aviso',
   lomoSinTexto: 'nota',

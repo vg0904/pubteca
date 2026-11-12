@@ -996,6 +996,15 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .lienzo-cubierta { display: block; max-width: 100%; height: auto !important; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(60, 40, 20, 0.15); }
 .cubierta-entera { overflow-x: auto; margin: 0.6rem 0; padding-bottom: 0.3rem; }
 .cubierta-entera .lienzo-cubierta { max-width: none; }
+/* Las piezas se arrastran. Con el dedo, mientras no hay pieza elegida, el lienzo se desplaza y
+   se amplia como siempre; con una elegida, el dedo la mueve a ella. */
+.lienzo-movible { touch-action: manipulation; }
+.lienzo-movible.con-pieza { touch-action: none; }
+.lienzo-movible:focus-visible { outline: 2px solid var(--acento, #b5651d); outline-offset: 3px; }
+.mover-piezas { margin-top: 0.8rem; }
+.mover-piezas .fila-opciones { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; }
+.flechas { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.flechas button { min-width: 2.75rem; min-height: 2.75rem; }
 .campo-en-linea { flex-direction: row; align-items: center; justify-content: space-between; gap: 0.6rem; }
 .campo-en-linea select { width: auto; }
 .seccion-impreso { margin-top: 2rem; }

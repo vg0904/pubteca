@@ -29,7 +29,7 @@
  * de WCAG (4,5:1, o 3:1 para texto grande). Si ninguna llega, un velo bajo la
  * pieza, cocido en la imagen del fondo.
  */
-import { CONFIG_CUBIERTA_POR_DEFECTO, ESTILOS_ORDEN, normalizarCubierta, type ConfigCubierta, type EstiloId, type QuePieza, type Tono } from './cubierta-config'
+import { CONFIG_CUBIERTA_POR_DEFECTO, ESTILOS_ORDEN, normalizarCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza, type Tono } from './cubierta-config'
 import { componerCodigo } from './codigo'
 import { cifrasDeIsbn, isbnLegible } from './ean13'
 import { PT_POR_MM, type Destino, type Papel } from './formatos'
@@ -332,6 +332,8 @@ export type AvisoCubierta =
   | { readonly codigo: 'sinopsisCortada' }
   | { readonly codigo: 'colorRgb' }
   | { readonly codigo: 'lomoDeIngram' }
+  /** Dos piezas de la portada que se pisan: solo puede pasar si el autor las movio. */
+  | { readonly codigo: 'piezasSeTocan'; readonly a: QuePieza; readonly b: QuePieza }
 
 export interface CubiertaCompuesta {
   readonly medidas: MedidasCubierta
@@ -345,6 +347,8 @@ export interface CubiertaCompuesta {
   /** El estilo con que se compuso y si lleva titulo. */
   readonly estilo: EstiloId
   readonly conTitulo: boolean
+  /** Lo que de verdad se movio cada pieza movida, en fracciones de A: lo pedido, o menos si se salia de lo seguro. */
+  readonly movidas: Readonly<Partial<Record<QuePieza, Punto>>>
 }
 
 // ---------------------------------------------------------------------------
@@ -391,6 +395,8 @@ interface Bloque {
   readonly ancho: number
 }
 
+const seCortan = (a: Caja, b: Caja): boolean => a.x < b.x + b.ancho - 1e-6 && b.x < a.x + a.ancho - 1e-6 && a.y < b.y + b.alto - 1e-6 && b.y < a.y + a.alto - 1e-6
+
 class Cubierta {
   private readonly m: MedidasCubierta
   private readonly A: number
@@ -401,6 +407,7 @@ class Cubierta {
   private readonly componedores = new Map<LetraCubierta, Componedor>()
   private readonly fondo: string
   private arte: { rol: 'portada' | 'contraportada'; caja: Caja; recorte: Caja; luz: Luminancias | undefined; img: ImagenDeCubierta }[] = []
+  private readonly movidas: Partial<Record<QuePieza, Punto>> = {}
 
   private readonly d: DatosCubierta
   private readonly c: ConfigCubierta
@@ -468,12 +475,21 @@ class Cubierta {
    * que le falte a cada linea.
    */
   private poner(b: Bloque, base: number, x0: number, x1: number, alinear: PiezaEstilo['alinear'], gris: Gris): Caja {
+    return this.colocar(b, base, x0, x1, alinear, gris)
+  }
+
+  /** La caja que ocuparia el bloque puesto asi, sin ponerlo. */
+  private cajaPuesta(b: Bloque, base: number, x0: number, x1: number, alinear: PiezaEstilo['alinear']): Caja {
+    return this.colocar(b, base, x0, x1, alinear, null)
+  }
+
+  private colocar(b: Bloque, base: number, x0: number, x1: number, alinear: PiezaEstilo['alinear'], gris: Gris | null): Caja {
     const primera = base - (b.lineas.length - 1) * b.paso
     let izq = Infinity
     let der = -Infinity
     b.lineas.forEach((l, i) => {
       const inicio = x0 + l.desde + (alinear === 'derecha' ? x1 - x0 - l.natural : 0)
-      for (const pz of l.piezas) this.ops.push({ op: 'texto', letra: b.letra, cara: pz.cara, cuerpo: b.cuerpo, x: inicio + pz.x, y: primera + i * b.paso, glifos: pz.glifos, gris, giro: 0 })
+      if (gris !== null) for (const pz of l.piezas) this.ops.push({ op: 'texto', letra: b.letra, cara: pz.cara, cuerpo: b.cuerpo, x: inicio + pz.x, y: primera + i * b.paso, glifos: pz.glifos, gris, giro: 0 })
       const xl = inicio + (l.piezas[0]?.x ?? 0)
       izq = Math.min(izq, xl)
       der = Math.max(der, xl + l.natural)
@@ -629,10 +645,13 @@ class Cubierta {
           const w = (alto * logo.ancho) / logo.alto
           const pie = baseDe(alto)
           const x = p.alinear === 'centro' ? m.portada.x + (m.portada.ancho - w) / 2 : p.alinear === 'derecha' ? x1 - w : x0
-          const caja = { x, y: pie - alto, ancho: w, alto }
+          const sin = { x, y: pie - alto, ancho: w, alto }
+          const { dx, dy } = this.movida(estilo.id, 'sello', sin)
+          const caja = { ...sin, x: sin.x + dx, y: sin.y + dy }
           const gris = this.tinta('sello', caja, true, this.c.tintas.sello)
           this.capas.push({ que: 'logo', rol: gris === TINTA_CLARA && this.d.imagenes.selloBlanco ? 'selloBlanco' : 'sello', caja })
-          colocadas.set('sello', caja)
+          // Las demas se anclan a donde la puso el estilo: mover una no arrastra a las otras.
+          colocadas.set('sello', sin)
           this.piezas.push({ que: 'sello', caja })
           continue
         }
@@ -641,7 +660,7 @@ class Cubierta {
 
       const texto = p.que === 'titulo' ? this.d.titulo : p.que === 'autor' ? this.d.autor : this.d.sello
       if (p.girado) {
-        this.girado(p, texto)
+        this.girado(p, texto, estilo.id)
         continue
       }
       let cuerpo = p.cuerpo * A
@@ -660,10 +679,18 @@ class Cubierta {
       }
       const ultima = baseDe(this.altoDe(b))
       const prevista = { x: x0, y: ultima - this.altoDe(b), ancho: x1 - x0, alto: this.altoDe(b) + b.baja }
-      const gris = this.tinta(p.que, this.ajustada(prevista, b, p.alinear, x0, x1), cuerpo >= 18, this.c.tintas[p.que])
-      const caja = this.poner(b, ultima, x0, x1, p.alinear, gris)
-      colocadas.set(p.que, caja)
+      // Se limita con la caja que ocupara de verdad; la tinta se mide, como siempre, en la prevista.
+      const { dx, dy } = this.movida(estilo.id, p.que, this.cajaPuesta(b, ultima, x0, x1, p.alinear))
+      const real = this.ajustada(prevista, b, p.alinear, x0, x1)
+      const gris = this.tinta(p.que, { ...real, x: real.x + dx, y: real.y + dy }, cuerpo >= 18, this.c.tintas[p.que])
+      const caja = this.poner(b, ultima + dy, x0 + dx, x1 + dx, p.alinear, gris)
+      colocadas.set(p.que, { ...caja, x: caja.x - dx, y: caja.y - dy })
       this.piezas.push({ que: p.que, caja })
+    }
+    // Movidas a mano, dos piezas pueden acabar una encima de otra: se dice.
+    const puestas = this.piezas.filter((x): x is { que: QuePieza; caja: Caja } => x.que === 'titulo' || x.que === 'autor' || x.que === 'sello')
+    for (const [i, a] of puestas.entries()) {
+      for (const b of puestas.slice(i + 1)) if (seCortan(a.caja, b.caja)) this.avisos.push({ codigo: 'piezasSeTocan', a: a.que, b: b.que })
     }
     return conTitulo && Boolean(this.d.titulo.trim())
   }
@@ -675,8 +702,24 @@ class Cubierta {
     return { ...c, x, ancho: w }
   }
 
+  /**
+   * Lo que el autor movio una pieza, en puntos, sin dejar que su caja salga
+   * de lo seguro de la portada (0,125 in dentro del corte, el lomo incluido).
+   * Se apunta lo movido de verdad: la interfaz arrastra desde ahi.
+   */
+  private movida(estilo: EstiloId, que: QuePieza, caja: Caja): { dx: number; dy: number } {
+    const d = this.c.mover[estilo]?.[que]
+    if (!d) return { dx: 0, dy: 0 }
+    const z = { x: this.m.portada.x + SEGURIDAD, y: this.m.portada.y + SEGURIDAD, ancho: this.m.portada.ancho - 2 * SEGURIDAD, alto: this.m.portada.alto - 2 * SEGURIDAD }
+    const limitar = (v: number, min: number, max: number): number => (min > max ? 0 : Math.min(max, Math.max(min, v)))
+    const dx = limitar(d.x * this.A, z.x - caja.x, z.x + z.ancho - caja.x - caja.ancho)
+    const dy = limitar(d.y * this.A, z.y - caja.y, z.y + z.alto - caja.y - caja.alto)
+    if (dx !== 0 || dy !== 0) this.movidas[que] = { x: dx / this.A, y: dy / this.A }
+    return { dx, dy }
+  }
+
   /** El titulo girado a lo largo del borde de fuera de la portada, de arriba abajo. */
-  private girado(p: PiezaEstilo, texto: string): void {
+  private girado(p: PiezaEstilo, texto: string, estilo: EstiloId): void {
     const m = this.m
     const A = this.A
     const margen = p.ancla.a === 'arriba' ? p.ancla.d * A : A / 10
@@ -689,11 +732,13 @@ class Cubierta {
     const arriba = m.portada.y + margen
     // De arriba abajo, lo alto de las letras mira hacia fuera: la linea base, a la izquierda.
     const borde = m.portada.x + m.portada.ancho - A / 10
-    const xBase = borde - b.sube
-    const caja = { x: xBase - b.baja, y: arriba, ancho: b.sube + b.baja, alto: b.ancho }
+    const sin = { x: borde - b.sube - b.baja, y: arriba, ancho: b.sube + b.baja, alto: b.ancho }
+    const { dx, dy } = this.movida(estilo, 'titulo', sin)
+    const xBase = borde - b.sube + dx
+    const caja = { ...sin, x: sin.x + dx, y: sin.y + dy }
     const gris = this.tinta('titulo', caja, true, this.c.tintas.titulo)
     const l = b.lineas[0]
-    if (l) for (const pz of l.piezas) this.ops.push({ op: 'texto', letra: b.letra, cara: pz.cara, cuerpo, x: xBase, y: arriba + pz.x - l.desde, glifos: pz.glifos, gris, giro: 90 })
+    if (l) for (const pz of l.piezas) this.ops.push({ op: 'texto', letra: b.letra, cara: pz.cara, cuerpo, x: xBase, y: arriba + dy + pz.x - l.desde, glifos: pz.glifos, gris, giro: 90 })
     this.piezas.push({ que: 'titulo', caja })
   }
 
@@ -861,7 +906,7 @@ class Cubierta {
     const codigo = this.contraportada()
     this.avisos.push({ codigo: 'colorRgb' })
     if (this.d.destino === 'ingram' && this.c.lomoManual <= 0) this.avisos.push({ codigo: 'lomoDeIngram' })
-    return { medidas: this.m, capas: this.capas, ops: this.ops, codigo, piezas: this.piezas, avisos: this.avisos, estilo: estilo.id, conTitulo }
+    return { medidas: this.m, capas: this.capas, ops: this.ops, codigo, piezas: this.piezas, avisos: this.avisos, estilo: estilo.id, conTitulo, movidas: this.movidas }
   }
 }
 

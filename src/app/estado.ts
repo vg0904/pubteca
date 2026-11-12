@@ -18,7 +18,7 @@
  *     una vez.
  */
 import { CONFIG_IMPRESO_POR_DEFECTO, conFuente, normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
-import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type ConfigCubierta } from '../core/impreso/cubierta-config'
+import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza } from '../core/impreso/cubierta-config'
 import { nombreSeguro } from '../core/texto'
 import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
@@ -228,6 +228,8 @@ export type Accion =
   | { readonly tipo: 'entregaKindle'; readonly cambios: Partial<EntregaKindle>; readonly ahora: number }
   /** Las opciones de la cubierta impresa. */
   | { readonly tipo: 'cubierta'; readonly cambios: Partial<ConfigCubierta>; readonly ahora: number }
+  /** Mover a mano una pieza de la portada en un estilo (null: a su sitio). Cada arrastre, un paso de deshacer. */
+  | { readonly tipo: 'moverPieza'; readonly estilo: EstiloId; readonly pieza: QuePieza; readonly a: Punto | null; readonly ahora: number }
   /** Las opciones del libro impreso. Cambiar de letra arrastra su cuerpo recomendado (ver `conFuente`). */
   | { readonly tipo: 'impreso'; readonly cambios: Partial<ConfigImpreso>; readonly ahora: number }
   // El ajuste propio de UNA imagen para Kindle. `cambios` a null lo quita y
@@ -1155,6 +1157,15 @@ export function reducir(e: Estado, a: Accion): Estado {
       const cubierta = normalizarCubierta({ ...antes, ...a.cambios, tintas: { ...antes.tintas, ...(a.cambios.tintas ?? {}) } })
       if (JSON.stringify(cubierta) === JSON.stringify(antes)) return e
       return cambiar(e, { ...p, cubierta }, { grupo: `cubierta:${Object.keys(a.cambios).sort().join(',')}`, ahora: a.ahora })
+    }
+    case 'moverPieza': {
+      const antes = p.cubierta ?? CONFIG_CUBIERTA_POR_DEFECTO
+      const delEstilo: Partial<Record<QuePieza, Punto>> = { ...antes.mover[a.estilo] }
+      if (a.a) delEstilo[a.pieza] = a.a
+      else delete delEstilo[a.pieza]
+      const cubierta = normalizarCubierta({ ...antes, mover: { ...antes.mover, [a.estilo]: delEstilo } })
+      if (JSON.stringify(cubierta) === JSON.stringify(antes)) return e
+      return cambiar(e, { ...p, cubierta }, { grupo: `moverPieza:${a.estilo}:${a.pieza}`, ahora: a.ahora })
     }
     case 'kindleDeImagen': {
       const propios = { ...(p.kindlePorImagen ?? {}) }

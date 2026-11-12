@@ -620,6 +620,8 @@ export function PantallaDescargar({ estado }: { estado: Estado }) {
                 </p>
               )}
               {generado?.g.sinFuentes && <p className="alerta nivel-nota">{ui.descargar.sinFuentes}</p>}
+              {generado?.g.portadaConTexto === 'puesta' && <p className="alerta nivel-nota">{ui.descargar.portadaConTexto}</p>}
+              {generado?.g.portadaConTexto === 'fallo' && <p className="alerta nivel-aviso">{ui.descargar.portadaConTextoFallo}</p>}
               {/* Desactualizada no: enseñaria un libro que ya no es el que hay. */}
               {!viejo && <VistaPrevia resultados={c.resultados} medio={urlDeMedio} />}
             </>

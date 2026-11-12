@@ -21,7 +21,7 @@
  */
 import type { KindlePropio } from './imagen-ajuste'
 import type { ConfigImpreso } from '../core/impreso/config'
-import type { ConfigCubierta } from '../core/impreso/cubierta-config'
+import { hayMovidas, type ConfigCubierta } from '../core/impreso/cubierta-config'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -318,11 +318,15 @@ export interface Proyecto {
  *       copia, y el autor perderia su maquetacion sin enterarse.
  *   4 · `cubierta` y las imagenes del sello (`sello`, `isotipo` y sus
  *       versiones claras). Lo mismo: una version 3 los tiraria de la copia.
+ *   5 · en `cubierta`, las piezas movidas a mano (`mover`) y la portada con su
+ *       texto en los EPUB (`enEpub`). Una version 4 abriria la cubierta y, al
+ *       normalizarla, perderia las dos cosas sin decir nada.
  */
-export const VERSION_PROYECTO = 4
+export const VERSION_PROYECTO = 5
 
 /** La version minima con la que hay que guardar este libro. */
 export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada'>>): number {
+  if (p.cubierta && (p.cubierta.enEpub || hayMovidas(p.cubierta.mover))) return 5
   if (p.cubierta || ROLES_DEL_SELLO.some((r) => p.portada?.[r] !== undefined)) return 4
   if (p.impreso) return 3
   const conMedios = [...p.capitulos, ...p.extras].some((c) => c.bloques.some(esMedio))

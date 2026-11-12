@@ -57,8 +57,11 @@ no carga nada.
   milimetros fijos), la contraportada con la caja del codigo y la sinopsis, la
   tinta de cada pieza por contraste (WCAG) y el velo cuando hace falta. No
   pinta: da las capas del fondo (que pinta la app) y las operaciones en
-  vectores. Sus opciones viven en `cubierta-config.ts`, ligero, para que el
-  almacen y la copia no carguen el compositor.
+  vectores. Las piezas de la portada que el autor mueve a mano (`mover`, por
+  estilo y en fracciones de A) se aplican sin salir nunca de lo seguro de KDP,
+  y la cubierta dice lo que de verdad se movio (`movidas`). Sus opciones viven
+  en `cubierta-config.ts`, ligero, para que el almacen y la copia no carguen
+  el compositor.
 - `ean13.ts`: el codigo de barras de un ISBN, modulo a modulo (las tablas de
   la norma), y lo que le pasa a un ISBN que no vale (`revisarIsbn`: la forma,
   el prefijo 978/979 de los libros o el digito de control, con el que tocaria).

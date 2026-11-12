@@ -482,6 +482,8 @@ export const ui: Ui = {
     desactualizado: 'You changed the book after preparing them. Prepare them again to download the latest.',
     sinFuentes:
       'I could not load the book’s typeface (offline?). The Apple Books EPUB will use the system Baskerville.',
+    portadaConTexto: 'The Apple Books EPUB carries the cover with its text, as in “Cover”.',
+    portadaConTextoFallo: 'I could not compose the cover with its text (offline for the typefaces?): the Apple Books EPUB carries the plain artwork.',
     resultado: 'What the check says',
     resultadoResumen: (mensajes: number, grupos: number) =>
       mensajes === grupos ? '' : `${mensajes} notices, grouped into ${grupos}.`,
@@ -999,6 +1001,7 @@ export const ui: Ui = {
       contrasteBajo: (pieza: string, contraste: string) => `${pieza} barely reads (${contraste}:1 with a veil): try another style, framing or ink.`,
       sinopsisCortada: 'The blurb does not fit above the barcode and the logo: it is cut. Shorten it.',
       lomoDeIngram: 'For IngramSpark, copy the spine width from their template: KDP’s may not match.',
+      piezasSeTocan: (a: string, b: string) => `${a} and ${b.toLocaleLowerCase('en')} overlap: move them apart a little.`,
       piezas: {
         titulo: 'The title',
         autor: 'The author',
@@ -1010,6 +1013,25 @@ export const ui: Ui = {
         selloContra: 'The back imprint',
         codigo: 'The barcode',
       },
+    },
+    mover: {
+      titulo: 'Move the pieces',
+      ayuda: 'Drag the title, the author or the imprint in the preview (with a finger, tap it first), or pick one and move it with the arrows: 1 mm at a time, 5 with Shift on the keyboard. It never leaves KDP’s safe area, and each style keeps its own.',
+      cual: 'The piece to move',
+      movida: 'moved',
+      flechas: 'Move the chosen piece',
+      direcciones: { izquierda: 'Move 1 mm left', arriba: 'Move 1 mm up', abajo: 'Move 1 mm down', derecha: 'Move 1 mm right' },
+      aSuSitio: 'Back in place',
+      todas: 'All back in place',
+    },
+    ebook: {
+      titulo: 'The ebook cover',
+      ayuda: 'The front cover as you see it here, with its text and without the bleed.',
+      enEpub: 'Use it in the Apple Books EPUB too',
+      enEpubAyuda: 'Instead of the plain artwork, which stays untouched in “Cover and plates”: the print cover uses that one. It is composed when the EPUBs are generated, so it is always the current one. The Kindle EPUB carries no cover inside: KDP uses the one you upload separately, which is the one you download here.',
+      preparar: (ancho: number, alto: number) => `Prepare the ebook cover (JPG, ${ancho} × ${alto})`,
+      preparando: 'Preparing the cover…',
+      descargar: (tamano: string) => `Download the ebook cover · ${tamano}`,
     },
     pdf: {
       titulo: 'Print-ready PDF',

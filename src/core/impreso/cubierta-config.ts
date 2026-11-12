@@ -9,6 +9,16 @@ export type EstiloId = 'papiro' | 'clasico' | 'cartel' | 'franja' | 'esquina' | 
 export const ESTILOS_ORDEN: readonly EstiloId[] = ['papiro', 'clasico', 'cartel', 'franja', 'esquina', 'vertical']
 
 export type QuePieza = 'titulo' | 'autor' | 'sello'
+export const PIEZAS_PORTADA: readonly QuePieza[] = ['titulo', 'autor', 'sello']
+
+/** Un desplazamiento, en fracciones del ancho de la portada (A): sirve igual en cualquier corte. */
+export interface Punto {
+  readonly x: number
+  readonly y: number
+}
+
+/** Lo que el autor movio a mano cada pieza de la portada, por estilo. */
+export type Movidas = Readonly<Partial<Record<EstiloId, Readonly<Partial<Record<QuePieza, Punto>>>>>>
 
 export type Tono = 'auto' | 'clara' | 'oscura'
 
@@ -30,6 +40,13 @@ export interface ConfigCubierta {
   readonly fondo: string
   /** La tinta de cada pieza: la que mejor se lee, o la que diga el autor. */
   readonly tintas: Readonly<Partial<Record<QuePieza | 'sinopsis' | 'lomo', Tono>>>
+  /**
+   * Las piezas de la portada movidas a mano, por estilo: cambiar de estilo no
+   * pierde lo movido en el otro. El compositor nunca las saca de lo seguro.
+   */
+  readonly mover: Movidas
+  /** La portada con su texto tambien en los dos EPUB, en vez del dibujo limpio (decision 12). */
+  readonly enEpub: boolean
 }
 
 export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
@@ -43,6 +60,8 @@ export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
   encuadre: { x: 0.5, y: 0.5 },
   fondo: '',
   tintas: {},
+  mover: {},
+  enEpub: false,
 }
 
 const esObjeto = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -67,5 +86,28 @@ export function normalizarCubierta(x: unknown): ConfigCubierta {
     encuadre: { x: entre(e['x'], 0, 1, 0.5), y: entre(e['y'], 0, 1, 0.5) },
     fondo: typeof x['fondo'] === 'string' && /^#[0-9a-f]{6}$/iu.test(x['fondo']) ? x['fondo'].toLowerCase() : '',
     tintas,
+    mover: normalizarMovidas(x['mover']),
+    enEpub: x['enEpub'] === true,
   }
 }
+
+/** Solo estilos y piezas que existen, numeros finitos y no mas de 1,5 A; lo que no se movio no se guarda. */
+function normalizarMovidas(x: unknown): Movidas {
+  if (!esObjeto(x)) return {}
+  const r: Partial<Record<EstiloId, Partial<Record<QuePieza, Punto>>>> = {}
+  for (const estilo of ESTILOS_ORDEN) {
+    const del = x[estilo]
+    if (!esObjeto(del)) continue
+    for (const pieza of PIEZAS_PORTADA) {
+      const p = del[pieza]
+      if (!esObjeto(p)) continue
+      const punto = { x: entre(p['x'], -1.5, 1.5, 0), y: entre(p['y'], -1.5, 1.5, 0) }
+      if (Math.abs(punto.x) < 1e-6 && Math.abs(punto.y) < 1e-6) continue
+      r[estilo] = { ...r[estilo], [pieza]: punto }
+    }
+  }
+  return r
+}
+
+/** Si el autor movio alguna pieza en algun estilo. */
+export const hayMovidas = (m: Movidas): boolean => Object.values(m).some((del) => del && Object.keys(del).length > 0)

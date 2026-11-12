@@ -129,6 +129,15 @@ toco se guarda igual que antes, y uno que si, como formato 3 (ver
   usan la vista previa (con guias), el PNG y la imagen del fondo del PDF (solo
   capas, a 300 ppi; el texto lo pone el PDF). `pintarSueltas` pinta unas
   operaciones solas: el codigo suelto en PNG.
+- `mover.ts` (puro): mover a mano las piezas de la portada: que pieza hay
+  bajo el puntero, cuanto se mueve al arrastrar (desde lo que de verdad estaba
+  movido) y un paso con las flechas. La vista de `ui/Cubierta.tsx` arrastra con
+  raton o lapiz, con el dedo despues de tocar la pieza, y con el teclado.
+- `epub.ts`: la portada del ebook (la de la cubierta con su texto, por su
+  corte, a 2560 px de alto, en JPEG). Se descarga para KDP y, si el autor lo
+  pide, `generar.ts` la compone al generar y la pone en el EPUB de Apple Books
+  en lugar del dibujo limpio, sin tocar el proyecto (el de Kindle no lleva
+  portada dentro). Se carga con `import()` solo entonces.
 - `codigo.ts` (puro): la muestra del codigo cuando la caja queda libre (sin
   ISBN, o para el de KDP), que solo se pinta en pantalla, en gris y con las
   barras de un numero que ningun lector acepta; y el codigo suelto en SVG y en

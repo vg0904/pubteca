@@ -7,6 +7,7 @@ import {
   luminanciaDe,
   medidasCubierta,
   normalizarCubierta,
+  SEGURIDAD,
   TINTA_CLARA,
   TINTA_OSCURA,
   type Caja,
@@ -16,6 +17,7 @@ import {
 } from '../src/core/impreso/cubierta'
 import { ALTO_BARRAS, MODULO, SILENCIO, componerCodigo, izquierdaDeBarras, svgDelCodigo } from '../src/core/impreso/codigo'
 import { barrasEan13, cifrasDeIsbn, controlEan, modulosEan13, revisarIsbn } from '../src/core/impreso/ean13'
+import { hayMovidas, PIEZAS_PORTADA, type QuePieza } from '../src/core/impreso/cubierta-config'
 import { isbnValido } from '../src/core/impreso/config'
 import { CORTES } from '../src/core/impreso/formatos'
 import { componerImpreso } from '../src/core/impreso/plan'
@@ -285,6 +287,102 @@ describe('la configuracion de la cubierta', () => {
     // Papiro sin titulo ni autor: en la portada solo queda el sello.
     const papiro = cubiertaDePrueba({ estilo: 'papiro', titulo: false, autor: false })
     expect(papiro.piezas.filter((p) => dentro(p.caja, papiro.medidas.portada)).map((p) => p.que)).toEqual(['sello'])
+  })
+})
+
+describe('las piezas de la portada, movidas a mano', () => {
+  const pieza = (c: CubiertaCompuesta, que: string): Caja => {
+    const p = c.piezas.find((x) => x.que === que)
+    if (!p) throw new Error(`sin ${que}`)
+    return p.caja
+  }
+  const A = 6 * IN
+  const logos = { ...datosDePrueba().imagenes, sello: { ancho: 900, alto: 300 }, selloBlanco: { ancho: 900, alto: 300 } }
+  const tintaDe = (c: CubiertaCompuesta, que: string): number[] => {
+    const caja = pieza(c, que)
+    return [...new Set(c.ops.filter((o) => o.op === 'texto' && dentro(cajaDe(o), encoger(caja, -2))).map((o) => (o.op === 'texto' ? o.gris : -1)))]
+  }
+
+  it('se mueve lo pedido, en fracciones de A; las demas se quedan donde las puso el estilo', () => {
+    const quieta = cubiertaDePrueba({ estilo: 'clasico' })
+    const movida = cubiertaDePrueba({ estilo: 'clasico', mover: { clasico: { titulo: { x: 0.05, y: 0.1 } } } })
+    const a = pieza(quieta, 'titulo')
+    const b = pieza(movida, 'titulo')
+    expect(b.x - a.x).toBeCloseTo(0.05 * A, 6)
+    expect(b.y - a.y).toBeCloseTo(0.1 * A, 6)
+    expect(movida.movidas).toEqual({ titulo: { x: expect.closeTo(0.05, 9), y: expect.closeTo(0.1, 9) } })
+    // El autor estaba anclado bajo el titulo: se ancla a donde lo puso el estilo, no lo arrastra.
+    expect(pieza(movida, 'autor')).toEqual(pieza(quieta, 'autor'))
+    expect(quieta.movidas).toEqual({})
+  })
+
+  it('cada estilo guarda lo suyo: lo movido en uno no mueve nada en otro', () => {
+    const mover = { clasico: { titulo: { x: 0.05, y: 0.1 } } }
+    expect(pieza(cubiertaDePrueba({ estilo: 'cartel', mover }), 'titulo')).toEqual(pieza(cubiertaDePrueba({ estilo: 'cartel' }), 'titulo'))
+  })
+
+  it('nada sale de lo seguro de KDP, se pida lo que se pida: en todos los estilos, piezas y direcciones', () => {
+    for (const estilo of ESTILOS_ORDEN) {
+      for (const que of PIEZAS_PORTADA) {
+        for (const [x, y] of [[1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5], [1.5, 1.5], [-1.5, -1.5]] as const) {
+          const c = cubiertaDePrueba({ estilo, titulo: true, mover: { [estilo]: { [que]: { x, y } } } }, { imagenes: logos })
+          const zona = encoger(c.medidas.portada, SEGURIDAD)
+          const donde = `${estilo} ${que} ${x},${y}`
+          for (const p of c.piezas.filter((q) => (PIEZAS_PORTADA as readonly string[]).includes(q.que))) expect(dentro(p.caja, zona), `${donde}: ${p.que}`).toBe(true)
+          // El texto, por sus glifos: dentro de lo seguro, y nunca en la caja del codigo.
+          for (const o of c.ops) if (o.op === 'texto' && cajaDe(o).x > c.medidas.espina.x + c.medidas.espina.ancho) expect(dentro(cajaDe(o), zona), donde).toBe(true)
+          for (const o of c.ops) if (!dentro(cajaDe(o), c.codigo)) expect(corta(cajaDe(o), c.codigo), donde).toBe(false)
+          // Lo que se apunta como movido es lo que de verdad se movio: menos de lo pedido.
+          const m = c.movidas[que as QuePieza]
+          if (m) expect(Math.abs(m.x) <= Math.abs(x) + 1e-9 && Math.abs(m.y) <= Math.abs(y) + 1e-9, donde).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('la tinta se vuelve a elegir donde queda: el autor, del mar oscuro al cielo claro, pasa a oscuro', () => {
+    expect(tintaDe(cubiertaDePrueba(), 'autor')).toEqual([TINTA_CLARA])
+    const arriba = cubiertaDePrueba({ mover: { papiro: { autor: { x: 0, y: -1.2 } } } })
+    expect(pieza(arriba, 'autor').y).toBeLessThan(arriba.medidas.portada.y + arriba.medidas.portada.alto * 0.3)
+    expect(tintaDe(arriba, 'autor')).toEqual([TINTA_OSCURA])
+  })
+
+  it('el titulo girado se mueve en los dos ejes', () => {
+    const quieta = cubiertaDePrueba({ estilo: 'vertical' })
+    const movida = cubiertaDePrueba({ estilo: 'vertical', mover: { vertical: { titulo: { x: -0.1, y: 0.05 } } } })
+    expect(pieza(movida, 'titulo').x - pieza(quieta, 'titulo').x).toBeCloseTo(-0.1 * A, 6)
+    expect(pieza(movida, 'titulo').y - pieza(quieta, 'titulo').y).toBeCloseTo(0.05 * A, 6)
+    const giradas = (c: CubiertaCompuesta) => c.ops.filter((o) => o.op === 'texto' && o.giro === 90 && o.x > c.medidas.espina.x + c.medidas.espina.ancho)
+    expect(giradas(movida).map((o) => o.x - (giradas(quieta)[0] as OpCubierta).x)[0]).toBeCloseTo(-0.1 * A, 6)
+    expect(giradas(movida).map((o) => o.y - (giradas(quieta)[0] as OpCubierta).y)[0]).toBeCloseTo(0.05 * A, 6)
+  })
+
+  it('la franja crece hasta cubrir el titulo subido a mano', () => {
+    const franja = (c: CubiertaCompuesta) => c.capas.find((x) => x.que === 'color' && x.caja.x >= c.medidas.portada.x - c.medidas.sangrado - 1e-6 && x.caja.y > 0)
+    const quieta = cubiertaDePrueba({ estilo: 'franja' })
+    const subida = cubiertaDePrueba({ estilo: 'franja', mover: { franja: { titulo: { x: 0, y: -0.3 } } } })
+    const fq = franja(quieta)
+    const fs = franja(subida)
+    if (!fq || !fs) throw new Error('sin franja')
+    expect(fs.caja.y).toBeLessThan(fq.caja.y)
+    expect(fs.caja.y).toBeLessThanOrEqual(pieza(subida, 'titulo').y)
+  })
+
+  it('dos piezas que se pisan se avisan; sin mover nada, nunca', () => {
+    for (const estilo of ESTILOS_ORDEN) expect(cubiertaDePrueba({ estilo }).avisos.some((a) => a.codigo === 'piezasSeTocan'), estilo).toBe(false)
+    const quieta = cubiertaDePrueba({ estilo: 'clasico' })
+    const dy = (pieza(quieta, 'titulo').y - pieza(quieta, 'autor').y) / A
+    const encima = cubiertaDePrueba({ estilo: 'clasico', mover: { clasico: { autor: { x: 0, y: dy } } } })
+    expect(encima.avisos).toContainEqual({ codigo: 'piezasSeTocan', a: 'titulo', b: 'autor' })
+  })
+
+  it('lo guardado se limpia: estilos y piezas que no existen fuera, numeros en rango, lo no movido no se guarda', () => {
+    const c = normalizarCubierta({ mover: { clasico: { titulo: { x: 9, y: 'a' }, lomo: { x: 0.1, y: 0 } }, barroco: { titulo: { x: 0.1, y: 0 } }, cartel: { autor: { x: 0, y: 0 } } }, enEpub: 'si' })
+    expect(c.mover).toEqual({ clasico: { titulo: { x: 1.5, y: 0 } } })
+    expect(c.enEpub).toBe(false)
+    expect(normalizarCubierta({ enEpub: true }).enEpub).toBe(true)
+    expect(hayMovidas(c.mover)).toBe(true)
+    expect(hayMovidas({ cartel: {} })).toBe(false)
   })
 })
 

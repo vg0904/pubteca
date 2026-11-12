@@ -492,6 +492,8 @@ export const ui = {
     desactualizado: 'Cambiaste el libro después de prepararlos. Vuelve a prepararlos para descargar lo último.',
     sinFuentes:
       'No pude cargar la letra del libro (¿sin conexión?). El EPUB de Apple Books usará la Baskerville del sistema.',
+    portadaConTexto: 'El EPUB de Apple Books lleva la portada con su texto, como en «Cubierta».',
+    portadaConTextoFallo: 'No pude componer la portada con su texto (¿sin conexión para las letras?): el EPUB de Apple Books lleva el dibujo limpio.',
     resultado: 'Lo que dice la revisión',
     resultadoResumen: (mensajes: number, grupos: number) =>
       mensajes === grupos ? '' : `${mensajes} avisos, agrupados en ${grupos}.`,
@@ -1016,6 +1018,7 @@ export const ui = {
       contrasteBajo: (pieza: string, contraste: string) => `${pieza} se lee justo (${contraste}:1 con velo): prueba otro estilo, otro encuadre u otra tinta.`,
       sinopsisCortada: 'La sinopsis no cabe entera sobre el código y el logo: se corta. Acórtala.',
       lomoDeIngram: 'Para IngramSpark, copia el ancho del lomo de su plantilla: el de KDP puede no coincidir.',
+      piezasSeTocan: (a: string, b: string) => `${a} y ${b.toLocaleLowerCase('es')} se pisan: muévelos un poco.`,
       piezas: {
         titulo: 'El título',
         autor: 'El autor',
@@ -1027,6 +1030,25 @@ export const ui = {
         selloContra: 'El sello de la contraportada',
         codigo: 'El código',
       },
+    },
+    mover: {
+      titulo: 'Mover las piezas',
+      ayuda: 'Arrastra el título, el autor o el sello en la vista (con el dedo, tócalo primero), o elige uno y muévelo con las flechas: 1 mm cada vez, 5 con Mayúsculas en el teclado. Nunca sale de la zona segura de KDP, y cada estilo guarda lo suyo.',
+      cual: 'La pieza que se mueve',
+      movida: 'movida',
+      flechas: 'Mover la pieza elegida',
+      direcciones: { izquierda: 'Mover 1 mm a la izquierda', arriba: 'Mover 1 mm hacia arriba', abajo: 'Mover 1 mm hacia abajo', derecha: 'Mover 1 mm a la derecha' },
+      aSuSitio: 'A su sitio',
+      todas: 'Todas a su sitio',
+    },
+    ebook: {
+      titulo: 'La portada del ebook',
+      ayuda: 'La portada tal como se ve aquí, con su texto y sin el sangrado.',
+      enEpub: 'Usarla también en el EPUB de Apple Books',
+      enEpubAyuda: 'En vez del dibujo limpio, que sigue intacto en «Portada y láminas»: es el que usa la cubierta impresa. Se compone al generar los EPUB, así que siempre es la de ahora. El de Kindle no lleva portada dentro: KDP pone la que subes aparte, y esa es la que se descarga aquí.',
+      preparar: (ancho: number, alto: number) => `Preparar la portada del ebook (JPG, ${ancho} × ${alto})`,
+      preparando: 'Preparando la portada…',
+      descargar: (tamano: string) => `Descargar la portada del ebook · ${tamano}`,
     },
     pdf: {
       titulo: 'PDF para imprenta',
