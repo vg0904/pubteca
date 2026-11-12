@@ -574,6 +574,7 @@ export default function App() {
               alImportar={() => void elegirManuscrito()}
             />
           )}
+          <footer className="credito">{ui.credito}</footer>
           <div className="avisos" aria-live="polite">
             {avisos.map((a) => (
               <div key={a.id} className={`aviso-breve aviso-${a.tipo}`} role={a.tipo === 'error' ? 'alert' : 'status'}>

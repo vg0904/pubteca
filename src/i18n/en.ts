@@ -933,7 +933,7 @@ export const ui: Ui = {
       titulo: 'Front cover style',
       ayuda: 'On your own artwork. All text is vector, and each piece picks the ink that reads best by itself.',
       nombres: {
-        papiro: 'Papiro (your template)',
+        minimo: 'Minimal (author and imprint only)',
         clasico: 'Classic centered',
         cartel: 'Poster',
         franja: 'Bottom band',
@@ -941,7 +941,7 @@ export const ui: Ui = {
         vertical: 'Vertical',
       },
       descripciones: {
-        papiro: 'Author and imprint only: the artwork carries the title. Baseline at 13 mm.',
+        minimo: 'Author and imprint only: the artwork carries the title. Baseline at 13 mm.',
         clasico: 'Serif title at the top, author below, imprint at the foot.',
         cartel: 'Condensed capitals across the full width, author below.',
         franja: 'An opaque band at the foot: it reads over any artwork.',
@@ -958,7 +958,7 @@ export const ui: Ui = {
     opciones: {
       titulo: 'Options',
       conTitulo: 'Title on the front',
-      conTituloAyuda: 'Leave it out if the artwork already has it, as in Papiro.',
+      conTituloAyuda: 'Leave it out if the artwork already has it, as in the Minimal style.',
       conAutor: 'Author on the front cover',
       conAutorAyuda: 'Leave it out if the artwork already has it. It stays on the spine.',
       sinopsis: 'Blurb on the back',
@@ -1061,4 +1061,5 @@ export const ui: Ui = {
   menu: 'More options',
   cerrar: 'Close',
   deshacer: 'Undo',
+  credito: 'A Victor Guerra production',
 }

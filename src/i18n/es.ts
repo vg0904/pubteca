@@ -950,7 +950,7 @@ export const ui = {
       titulo: 'Estilo de la portada',
       ayuda: 'Sobre tu propio dibujo. Todo el texto va en vectores, y cada pieza elige sola la tinta que mejor se lee.',
       nombres: {
-        papiro: 'Papiro (tu plantilla)',
+        minimo: 'Mínimo (solo autor y sello)',
         clasico: 'Clásico centrado',
         cartel: 'Cartel',
         franja: 'Franja inferior',
@@ -958,7 +958,7 @@ export const ui = {
         vertical: 'Vertical',
       },
       descripciones: {
-        papiro: 'Solo autor y sello: el dibujo trae el título. Línea base a 13 mm.',
+        minimo: 'Solo autor y sello: el dibujo trae el título. Línea base a 13 mm.',
         clasico: 'Título arriba en serifa, autor debajo, sello al pie.',
         cartel: 'Título en mayúsculas condensadas a todo el ancho, autor abajo.',
         franja: 'Una franja opaca al pie: se lee sobre cualquier dibujo.',
@@ -975,7 +975,7 @@ export const ui = {
     opciones: {
       titulo: 'Opciones',
       conTitulo: 'El título en la portada',
-      conTituloAyuda: 'Quítalo si el dibujo ya lo trae, como en Papiro.',
+      conTituloAyuda: 'Quítalo si el dibujo ya lo trae, como en el estilo Mínimo.',
       conAutor: 'El autor en la portada',
       conAutorAyuda: 'Quítalo si el dibujo ya lo trae. En el lomo sigue.',
       sinopsis: 'La sinopsis en la contraportada',
@@ -1078,6 +1078,7 @@ export const ui = {
   menu: 'Más opciones',
   cerrar: 'Cerrar',
   deshacer: 'Deshacer',
+  credito: 'Una producción de Victor Guerra',
 }
 
 /**
