@@ -260,7 +260,7 @@ describe('la configuracion de la cubierta', () => {
   it('lo que no se entiende toma su valor por defecto', () => {
     expect(normalizarCubierta(null)).toEqual(CONFIG_CUBIERTA_POR_DEFECTO)
     const c = normalizarCubierta({ estilo: 'barroco', lomoManual: -3, encuadre: { x: 7 }, fondo: 'rojo', tintas: { autor: 'clara', titulo: 'fucsia' }, codigo: 'kdp' })
-    expect(c.estilo).toBe('papiro')
+    expect(c.estilo).toBe('minimo')
     expect(c.lomoManual).toBe(0)
     expect(c.encuadre).toEqual({ x: 1, y: 0.5 })
     expect(c.fondo).toBe('')
@@ -284,9 +284,9 @@ describe('la configuracion de la cubierta', () => {
       const portada = sin.piezas.filter((p) => p.que === 'titulo' || p.que === 'sello').map((p) => p.caja)
       for (const caja of portada) expect(dentro(caja, encoger(sin.medidas.portada, 0))).toBe(true)
     }
-    // Papiro sin titulo ni autor: en la portada solo queda el sello.
-    const papiro = cubiertaDePrueba({ estilo: 'papiro', titulo: false, autor: false })
-    expect(papiro.piezas.filter((p) => dentro(p.caja, papiro.medidas.portada)).map((p) => p.que)).toEqual(['sello'])
+    // El minimo sin titulo ni autor: en la portada solo queda el sello.
+    const minimo = cubiertaDePrueba({ estilo: 'minimo', titulo: false, autor: false })
+    expect(minimo.piezas.filter((p) => dentro(p.caja, minimo.medidas.portada)).map((p) => p.que)).toEqual(['sello'])
   })
 })
 
@@ -342,7 +342,7 @@ describe('las piezas de la portada, movidas a mano', () => {
 
   it('la tinta se vuelve a elegir donde queda: el autor, del mar oscuro al cielo claro, pasa a oscuro', () => {
     expect(tintaDe(cubiertaDePrueba(), 'autor')).toEqual([TINTA_CLARA])
-    const arriba = cubiertaDePrueba({ mover: { papiro: { autor: { x: 0, y: -1.2 } } } })
+    const arriba = cubiertaDePrueba({ mover: { minimo: { autor: { x: 0, y: -1.2 } } } })
     expect(pieza(arriba, 'autor').y).toBeLessThan(arriba.medidas.portada.y + arriba.medidas.portada.alto * 0.3)
     expect(tintaDe(arriba, 'autor')).toEqual([TINTA_OSCURA])
   })
@@ -446,7 +446,7 @@ describe('el PDF de la cubierta', () => {
   })
 })
 
-describe('la plantilla del autor (Papiro), al milimetro', () => {
+describe('el estilo minimo, al milimetro', () => {
   it('el sello en la linea base de 13 mm, de 1/6 A; el autor, 1/10 A por encima del sello', () => {
     const c = cubiertaDePrueba({}, { imagenes: { ...datosDePrueba().imagenes, sello: { ancho: 900, alto: 300 } } })
     const m = c.medidas

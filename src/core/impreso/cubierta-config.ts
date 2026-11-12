@@ -5,8 +5,8 @@
  * particion): eso solo lo descarga quien abre la cubierta.
  */
 
-export type EstiloId = 'papiro' | 'clasico' | 'cartel' | 'franja' | 'esquina' | 'vertical'
-export const ESTILOS_ORDEN: readonly EstiloId[] = ['papiro', 'clasico', 'cartel', 'franja', 'esquina', 'vertical']
+export type EstiloId = 'minimo' | 'clasico' | 'cartel' | 'franja' | 'esquina' | 'vertical'
+export const ESTILOS_ORDEN: readonly EstiloId[] = ['minimo', 'clasico', 'cartel', 'franja', 'esquina', 'vertical']
 
 export type QuePieza = 'titulo' | 'autor' | 'sello'
 export const PIEZAS_PORTADA: readonly QuePieza[] = ['titulo', 'autor', 'sello']
@@ -58,7 +58,7 @@ export interface ConfigCubierta {
 export type ColorCubierta = 'rgb' | 'cmyk'
 
 export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
-  estilo: 'papiro',
+  estilo: 'minimo',
   titulo: null,
   autor: true,
   sinopsis: true,

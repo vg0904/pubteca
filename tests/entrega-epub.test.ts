@@ -223,7 +223,7 @@ describe('la portada con su texto en el EPUB (decision 12)', () => {
   const compuesta = falsoJpeg(1707, 2560)
   const conTexto = (): Promise<{ imagen: Imagen; bytes: Uint8Array }> =>
     Promise.resolve({ imagen: { id: 'portada-del-ebook', nombreOriginal: 'portada-del-ebook.jpg', tipo: 'jpeg', bytes: compuesta.length, ancho: 1707, alto: 2560, alfa: false }, bytes: compuesta })
-  const cubierta = (enEpub: boolean) => ({ estilo: 'papiro', titulo: null, autor: true, sinopsis: true, codigo: 'generar', lomo: 'descendente', lomoManual: 0, encuadre: { x: 0.5, y: 0.5 }, fondo: '', tintas: {}, mover: {}, enEpub, color: null }) as const
+  const cubierta = (enEpub: boolean) => ({ estilo: 'minimo', titulo: null, autor: true, sinopsis: true, codigo: 'generar', lomo: 'descendente', lomoManual: 0, encuadre: { x: 0.5, y: 0.5 }, fondo: '', tintas: {}, mover: {}, enEpub, color: null }) as const
 
   it('Apple Books lleva la portada compuesta en vez del dibujo limpio, y se dice; Kindle, como siempre, ninguna', async () => {
     const { proyecto, imagenes, repo } = await libroDePrueba()

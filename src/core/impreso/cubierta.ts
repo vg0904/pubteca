@@ -176,8 +176,8 @@ const sello = (alinear: PiezaEstilo['alinear'], ancho = 0.8): PiezaEstilo => ({ 
  * autor contesto al empezar M7.
  */
 export const ESTILOS: Readonly<Record<EstiloId, EstiloPortada>> = {
-  papiro: {
-    id: 'papiro',
+  minimo: {
+    id: 'minimo',
     conTitulo: false,
     letraLomo: 'jost',
     piezas: [

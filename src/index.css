@@ -786,6 +786,9 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 @keyframes progreso { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 @media (prefers-reduced-motion: reduce) { .progreso { animation: none; background: var(--acento); opacity: 0.5; } }
 
+/* El credito, al pie de todas las pantallas */
+.credito { padding: 1.5rem 16px 2rem; text-align: center; font-family: var(--interfaz); font-size: 0.78rem; color: var(--suave); }
+
 /* Avisos breves */
 .avisos { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 50; display: flex; flex-direction: column; gap: 0.5rem; width: min(34rem, calc(100% - 32px)); }
 .aviso-breve {

@@ -202,7 +202,7 @@ export function pdfDeCubiertaCmyk(c: CubiertaCompuesta, ppi = 100, limite = 3): 
 function main(argv: readonly string[]): number {
   const salida = argv[0] ?? join(RAIZ, 'tmp', 'pdfs')
   mkdirSync(salida, { recursive: true })
-  for (const estilo of ['papiro', 'vertical'] as const) {
+  for (const estilo of ['minimo', 'vertical'] as const) {
     const c = cubiertaDePrueba({ estilo, titulo: true })
     const pdf = pdfDeCubierta(c, 150)
     const ruta = join(salida, `cubierta-${estilo}.pdf`)
@@ -211,7 +211,7 @@ function main(argv: readonly string[]): number {
   }
   // La misma en CMYK, PDF/X-1a: tiene que pasar nuestra lista, y CI la pasa por qpdf, pdffonts y zbarimg.
   {
-    const c = cubiertaDePrueba({ estilo: 'papiro', titulo: true })
+    const c = cubiertaDePrueba({ estilo: 'minimo', titulo: true })
     const pdf = pdfDeCubiertaCmyk(c, 150)
     const problemas = comprobarPdfx(leerPdf(pdf))
     if (problemas.length) {

@@ -82,7 +82,7 @@ describe('las opciones de la cubierta y el sello en el modelo', () => {
   })
 
   it('un cambio que no cambia nada no crea nada; el encuadre arrastrado es un solo paso de deshacer', () => {
-    expect(cubierta(e0, { estilo: 'papiro' })).toBe(e0)
+    expect(cubierta(e0, { estilo: 'minimo' })).toBe(e0)
     let e = cubierta(e0, { encuadre: { x: 0.4, y: 0.5 } }, 1000)
     e = cubierta(e, { encuadre: { x: 0.3, y: 0.5 } }, 1100)
     expect(e.pasado.length - e0.pasado.length).toBe(1)
@@ -340,7 +340,7 @@ describe('la resolucion de los PNG (pHYs)', () => {
 
 describe('las piezas movidas a mano y la portada del ebook, en el modelo', () => {
   const e0: Estado = reducir(ESTADO_INICIAL, { tipo: 'abrir', proyecto: libroDeLaApp(), imagenes: [] })
-  const mover = (e: Estado, pieza: 'titulo' | 'autor' | 'sello', a: { x: number; y: number } | null, ahora: number, estilo: 'papiro' | 'clasico' = 'clasico'): Estado =>
+  const mover = (e: Estado, pieza: 'titulo' | 'autor' | 'sello', a: { x: number; y: number } | null, ahora: number, estilo: 'minimo' | 'clasico' = 'clasico'): Estado =>
     reducir(e, { tipo: 'moverPieza', estilo, pieza, a, ahora })
 
   it('mover una pieza la apunta en su estilo, y el libro pasa a formato 5 (un 4 la perderia al normalizar)', () => {
@@ -362,7 +362,7 @@ describe('las piezas movidas a mano y la portada del ebook, en el modelo', () =>
     expect(e.pasado.length - e0.pasado.length).toBe(2)
     expect(reducir(e, { tipo: 'deshacer' }).proyecto?.cubierta?.mover).toEqual({ clasico: { titulo: { x: 0.03, y: 0 } } })
     // Lo de otro estilo no se toca.
-    expect(mover(e, 'sello', { x: 0.1, y: 0 }, 2000, 'papiro').proyecto?.cubierta?.mover).toMatchObject({ clasico: { titulo: { x: 0.03, y: 0 }, autor: { x: 0, y: 0.02 } }, papiro: { sello: { x: 0.1, y: 0 } } })
+    expect(mover(e, 'sello', { x: 0.1, y: 0 }, 2000, 'minimo').proyecto?.cubierta?.mover).toMatchObject({ clasico: { titulo: { x: 0.03, y: 0 }, autor: { x: 0, y: 0.02 } }, minimo: { sello: { x: 0.1, y: 0 } } })
   })
 
   it('elegir a mano el color del PDF pide formato 6 (un 5 lo tiraria y volveria al del destino)', () => {
