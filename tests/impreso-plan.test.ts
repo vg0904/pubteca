@@ -108,6 +108,16 @@ describe('el plan, en el orden de la tradicion', () => {
     expect(r.avisos).toContainEqual({ codigo: 'sinIsbn' })
   })
 
+  it('sin titulo o sin autor se avisa (la portada saldria en blanco), y los derechos no dejan un hueco', () => {
+    expect(r.avisos.filter((a) => a.codigo === 'sinTitulo' || a.codigo === 'sinAutor')).toEqual([])
+    const base = leerProyecto(FIXTURE)
+    const sinNada = contenidoDe({ ...base, libroTxt: (base.libroTxt ?? '').replace(/^titulo: .*$/mu, 'titulo:').replace(/^autor: .*$/mu, 'autor:') }, 2026)
+    expect(sinNada.derechos).toBe('© 2026. Todos los derechos reservados.')
+    const avisos = plan({}, sinNada).avisos
+    expect(avisos).toContainEqual({ codigo: 'sinTitulo' })
+    expect(avisos).toContainEqual({ codigo: 'sinAutor' })
+  })
+
   it('sin anteportada, la portada es la pagina 1', () => {
     expect(primeraDe(plan({ anteportada: false }), 'portada').numero).toBe(1)
   })

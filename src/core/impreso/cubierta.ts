@@ -606,7 +606,7 @@ class Cubierta {
     const colocadas = new Map<QuePieza, Caja>()
     for (const p of estilo.piezas) {
       if (p.que === 'titulo' && (!conTitulo || !this.d.titulo.trim())) continue
-      if (p.que === 'autor' && !this.d.autor.trim()) continue
+      if (p.que === 'autor' && (!this.c.autor || !this.d.autor.trim())) continue
       const x0 = p.alinear === 'derecha' ? m.portada.x + m.portada.ancho - A / 10 - (p.ancho ?? 0.8) * A : p.alinear === 'izquierda' ? m.portada.x + A / 10 : m.portada.x + (m.portada.ancho - (p.ancho ?? 0.8) * A) / 2
       const x1 = x0 + (p.ancho ?? 0.8) * A
       // Donde cae su ultima linea base (o el pie de su logo).

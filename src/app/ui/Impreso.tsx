@@ -205,6 +205,10 @@ function textoDeGrupo(g: GrupoImpreso, ui: Ui, nombreImagen: (clave: string) => 
       return t.isbnNoValido(primero.isbn, motivoIsbn(primero.isbn, ui.impreso.creditos.isbnMal) ?? '')
     case 'sinIsbn':
       return t.sinIsbn
+    case 'sinTitulo':
+      return t.sinTitulo
+    case 'sinAutor':
+      return t.sinAutor
     case 'blancasSeguidas':
       return t.blancasSeguidas(primero.cuantas, primero.desde)
   }

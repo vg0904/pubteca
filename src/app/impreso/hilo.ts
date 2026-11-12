@@ -52,14 +52,23 @@ function hiloDelImpreso(): Worker | null {
   return hilo
 }
 
-/** Un pedido al motor, en su hilo si se puede. */
+/**
+ * Un pedido al motor, en su hilo si se puede. Las respuestas se reparten por
+ * orden: si un pedido no se pudo mandar (postMessage lanza, por ejemplo con un
+ * ArrayBuffer ya transferido), no puede quedarse en la cola, o cada pedido
+ * siguiente recibiria la respuesta del anterior. Ese se hace aqui.
+ */
 export function pedirAlImpreso(p: PedidoImpreso, transferir: Transferable[] = []): Promise<RespuestaImpreso> {
   const w = hiloDelImpreso()
   if (!w) return aqui(p)
+  try {
+    w.postMessage(p, transferir)
+  } catch {
+    return aqui(p)
+  }
   return new Promise((resolver) => {
     esperando.push(resolver)
     pedidos.push(p)
-    w.postMessage(p, transferir)
   })
 }
 
@@ -87,12 +96,15 @@ export class ColaDeComposicion {
 
   private lanzar(p: PedidoComponer, resolver: (r: RespuestaImpreso | null) => void): void {
     this.enVuelo = true
-    void this.pedir(p).then((r) => {
-      resolver(r)
-      this.enVuelo = false
-      const s = this.siguiente
-      this.siguiente = null
-      if (s) this.lanzar(s.p, s.resolver)
-    })
+    // Pase lo que pase con este pedido, la cola sigue: un fallo no la deja parada para siempre.
+    void this.pedir(p)
+      .catch((e: unknown): RespuestaImpreso => ({ tipo: 'error', id: p.id, error: e instanceof Error ? e.message : String(e) }))
+      .then((r) => {
+        resolver(r)
+        this.enVuelo = false
+        const s = this.siguiente
+        this.siguiente = null
+        if (s) this.lanzar(s.p, s.resolver)
+      })
   }
 }

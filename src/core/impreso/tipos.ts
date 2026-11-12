@@ -99,5 +99,8 @@ export type AvisoImpreso =
   | { readonly codigo: 'laminasOmitidas'; readonly laminas: number }
   | { readonly codigo: 'isbnNoValido'; readonly isbn: string }
   | { readonly codigo: 'sinIsbn' }
+  /** Sin titulo, la anteportada y la portada salen en blanco; sin autor, la portada y los derechos van sin el. */
+  | { readonly codigo: 'sinTitulo' }
+  | { readonly codigo: 'sinAutor' }
   /** Mas paginas en blanco seguidas de las que admite KDP. Las reglas no deberian llegar nunca. */
   | { readonly codigo: 'blancasSeguidas'; readonly desde: number; readonly cuantas: number }

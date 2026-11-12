@@ -264,6 +264,27 @@ describe('la configuracion de la cubierta', () => {
     expect(c.fondo).toBe('')
     expect(c.tintas).toEqual({ autor: 'clara' })
     expect(c.codigo).toBe('kdp')
+    // Un libro guardado antes de la opcion lleva el autor; quitarlo se guarda.
+    expect(c.autor).toBe(true)
+    expect(normalizarCubierta({ autor: false }).autor).toBe(false)
+    expect(normalizarCubierta({ autor: 'no' }).autor).toBe(true)
+    expect(normalizarCubierta({ autor: 0 }).autor).toBe(true)
+  })
+
+  it('el autor fuera de la portada (el dibujo ya lo trae): en ningun estilo, y en el lomo sigue', () => {
+    for (const estilo of ESTILOS_ORDEN) {
+      const con = cubiertaDePrueba({ estilo })
+      const sin = cubiertaDePrueba({ estilo, autor: false })
+      expect(con.piezas.some((p) => p.que === 'autor'), estilo).toBe(true)
+      expect(sin.piezas.some((p) => p.que === 'autor'), estilo).toBe(false)
+      expect(sin.piezas.some((p) => p.que === 'lomoAutor'), estilo).toBe(true)
+      // Lo demas de la portada sigue dentro y sin pisarse.
+      const portada = sin.piezas.filter((p) => p.que === 'titulo' || p.que === 'sello').map((p) => p.caja)
+      for (const caja of portada) expect(dentro(caja, encoger(sin.medidas.portada, 0))).toBe(true)
+    }
+    // Papiro sin titulo ni autor: en la portada solo queda el sello.
+    const papiro = cubiertaDePrueba({ estilo: 'papiro', titulo: false, autor: false })
+    expect(papiro.piezas.filter((p) => dentro(p.caja, papiro.medidas.portada)).map((p) => p.que)).toEqual(['sello'])
   })
 })
 

@@ -189,7 +189,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
     () => (datos && fuentes ? ESTILOS_ORDEN.map((e) => ({ e, c: componerCubierta(datos, { ...c, estilo: e, titulo: null }, fuentes.f) })) : []),
     // Las miniaturas no dependen del estilo elegido ni de las tintas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [datos, fuentes, c.encuadre, c.fondo, c.lomo, c.codigo, c.sinopsis, c.lomoManual],
+    [datos, fuentes, c.encuadre, c.fondo, c.lomo, c.codigo, c.sinopsis, c.lomoManual, c.autor],
   )
   const pintar = useMemo<ParaPintarCubierta | null>(
     () => (fuentes ? { fuentes: fuentes.f, trazo: trazosDeCubierta(fuentes.f), imagen: (rol) => imagenes?.mapa.get(rol) ?? null } : null),
@@ -329,6 +329,11 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
               {t.opciones.conTitulo}
             </label>
             <p className="ayuda">{t.opciones.conTituloAyuda}</p>
+            <label className="casilla">
+              <input type="checkbox" checked={c.autor} onChange={(e) => cambiar({ autor: e.target.checked })} />
+              {t.opciones.conAutor}
+            </label>
+            <p className="ayuda">{t.opciones.conAutorAyuda}</p>
             <label className="casilla">
               <input type="checkbox" checked={c.sinopsis} onChange={(e) => cambiar({ sinopsis: e.target.checked })} />
               {t.opciones.sinopsis}

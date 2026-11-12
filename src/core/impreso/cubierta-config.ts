@@ -16,6 +16,8 @@ export interface ConfigCubierta {
   readonly estilo: EstiloId
   /** El titulo en la portada; null: lo que diga el estilo. */
   readonly titulo: boolean | null
+  /** El autor en la portada (no en el lomo): fuera si el dibujo ya lo trae. */
+  readonly autor: boolean
   readonly sinopsis: boolean
   /** El codigo: generarlo con el ISBN del impreso, o dejar la caja libre para el de KDP. */
   readonly codigo: 'generar' | 'kdp'
@@ -33,6 +35,7 @@ export interface ConfigCubierta {
 export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
   estilo: 'papiro',
   titulo: null,
+  autor: true,
   sinopsis: true,
   codigo: 'generar',
   lomo: 'descendente',
@@ -56,6 +59,7 @@ export function normalizarCubierta(x: unknown): ConfigCubierta {
   return {
     estilo: ESTILOS_ORDEN.includes(x['estilo'] as EstiloId) ? (x['estilo'] as EstiloId) : d.estilo,
     titulo: typeof x['titulo'] === 'boolean' ? x['titulo'] : null,
+    autor: typeof x['autor'] === 'boolean' ? x['autor'] : d.autor,
     sinopsis: typeof x['sinopsis'] === 'boolean' ? x['sinopsis'] : d.sinopsis,
     codigo: x['codigo'] === 'kdp' ? 'kdp' : 'generar',
     lomo: x['lomo'] === 'ascendente' ? 'ascendente' : 'descendente',

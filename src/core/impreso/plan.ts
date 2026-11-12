@@ -399,6 +399,9 @@ export function componerImpreso(
   if (c.laminas === 'omitir' && contenido.laminas.length > 0) avisos.push({ codigo: 'laminasOmitidas', laminas: contenido.laminas.length })
   if (c.isbn && !isbnValido(c.isbn)) avisos.push({ codigo: 'isbnNoValido', isbn: c.isbn })
   if (!c.isbn) avisos.push({ codigo: 'sinIsbn' })
+  // El EPUB no se genera sin titulo; el impreso si, pero la anteportada y la portada saldrian en blanco.
+  if (!contenido.titulo.trim()) avisos.push({ codigo: 'sinTitulo' })
+  if (!contenido.autor.trim()) avisos.push({ codigo: 'sinAutor' })
   for (const b of blancasSeguidas(final.paginas)) avisos.push(b)
 
   return {

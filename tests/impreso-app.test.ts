@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { archivosDeZip, leerCopia } from '../src/app/abrir-copia'
 import { abrirAlmacen, guardarProyecto, leerProyecto } from '../src/app/almacen'
 import { zipDeCopia } from '../src/app/copia'
@@ -216,6 +216,43 @@ describe('el motor del impreso (lo que corre en su hilo)', () => {
     expect(vistos).toEqual([1, 3])
     pendientes[1]?.({ tipo: 'error', id: 3, error: 'x' })
     expect((await tres)?.id).toBe(3)
+  })
+
+  it('un pedido que falla no deja la cola parada: se dice el error y el siguiente sale', async () => {
+    let veces = 0
+    const cola = new ColaDeComposicion((p) => (veces++ === 0 ? Promise.reject(new Error('no se pudo mandar')) : Promise.resolve({ tipo: 'error', id: p.id, error: 'ok' })))
+    expect(await cola.componer({ ...pedido, id: 1 })).toEqual({ tipo: 'error', id: 1, error: 'no se pudo mandar' })
+    expect((await cola.componer({ ...pedido, id: 2 }))?.id).toBe(2)
+  })
+
+  it('si el hilo no acepta un pedido, se hace aqui y nadie se queda con la respuesta de otro', async () => {
+    vi.resetModules()
+    const mandados: unknown[] = []
+    class HiloFalso {
+      private oyentes: ((e: { data: unknown }) => void)[] = []
+      addEventListener(tipo: string, f: (e: { data: unknown }) => void): void {
+        if (tipo === 'message') this.oyentes.push(f)
+      }
+      postMessage(m: { tipo: string; id: number }): void {
+        if (m.id === 1) throw new DOMException('ArrayBuffer detached', 'DataCloneError')
+        mandados.push(m.id)
+        // El hilo contesta en orden, con el id de lo que le llego.
+        queueMicrotask(() => this.oyentes.forEach((f) => f({ data: { tipo: 'error', id: m.id, error: 'del hilo' } })))
+      }
+      terminate(): void {}
+    }
+    vi.stubGlobal('Worker', HiloFalso)
+    try {
+      const { pedirAlImpreso } = await import('../src/app/impreso/hilo')
+      const roto = { ...pedido, id: 1, fuente: { id: 'no-existe', caras: pedido.fuente.caras } }
+      const [uno, dos] = await Promise.all([pedirAlImpreso(roto), pedirAlImpreso({ ...pedido, id: 2 })])
+      expect(mandados).toEqual([2])
+      expect(uno.id).toBe(1)
+      expect(dos).toEqual({ tipo: 'error', id: 2, error: 'del hilo' })
+    } finally {
+      vi.unstubAllGlobals()
+      vi.resetModules()
+    }
   })
 })
 

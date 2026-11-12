@@ -25,6 +25,8 @@ const NIVEL: Readonly<Record<CodigoImpreso, 'aviso' | 'nota'>> = {
   mediosFuera: 'nota',
   laminasOmitidas: 'nota',
   sinIsbn: 'nota',
+  sinTitulo: 'aviso',
+  sinAutor: 'aviso',
 }
 
 export interface GrupoImpreso<C extends CodigoImpreso = CodigoImpreso> {

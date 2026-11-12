@@ -154,10 +154,11 @@ export function contenidoDe(p: Proyecto, anioActual: number): Contenido {
     .filter((k) => /^color-\p{Nd}+$/u.test(k))
     .sort((x, y) => valorDigitos(x.slice(6)) - valorDigitos(y.slice(6)))
 
+  // Sin autor, su marca se va con el espacio de delante: «© 2026. Todos…», no «© 2026 . Todos…».
   const derechos = (cfg.derechos ?? '')
     .replaceAll('{año}', anio)
     .replaceAll('{anio}', anio)
-    .replaceAll('{autor}', cfg.autor)
+    .replace(/\s*\{autor\}/gu, (m) => (cfg.autor.trim() ? m.replace('{autor}', cfg.autor) : ''))
     .replaceAll('{titulo}', cfg.titulo)
 
   return {
