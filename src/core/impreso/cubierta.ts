@@ -29,7 +29,7 @@
  * de WCAG (4,5:1, o 3:1 para texto grande). Si ninguna llega, un velo bajo la
  * pieza, cocido en la imagen del fondo.
  */
-import { CONFIG_CUBIERTA_POR_DEFECTO, ESTILOS_ORDEN, normalizarCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza, type Tono } from './cubierta-config'
+import { CONFIG_CUBIERTA_POR_DEFECTO, ESTILOS_ORDEN, normalizarCubierta, type Ajuste, type ConfigCubierta, type EstiloId, type PiezaContra, type Punto, type QuePieza, type Tono } from './cubierta-config'
 import { componerCodigo } from './codigo'
 import { cifrasDeIsbn, isbnLegible } from './ean13'
 import { PT_POR_MM, type Destino, type Papel } from './formatos'
@@ -332,8 +332,10 @@ export type AvisoCubierta =
   | { readonly codigo: 'sinopsisCortada' }
   | { readonly codigo: 'colorRgb' }
   | { readonly codigo: 'lomoDeIngram' }
-  /** Dos piezas de la portada que se pisan: solo puede pasar si el autor las movio. */
-  | { readonly codigo: 'piezasSeTocan'; readonly a: QuePieza; readonly b: QuePieza }
+  /** Dos piezas que se pisan (de la portada, o de la contraportada): solo puede pasar si el autor las movio. */
+  | { readonly codigo: 'piezasSeTocan'; readonly a: PiezaColocada; readonly b: PiezaColocada }
+  /** El codigo, movido o de otro tamaño: ya no esta en la caja donde KDP pone el suyo. */
+  | { readonly codigo: 'codigoMovido' }
 
 export interface CubiertaCompuesta {
   readonly medidas: MedidasCubierta
@@ -349,6 +351,12 @@ export interface CubiertaCompuesta {
   readonly conTitulo: boolean
   /** Lo que de verdad se movio cada pieza movida, en fracciones de A: lo pedido, o menos si se salia de lo seguro. */
   readonly movidas: Readonly<Partial<Record<QuePieza, Punto>>>
+  /** Lo mismo en la contraportada, con la escala que de verdad se aplico. */
+  readonly ajustesContra: Readonly<Partial<Record<PiezaContra, Ajuste>>>
+  /** Si el codigo se puede mover: solo el que genera Pubteca (la caja libre es donde KDP pone el suyo). */
+  readonly codigoMovible: boolean
+  /** Cada dibujo, si sobra a lo ancho y a lo alto: si no sobra, ese encuadre no mueve nada. */
+  readonly encuadres: Readonly<Partial<Record<'portada' | 'contraportada', { readonly x: boolean; readonly y: boolean }>>>
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +416,9 @@ class Cubierta {
   private readonly fondo: string
   private arte: { rol: 'portada' | 'contraportada'; caja: Caja; recorte: Caja; luz: Luminancias | undefined; img: ImagenDeCubierta }[] = []
   private readonly movidas: Partial<Record<QuePieza, Punto>> = {}
+  private readonly ajustesContra: Partial<Record<PiezaContra, Ajuste>> = {}
+  private readonly encuadres: Partial<Record<'portada' | 'contraportada', { x: boolean; y: boolean }>> = {}
+  private codigoMovible = false
 
   private readonly d: DatosCubierta
   private readonly c: ConfigCubierta
@@ -584,6 +595,7 @@ class Cubierta {
     const w = caja.ancho / escala
     const h = caja.alto / escala
     const recorte = { x: Math.min(img.ancho - w, Math.max(0, foco.x * img.ancho - w / 2)), y: Math.min(img.alto - h, Math.max(0, foco.y * img.alto - h / 2)), ancho: w, alto: h }
+    this.encuadres[rol] = { x: w < img.ancho - 0.5, y: h < img.alto - 0.5 }
     this.capas.push({ que: 'arte', rol, caja, recorte })
     this.arte.push({ rol, caja, recorte, luz: img.luz, img })
     // La resolucion, a lo que se imprime: pixeles del recorte por pulgada.
@@ -603,7 +615,7 @@ class Cubierta {
     const cajaLomo = { x: m.espina.x, y: 0, ancho: m.lomo, alto: m.alto }
     const cajaPortada = { x: m.portada.x, y: 0, ancho: m.portada.ancho + s, alto: m.alto }
     this.capas.push({ que: 'color', caja: { x: 0, y: 0, ancho: m.ancho, alto: m.alto }, color: this.fondo })
-    this.ponerArte('contraportada', cajaContra, { x: 0.5, y: 0.5 })
+    this.ponerArte('contraportada', cajaContra, this.c.encuadreContra)
     if (!this.ponerArte('portada', cajaPortada, this.c.encuadre)) this.avisos.push({ codigo: 'sinPortada' })
     this.capas.push({ que: 'color', caja: cajaLomo, color: this.fondo })
     if (estilo.franja) {
@@ -821,53 +833,111 @@ class Cubierta {
 
   // --- La contraportada ----------------------------------------------------------------
 
+  /** Lo seguro de la contraportada: 0,125 in dentro del corte, el lomo incluido. */
+  private zonaContra(): Caja {
+    const k = this.m.contra
+    return { x: k.x + SEGURIDAD, y: k.y + SEGURIDAD, ancho: k.ancho - 2 * SEGURIDAD, alto: k.alto - 2 * SEGURIDAD }
+  }
+
+  /** La escala pedida para una pieza de la contraportada, sin que una caja de `ancho` × `alto` (a escala 1) deje de caber en lo seguro. */
+  private escalaContra(que: PiezaContra, ancho: number, alto: number): number {
+    const a = this.c.contra[que]
+    if (!a || a.escala === 1) return 1
+    const z = this.zonaContra()
+    return Math.min(a.escala, z.ancho / ancho, z.alto / alto)
+  }
+
+  /**
+   * Lo que se desplaza una pieza de la contraportada, sin que su caja salga
+   * de lo seguro. Se apunta lo de verdad (con la escala): la interfaz parte de ahi.
+   */
+  private desplazarContra(que: PiezaContra, caja: Caja, escala: number): { dx: number; dy: number } {
+    const a = this.c.contra[que]
+    const z = this.zonaContra()
+    const limitar = (v: number, min: number, max: number): number => (min > max ? 0 : Math.min(max, Math.max(min, v)))
+    const dx = limitar((a?.x ?? 0) * this.A, z.x - caja.x, z.x + z.ancho - caja.x - caja.ancho)
+    const dy = limitar((a?.y ?? 0) * this.A, z.y - caja.y, z.y + z.alto - caja.y - caja.alto)
+    if (dx !== 0 || dy !== 0 || escala !== 1) this.ajustesContra[que] = { x: dx / this.A, y: dy / this.A, escala }
+    return { dx, dy }
+  }
+
   private contraportada(): Caja {
     const m = this.m
     const A = this.A
     const k = m.contra
     const base = k.y + k.alto - LINEA_BASE
-    const codigo = cajaDelCodigo(m)
+    const kdp = cajaDelCodigo(m)
 
     // El logo del sello: 1/3 A, a 1/10 A del borde de fuera, sobre la linea base.
-    let techo = codigo.y
+    // Crece o encoge desde su esquina de abajo a la izquierda, y se mueve sin salir de lo seguro.
+    // La sinopsis se mide con las piezas donde las pone el estilo, no donde las lleve el autor.
+    let techo = kdp.y
     const logo = this.d.imagenes.sello
     if (logo) {
-      const ancho = A / 3
-      const alto = Math.min((ancho * logo.alto) / logo.ancho, 0.18 * A)
-      const w = (alto * logo.ancho) / logo.alto
-      const caja = { x: k.x + A / 10, y: base - alto, ancho: w, alto }
+      const ancho0 = A / 3
+      const alto0 = Math.min((ancho0 * logo.alto) / logo.ancho, 0.18 * A)
+      const w0 = (alto0 * logo.ancho) / logo.alto
+      const e = this.escalaContra('selloContra', w0, alto0)
+      const alto = alto0 * e
+      const sin = { x: k.x + A / 10, y: base - alto, ancho: w0 * e, alto }
+      const { dx, dy } = this.desplazarContra('selloContra', sin, e)
+      const caja = { ...sin, x: sin.x + dx, y: sin.y + dy }
       const gris = this.tinta('selloContra', caja, true, this.c.tintas.sello)
       this.capas.push({ que: 'logo', rol: gris === TINTA_CLARA && this.d.imagenes.selloBlanco ? 'selloBlanco' : 'sello', caja })
       this.piezas.push({ que: 'selloContra', caja })
-      techo = Math.min(techo, caja.y)
+      techo = Math.min(techo, base - alto0)
     } else if (this.d.sello.trim()) {
-      const b = this.bloque(this.d.sello, { letra: 'playfair', cuerpo: 0.035 * A, mayusculas: true, espaciado: 0.25, ancho: A / 3, modo: 'bandera' })
-      const prevista = { x: k.x + A / 10, y: base - this.altoDe(b), ancho: b.ancho, alto: this.altoDe(b) }
+      const opciones = (e: number) => ({ letra: 'playfair' as const, cuerpo: 0.035 * A * e, mayusculas: true, espaciado: 0.25, ancho: (A / 3) * e, modo: 'bandera' as const })
+      const b0 = this.bloque(this.d.sello, opciones(1))
+      const e = this.escalaContra('selloContra', b0.ancho || A / 3, this.altoDe(b0) + b0.baja)
+      const b = e === 1 ? b0 : this.bloque(this.d.sello, opciones(e))
+      const x0 = k.x + A / 10
+      const x1 = x0 + (A / 3) * e
+      const { dx, dy } = this.desplazarContra('selloContra', this.cajaPuesta(b, base, x0, x1, 'izquierda'), e)
+      const prevista = { x: x0 + dx, y: base + dy - this.altoDe(b), ancho: b.ancho, alto: this.altoDe(b) }
       const gris = this.tinta('selloContra', prevista, true, this.c.tintas.sello)
-      const caja = this.poner(b, base, k.x + A / 10, k.x + A / 10 + A / 3, 'izquierda', gris)
+      const caja = this.poner(b, base + dy, x0 + dx, x1 + dx, 'izquierda', gris)
       this.piezas.push({ que: 'selloContra', caja })
-      techo = Math.min(techo, caja.y)
+      techo = Math.min(techo, base - this.altoDe(b0))
     }
 
-    // El codigo: el nuestro, o la caja libre para el de KDP.
+    // El codigo: el nuestro (que se puede mover y escalar desde su esquina de
+    // abajo a la derecha), o la caja libre donde KDP pone el suyo, que no se mueve.
     const cifras = this.c.codigo === 'generar' ? cifrasDeIsbn(this.d.isbn) : null
     if (this.c.codigo === 'generar' && !cifras) this.avisos.push({ codigo: 'codigoSinIsbn' })
-    if (cifras) this.codigoDeBarras(codigo, cifras)
-    else this.avisos.push({ codigo: 'codigoKdp' })
+    let codigo = kdp
+    if (cifras) {
+      this.codigoMovible = true
+      const e = this.escalaContra('codigo', kdp.ancho, kdp.alto)
+      const sin = e === 1 ? kdp : { x: kdp.x + kdp.ancho * (1 - e), y: kdp.y + kdp.alto * (1 - e), ancho: kdp.ancho * e, alto: kdp.alto * e }
+      const { dx, dy } = this.desplazarContra('codigo', sin, e)
+      codigo = dx === 0 && dy === 0 ? sin : { ...sin, x: sin.x + dx, y: sin.y + dy }
+      if (codigo !== kdp) this.avisos.push({ codigo: 'codigoMovido' })
+      this.codigoDeBarras(codigo, cifras)
+    } else this.avisos.push({ codigo: 'codigoKdp' })
     this.piezas.push({ que: 'codigo', caja: codigo })
 
     // La sinopsis, arriba, sin bajar nunca a la caja del codigo ni al logo.
     if (this.c.sinopsis && this.d.descripcion.trim()) this.sinopsis({ x: k.x + A / 10, y: k.y + A / 10, ancho: k.ancho - A / 5, alto: techo - 0.06 * A - (k.y + A / 10) })
+
+    // Movidas a mano, pueden acabar una encima de otra (o de la caja del codigo de KDP): se dice.
+    const puestas = this.piezas.filter((x) => x.que === 'selloContra' || x.que === 'codigo' || x.que === 'sinopsis')
+    for (const [i, a] of puestas.entries()) {
+      for (const b of puestas.slice(i + 1)) if (seCortan(a.caja, b.caja)) this.avisos.push({ codigo: 'piezasSeTocan', a: a.que, b: b.que })
+    }
     return codigo
   }
 
-  private sinopsis(caja: Caja): void {
+  /** La sinopsis en su caja: crece o encoge entera (caja y letra) desde su esquina de arriba a la izquierda. */
+  private sinopsis(caja0: Caja): void {
     const fu = this.f.libro.regular
-    let cuerpo = 11
+    const e = this.escalaContra('sinopsis', caja0.ancho, caja0.alto)
+    const caja = e === 1 ? caja0 : { ...caja0, ancho: caja0.ancho * e, alto: caja0.alto * e }
+    let cuerpo = 11 * e
     let b = this.bloque(this.d.descripcion, { letra: 'libro', cuerpo, ancho: caja.ancho, modo: 'bandera', interlinea: 1.38 })
-    // Si no cabe, mas pequeña (hasta 9 pt); si aun no, se corta y se dice.
-    while (b.sube + b.lineas.length * b.paso > caja.alto && cuerpo > 9) {
-      cuerpo -= 0.5
+    // Si no cabe, mas pequeña (hasta 9 pt a escala 1); si aun no, se corta y se dice.
+    while (b.sube + b.lineas.length * b.paso > caja.alto && cuerpo > 9 * e) {
+      cuerpo -= 0.5 * e
       b = this.bloque(this.d.descripcion, { letra: 'libro', cuerpo, ancho: caja.ancho, modo: 'bandera', interlinea: 1.38 })
     }
     const caben = Math.max(0, Math.floor((caja.alto - b.sube - (Math.abs(fu.descendente) * cuerpo) / fu.upm) / b.paso) + 1)
@@ -877,8 +947,9 @@ class Cubierta {
     }
     if (b.lineas.length === 0) return
     const ultima = caja.y + b.sube + (b.lineas.length - 1) * b.paso
-    const gris = this.tinta('sinopsis', { x: caja.x, y: caja.y, ancho: b.ancho, alto: this.altoDe(b) + b.baja }, false, this.c.tintas.sinopsis)
-    const puesta = this.poner(b, ultima, caja.x, caja.x + caja.ancho, 'izquierda', gris)
+    const { dx, dy } = this.desplazarContra('sinopsis', this.cajaPuesta(b, ultima, caja.x, caja.x + caja.ancho, 'izquierda'), e)
+    const gris = this.tinta('sinopsis', { x: caja.x + dx, y: caja.y + dy, ancho: b.ancho, alto: this.altoDe(b) + b.baja }, false, this.c.tintas.sinopsis)
+    const puesta = this.poner(b, ultima + dy, caja.x + dx, caja.x + caja.ancho + dx, 'izquierda', gris)
     this.piezas.push({ que: 'sinopsis', caja: puesta })
   }
 
@@ -906,7 +977,7 @@ class Cubierta {
     const codigo = this.contraportada()
     this.avisos.push({ codigo: 'colorRgb' })
     if (this.d.destino === 'ingram' && this.c.lomoManual <= 0) this.avisos.push({ codigo: 'lomoDeIngram' })
-    return { medidas: this.m, capas: this.capas, ops: this.ops, codigo, piezas: this.piezas, avisos: this.avisos, estilo: estilo.id, conTitulo, movidas: this.movidas }
+    return { medidas: this.m, capas: this.capas, ops: this.ops, codigo, piezas: this.piezas, avisos: this.avisos, estilo: estilo.id, conTitulo, movidas: this.movidas, ajustesContra: this.ajustesContra, codigoMovible: this.codigoMovible, encuadres: this.encuadres }
   }
 }
 

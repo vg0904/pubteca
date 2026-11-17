@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { componerCubierta, ESTILOS_ORDEN, type CubiertaCompuesta, type FuentesCubierta, type RolCubierta } from '../../core/impreso/cubierta'
-import { colorDe, LIMITE_TINTA, type ColorCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza, type Tono } from '../../core/impreso/cubierta-config'
+import { colorDe, ESCALAS, LIMITE_TINTA, type ColorCubierta, type ConfigCubierta, type EstiloId, type PiezaContra, type Punto, type QuePieza, type Tono } from '../../core/impreso/cubierta-config'
 import { probarFilas, pruebaEnPantalla, type RejillaRgb } from '../../core/impreso/color'
 import { escribirCubierta } from '../../core/impreso/pdf-cubierta'
 import { nombreSeguro } from '../../core/texto'
@@ -19,7 +19,7 @@ import { jpegDelEbook, medidasDelEbook } from '../cubierta/epub'
 import { separarEnHilo } from '../cubierta/cmyk'
 import { separacionDe } from '../cubierta/cmyk-motor'
 import { CONDICION_PERFIL, perfilCmyk } from '../cubierta/perfil'
-import { arrastrada, direccionDeTecla, movibles, movidaDe, paso, piezaEn, type Direccion } from '../cubierta/mover'
+import { arrastrada, direccionDeTecla, escalaDe, escalaLimitada, esDeContra, movibles, movidaDe, paso, piezaEn, type Direccion, type PiezaMovible } from '../cubierta/mover'
 import { avisosDeCubierta } from '../cubierta/avisos'
 import { fuentesDeCubierta } from '../cubierta/fuentes'
 import { medirDibujo } from '../cubierta/medir'
@@ -65,10 +65,52 @@ function Lienzo({ c, px, pintar, que, etiqueta }: { c: CubiertaCompuesta; px: nu
 }
 
 /**
+ * Un valor con su deslizador y su numero escrito, para afinar: lo que se
+ * escribe fuera de rango, o lo que no es numero, no se manda (y al salir del
+ * campo vuelve el valor de verdad). Si el valor cambia desde fuera (deshacer,
+ * arrastrar), el campo lo sigue.
+ */
+function NumeroConDeslizador({ etiqueta, valor, min, max, paso, unidad, desactivado = false, alCambiar }: { etiqueta: string; valor: number; min: number; max: number; paso: number; unidad: string; desactivado?: boolean; alCambiar: (v: number) => void }) {
+  const [texto, setTexto] = useState(String(valor))
+  const [de, setDe] = useState(valor)
+  if (de !== valor) {
+    setDe(valor)
+    setTexto(String(valor))
+  }
+  const id = useId()
+  return (
+    <div className="campo-numero">
+      <label htmlFor={id}>{etiqueta}</label>
+      <input type="range" min={min} max={max} step={paso} value={valor} disabled={desactivado} aria-label={etiqueta} onChange={(e) => alCambiar(Number(e.target.value))} />
+      <span className="numero-con-unidad">
+        <input
+          id={id}
+          type="number"
+          inputMode="decimal"
+          min={min}
+          max={max}
+          step={paso}
+          value={texto}
+          disabled={desactivado}
+          onChange={(e) => {
+            setTexto(e.target.value)
+            const v = Number(e.target.value.replace(',', '.'))
+            if (e.target.value.trim() !== '' && Number.isFinite(v) && v >= min && v <= max) alCambiar(v)
+          }}
+          onBlur={() => setTexto(String(valor))}
+        />
+        <span aria-hidden="true">{unidad}</span>
+      </span>
+    </div>
+  )
+}
+
+/**
  * La cubierta entera, con las piezas de la portada que se arrastran. Con
  * raton o lapiz se arrastra en el acto; con el dedo, primero se toca la pieza
  * (asi el dedo sigue desplazando la pagina hasta que el autor elige algo).
- * Con el teclado: las flechas mueven la elegida 1 mm (5 con Mayusculas).
+ * Con el teclado: las flechas mueven la elegida 1 mm (5 con Mayusculas), y
+ * + y - cambian el tamaño de las de la contraportada.
  */
 function VistaMovible({
   c,
@@ -78,15 +120,17 @@ function VistaMovible({
   elegida,
   alElegir,
   alMover,
+  alEscalar,
   prueba,
 }: {
   c: CubiertaCompuesta
   pintar: ParaPintarCubierta | null
   que: QuePintar
   etiqueta: string
-  elegida: QuePieza | null
-  alElegir: (q: QuePieza | null) => void
-  alMover: (q: QuePieza, a: Punto) => void
+  elegida: PiezaMovible | null
+  alElegir: (q: PiezaMovible | null) => void
+  alMover: (q: PiezaMovible, a: Punto) => void
+  alEscalar: (q: PiezaContra, escala: number) => void
   /** La prueba de CMYK: los colores como saldran impresos. */
   prueba: RejillaRgb | null
 }) {
@@ -98,7 +142,7 @@ function VistaMovible({
   useEffect(() => {
     ultima.current = c
   }, [c])
-  const arrastre = useRef<{ que: QuePieza; id: number; desde: { x: number; y: number }; base: Punto; cuadro: number } | null>(null)
+  const arrastre = useRef<{ que: PiezaMovible; id: number; desde: { x: number; y: number }; base: Punto; cuadro: number } | null>(null)
   const marco = elegida ? movibles(c).find((p) => p.que === elegida)?.caja : undefined
   useEffect(() => {
     const el = ref.current
@@ -134,7 +178,7 @@ function VistaMovible({
     // Se guarda lo que de verdad se movio: si se pidio de mas, el borde de lo seguro manda.
     alMover(a.que, movidaDe(ultima.current, a.que))
   }
-  const mover = (q: QuePieza, d: Direccion, mm: number): void => alMover(q, paso(c, q, d, mm))
+  const mover = (q: PiezaMovible, d: Direccion, mm: number): void => alMover(q, paso(c, q, d, mm))
 
   return (
     <canvas
@@ -185,6 +229,11 @@ function VistaMovible({
           alElegir(null)
           return
         }
+        if (elegida && esDeContra(elegida) && (e.key === '+' || e.key === '-')) {
+          e.preventDefault()
+          alEscalar(elegida, escalaDe(c, elegida) + (e.key === '+' ? 0.05 : -0.05))
+          return
+        }
         const d = direccionDeTecla(e.key)
         if (!d || !elegida) return
         e.preventDefault()
@@ -214,6 +263,8 @@ function textoDeAviso(a: AvisoCubierta, ui: Ui): string {
       return t.codigoSinIsbn
     case 'codigoKdp':
       return t.codigoKdp
+    case 'codigoMovido':
+      return t.codigoMovido
     case 'velo':
       return t.velo(t.piezas[a.pieza])
     case 'contrasteBajo':
@@ -342,15 +393,26 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
   const queVista = useMemo<QuePintar>(() => ({ capas: true, texto: true, guias, extra: muestra }), [guias, muestra])
 
   // -- mover las piezas a mano -----------------------------------------------------------
-  const [elegidaPedida, setElegida] = useState<QuePieza | null>(null)
+  const [elegidaPedida, setElegida] = useState<PiezaMovible | null>(null)
   const piezasMovibles = useMemo(() => (compuesta ? movibles(compuesta) : []), [compuesta])
   // Si la pieza elegida ya no esta (otro estilo, sin titulo), no hay elegida.
   const elegida = elegidaPedida && piezasMovibles.some((x) => x.que === elegidaPedida) ? elegidaPedida : null
+  // Las de la portada, por estilo; las de la contraportada, con su tamaño (el que de verdad tienen).
   const moverPieza = useCallback(
-    (pieza: QuePieza, a: Punto | null) => despachar({ tipo: 'moverPieza', estilo: c.estilo, pieza, a, ahora: Date.now() }),
-    [despachar, c.estilo],
+    (pieza: PiezaMovible, a: Punto | null) => {
+      if (!esDeContra(pieza)) despachar({ tipo: 'moverPieza', estilo: c.estilo, pieza, a, ahora: Date.now() })
+      else despachar({ tipo: 'ajustarContra', pieza, a: a ? { ...a, escala: compuesta ? escalaDe(compuesta, pieza) : 1 } : null, ahora: Date.now() })
+    },
+    [despachar, c.estilo, compuesta],
+  )
+  const escalarPieza = useCallback(
+    (pieza: PiezaContra, escala: number) =>
+      despachar({ tipo: 'ajustarContra', pieza, a: { ...(compuesta ? movidaDe(compuesta, pieza) : { x: 0, y: 0 }), escala: escalaLimitada(pieza, escala) }, ahora: Date.now() }),
+    [despachar, compuesta],
   )
   const movidasDelEstilo = c.mover[c.estilo] ?? {}
+  const estaMovida = (q: PiezaMovible): boolean => (esDeContra(q) ? Boolean(c.contra[q]) : Boolean(movidasDelEstilo[q]))
+  const hayMovidas = Object.keys(movidasDelEstilo).length > 0 || Object.keys(c.contra).length > 0
 
   // -- el color del PDF: RGB o CMYK, y la prueba de como sale impreso -----------------------
   const color: ColorCubierta = colorDe(c, impreso.destino)
@@ -507,39 +569,100 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
             <input type="checkbox" checked={guias} onChange={(e) => setGuias(e.target.checked)} />
             {t.vista.guias}
           </label>
-          <div className="cubierta-entera">
-            <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} prueba={pruebaVista} />
+          <div className="vista-con-panel">
+            <div>
+              <div className="cubierta-entera">
+                <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} alEscalar={escalarPieza} prueba={pruebaVista} />
+              </div>
+              {guias && <p className="ayuda">{t.vista.ayuda}</p>}
+              {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
+            </div>
+            <aside className="panel-vista">
+              <fieldset className="opciones-impreso">
+                <legend>{t.encuadre.titulo}</legend>
+                <p className="ayuda">{t.encuadre.ayuda}</p>
+                {(['portada', 'contraportada'] as const)
+                  .filter((rol) => compuesta.encuadres[rol])
+                  .map((rol) => {
+                    const valor = rol === 'portada' ? c.encuadre : c.encuadreContra
+                    const libre = compuesta.encuadres[rol] as { x: boolean; y: boolean }
+                    const poner = (eje: 'x' | 'y', v: number): void => cambiar(rol === 'portada' ? { encuadre: { ...c.encuadre, [eje]: v } } : { encuadreContra: { ...c.encuadreContra, [eje]: v } })
+                    return (
+                      <div key={rol} className="encuadre-dibujo">
+                        <strong>{t.encuadre[rol]}</strong>
+                        {(['x', 'y'] as const).map((eje) => (
+                          <NumeroConDeslizador
+                            key={eje}
+                            etiqueta={eje === 'x' ? t.encuadre.horizontal : t.encuadre.vertical}
+                            valor={Math.round(valor[eje] * 1000) / 10}
+                            min={0}
+                            max={100}
+                            paso={0.1}
+                            unidad="%"
+                            desactivado={!libre[eje]}
+                            alCambiar={(v) => poner(eje, v / 100)}
+                          />
+                        ))}
+                        {!libre.x && !libre.y ? <p className="ayuda">{t.encuadre.cabeEntero}</p> : (!libre.x || !libre.y) && <p className="ayuda">{t.encuadre.cabe(!libre.x ? t.encuadre.horizontal : t.encuadre.vertical)}</p>}
+                      </div>
+                    )
+                  })}
+                {!compuesta.encuadres.portada && <p className="ayuda">{t.encuadre.sinDibujo}</p>}
+              </fieldset>
+              {piezasMovibles.length > 0 && (
+                <fieldset className="opciones-impreso mover-piezas">
+                  <legend>{t.mover.titulo}</legend>
+                  <p className="ayuda">{t.mover.ayuda}</p>
+                  {(['portada', 'contraportada'] as const).map((lado) => {
+                    const del = piezasMovibles.filter(({ que }) => esDeContra(que) === (lado === 'contraportada'))
+                    if (del.length === 0) return null
+                    return (
+                      <div key={lado} className="fila-opciones" role="radiogroup" aria-label={t.mover.lados[lado]}>
+                        <strong className="lado">{t.mover.lados[lado]}</strong>
+                        {del.map(({ que }) => (
+                          <label key={que} className="casilla">
+                            <input type="radio" name={`${nombreFondo}-pieza`} checked={elegida === que} onChange={() => setElegida(que)} />
+                            {t.mover.piezas[que]}
+                            {estaMovida(que) && <span className="ayuda"> · {t.mover.movida}</span>}
+                          </label>
+                        ))}
+                      </div>
+                    )
+                  })}
+                  <div className="flechas" aria-label={t.mover.flechas}>
+                    {(['izquierda', 'arriba', 'abajo', 'derecha'] as const).map((d) => (
+                      <button key={d} type="button" className="boton-secundario" disabled={!elegida} aria-label={t.mover.direcciones[d]} onClick={() => elegida && moverPieza(elegida, paso(compuesta, elegida, d, 1))}>
+                        <span aria-hidden="true">{({ izquierda: '←', arriba: '↑', abajo: '↓', derecha: '→' } as const)[d]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {elegida && esDeContra(elegida) && (
+                    <>
+                      <NumeroConDeslizador
+                        etiqueta={t.mover.tamano}
+                        valor={Math.round(escalaDe(compuesta, elegida) * 100)}
+                        min={ESCALAS[elegida].min * 100}
+                        max={ESCALAS[elegida].max * 100}
+                        paso={1}
+                        unidad="%"
+                        alCambiar={(v) => escalarPieza(elegida, v / 100)}
+                      />
+                      {elegida === 'codigo' && <p className="ayuda">{t.mover.tamanoCodigo}</p>}
+                    </>
+                  )}
+                  {!compuesta.codigoMovible && <p className="ayuda">{t.mover.codigoFijo}</p>}
+                  <div className="flechas">
+                    <button type="button" className="boton-secundario" disabled={!elegida || !estaMovida(elegida)} onClick={() => elegida && moverPieza(elegida, null)}>
+                      {t.mover.aSuSitio}
+                    </button>
+                    <button type="button" className="boton-secundario" disabled={!hayMovidas} onClick={() => cambiar({ mover: { ...c.mover, [c.estilo]: {} }, contra: {} })}>
+                      {t.mover.todas}
+                    </button>
+                  </div>
+                </fieldset>
+              )}
+            </aside>
           </div>
-          {guias && <p className="ayuda">{t.vista.ayuda}</p>}
-          {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
-          {piezasMovibles.length > 0 && (
-            <fieldset className="opciones-impreso mover-piezas">
-              <legend>{t.mover.titulo}</legend>
-              <p className="ayuda">{t.mover.ayuda}</p>
-              <div className="fila-opciones" role="radiogroup" aria-label={t.mover.cual}>
-                {piezasMovibles.map(({ que }) => (
-                  <label key={que} className="casilla">
-                    <input type="radio" name={`${nombreFondo}-pieza`} checked={elegida === que} onChange={() => setElegida(que)} />
-                    {t.opciones.piezas[que]}
-                    {movidasDelEstilo[que] && <span className="ayuda"> · {t.mover.movida}</span>}
-                  </label>
-                ))}
-              </div>
-              <div className="flechas" aria-label={t.mover.flechas}>
-                {(['izquierda', 'arriba', 'abajo', 'derecha'] as const).map((d) => (
-                  <button key={d} type="button" className="boton-secundario" disabled={!elegida || !compuesta} aria-label={t.mover.direcciones[d]} onClick={() => elegida && compuesta && moverPieza(elegida, paso(compuesta, elegida, d, 1))}>
-                    <span aria-hidden="true">{({ izquierda: '←', arriba: '↑', abajo: '↓', derecha: '→' } as const)[d]}</span>
-                  </button>
-                ))}
-                <button type="button" className="boton-secundario" disabled={!elegida || !movidasDelEstilo[elegida]} onClick={() => elegida && moverPieza(elegida, null)}>
-                  {t.mover.aSuSitio}
-                </button>
-                <button type="button" className="boton-secundario" disabled={Object.keys(movidasDelEstilo).length === 0} onClick={() => cambiar({ mover: { ...c.mover, [c.estilo]: {} } })}>
-                  {t.mover.todas}
-                </button>
-              </div>
-            </fieldset>
-          )}
         </section>
       )}
 
@@ -605,16 +728,6 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
             )}
           </fieldset>
 
-          <fieldset className="opciones-impreso">
-            <legend>{t.opciones.encuadre}</legend>
-            {(['x', 'y'] as const).map((eje) => (
-              <label key={eje} className="campo">
-                <span>{eje === 'x' ? t.opciones.horizontal : t.opciones.vertical}</span>
-                <input type="range" min={0} max={1} step={0.01} value={c.encuadre[eje]} onChange={(e) => cambiar({ encuadre: { ...c.encuadre, [eje]: Number(e.target.value) } })} />
-              </label>
-            ))}
-            <p className="ayuda">{t.opciones.encuadreAyuda}</p>
-          </fieldset>
 
           <fieldset className="opciones-impreso">
             <legend>{t.opciones.fondo}</legend>

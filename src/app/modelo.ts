@@ -21,7 +21,7 @@
  */
 import type { KindlePropio } from './imagen-ajuste'
 import type { ConfigImpreso } from '../core/impreso/config'
-import { hayMovidas, type ConfigCubierta } from '../core/impreso/cubierta-config'
+import { hayAjustesContra, hayMovidas, type ConfigCubierta } from '../core/impreso/cubierta-config'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -323,11 +323,15 @@ export interface Proyecto {
  *       normalizarla, perderia las dos cosas sin decir nada.
  *   6 · en `cubierta`, el color del PDF elegido a mano (`color`, RGB o CMYK).
  *       Una version 5 lo tiraria al normalizar y volveria al del destino.
+ *   7 · en `cubierta`, el codigo, el sello y la sinopsis de la contraportada
+ *       movidos o de otro tamaño (`contra`) y el encuadre de su dibujo
+ *       (`encuadreContra`). Una version 6 los perderia al normalizar.
  */
-export const VERSION_PROYECTO = 6
+export const VERSION_PROYECTO = 7
 
 /** La version minima con la que hay que guardar este libro. */
 export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada'>>): number {
+  if (p.cubierta && hayAjustesContra(p.cubierta)) return 7
   if (p.cubierta && p.cubierta.color !== null && p.cubierta.color !== undefined) return 6
   if (p.cubierta && (p.cubierta.enEpub || hayMovidas(p.cubierta.mover))) return 5
   if (p.cubierta || ROLES_DEL_SELLO.some((r) => p.portada?.[r] !== undefined)) return 4

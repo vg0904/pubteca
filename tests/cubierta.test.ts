@@ -17,7 +17,7 @@ import {
 } from '../src/core/impreso/cubierta'
 import { ALTO_BARRAS, MODULO, SILENCIO, componerCodigo, izquierdaDeBarras, svgDelCodigo } from '../src/core/impreso/codigo'
 import { barrasEan13, cifrasDeIsbn, controlEan, modulosEan13, revisarIsbn } from '../src/core/impreso/ean13'
-import { colorDe, hayMovidas, LIMITE_TINTA, PIEZAS_PORTADA, type QuePieza } from '../src/core/impreso/cubierta-config'
+import { colorDe, ESCALAS, hayAjustesContra, hayMovidas, LIMITE_TINTA, PIEZAS_CONTRA, PIEZAS_PORTADA, type QuePieza } from '../src/core/impreso/cubierta-config'
 import { isbnValido } from '../src/core/impreso/config'
 import { CORTES } from '../src/core/impreso/formatos'
 import { componerImpreso } from '../src/core/impreso/plan'
@@ -383,6 +383,134 @@ describe('las piezas de la portada, movidas a mano', () => {
     expect(normalizarCubierta({ enEpub: true }).enEpub).toBe(true)
     expect(hayMovidas(c.mover)).toBe(true)
     expect(hayMovidas({ cartel: {} })).toBe(false)
+  })
+})
+
+describe('la contraportada a mano: el codigo, el sello y la sinopsis, de sitio y de tamaño', () => {
+  const pieza = (c: CubiertaCompuesta, que: string): Caja => {
+    const p = c.piezas.find((x) => x.que === que)
+    if (!p) throw new Error(`sin ${que}`)
+    return p.caja
+  }
+  const A = 6 * IN
+  const conLogo = { imagenes: { ...datosDePrueba().imagenes, sello: { ancho: 900, alto: 300 }, selloBlanco: { ancho: 900, alto: 300 } } }
+  const barras = (c: CubiertaCompuesta) => c.ops.filter((o): o is Extract<OpCubierta, { op: 'rect' }> => o.op === 'rect' && o.gris === 0)
+
+  it('el codigo crece desde su esquina de abajo a la derecha, y todo el codigo con el: modulo, barras y su zona de silencio', () => {
+    const quieto = cubiertaDePrueba()
+    const grande = cubiertaDePrueba({ contra: { codigo: { x: 0, y: 0, escala: 1.25 } } })
+    const q = quieto.codigo
+    const g = grande.codigo
+    expect(g.ancho).toBeCloseTo(q.ancho * 1.25, 9)
+    expect(g.alto).toBeCloseTo(q.alto * 1.25, 9)
+    expect(g.x + g.ancho).toBeCloseTo(q.x + q.ancho, 9)
+    expect(g.y + g.alto).toBeCloseTo(q.y + q.alto, 9)
+    const bq = barras(quieto)
+    const bg = barras(grande)
+    expect(bg).toHaveLength(bq.length)
+    bg.forEach((b, i) => expect(b.ancho).toBeCloseTo((bq[i] as (typeof bq)[number]).ancho * 1.25, 9))
+    const izq = Math.min(...bg.map((b) => b.x))
+    const der = Math.max(...bg.map((b) => b.x + b.ancho))
+    expect(izq - g.x).toBeGreaterThanOrEqual(SILENCIO.izquierda * MODULO * 1.25)
+    expect(g.x + g.ancho - der).toBeGreaterThanOrEqual(SILENCIO.derecha * MODULO * 1.25)
+    expect(grande.avisos).toContainEqual({ codigo: 'codigoMovido' })
+    expect(quieto.avisos.some((a) => a.codigo === 'codigoMovido')).toBe(false)
+    expect(grande.ajustesContra.codigo?.escala).toBe(1.25)
+  })
+
+  it('el codigo se mueve; la caja libre para KDP, no (alli pone KDP el suyo)', () => {
+    const quieto = cubiertaDePrueba()
+    const movido = cubiertaDePrueba({ contra: { codigo: { x: -0.3, y: -0.2, escala: 1 } } })
+    expect(movido.codigo.x - quieto.codigo.x).toBeCloseTo(-0.3 * A, 9)
+    expect(movido.codigo.y - quieto.codigo.y).toBeCloseTo(-0.2 * A, 9)
+    expect(movido.codigoMovible).toBe(true)
+    for (const libre of [cubiertaDePrueba({ codigo: 'kdp', contra: { codigo: { x: -0.3, y: -0.2, escala: 1.3 } } }), cubiertaDePrueba({ contra: { codigo: { x: -0.3, y: 0, escala: 1 } } }, { isbn: '' })]) {
+      expect(libre.codigo).toEqual(quieto.codigo)
+      expect(libre.codigoMovible).toBe(false)
+      expect(libre.ajustesContra.codigo).toBeUndefined()
+    }
+  })
+
+  it('el logo del sello crece desde su esquina de abajo a la izquierda, sobre la linea base', () => {
+    const quieto = cubiertaDePrueba({}, conLogo)
+    const grande = cubiertaDePrueba({ contra: { selloContra: { x: 0, y: 0, escala: 1.5 } } }, conLogo)
+    const q = pieza(quieto, 'selloContra')
+    const g = pieza(grande, 'selloContra')
+    expect(g.ancho).toBeCloseTo(q.ancho * 1.5, 9)
+    expect(g.x).toBeCloseTo(q.x, 9)
+    expect(g.y + g.alto).toBeCloseTo(q.y + q.alto, 9)
+    // El sello en texto, igual: su letra crece con el.
+    const texto = cubiertaDePrueba({ contra: { selloContra: { x: 0.05, y: 0, escala: 0.5 } } })
+    expect(pieza(texto, 'selloContra').alto).toBeLessThan(pieza(cubiertaDePrueba(), 'selloContra').alto * 0.6)
+    expect(pieza(texto, 'selloContra').x - pieza(cubiertaDePrueba(), 'selloContra').x).toBeCloseTo(0.05 * A, 6)
+  })
+
+  it('la sinopsis crece entera, caja y letra, desde su esquina de arriba: los mismos renglones, mas grandes', () => {
+    const cuerpos = (c: CubiertaCompuesta) => [...new Set(c.ops.filter((o) => o.op === 'texto' && o.letra === 'libro').map((o) => (o.op === 'texto' ? o.cuerpo : 0)))]
+    const quieta = cubiertaDePrueba()
+    const chica = cubiertaDePrueba({ contra: { sinopsis: { x: 0, y: 0.1, escala: 0.8 } } })
+    expect(cuerpos(quieta)).toEqual([11])
+    expect(cuerpos(chica)).toEqual([expect.closeTo(8.8, 9)])
+    const q = pieza(quieta, 'sinopsis')
+    const k = pieza(chica, 'sinopsis')
+    expect(k.alto).toBeCloseTo(q.alto * 0.8, 1)
+    expect(k.y - q.y).toBeCloseTo(0.1 * A, 6)
+    const renglones = (c: CubiertaCompuesta) => new Set(c.ops.filter((o) => o.op === 'texto' && o.letra === 'libro').map((o) => o.y)).size
+    expect(renglones(chica)).toBe(renglones(quieta))
+  })
+
+  it('nada sale de lo seguro de la contraportada, se pida lo que se pida: en cada pieza, direccion y tamaño', () => {
+    for (const que of PIEZAS_CONTRA) {
+      for (const escala of [ESCALAS[que].min, ESCALAS[que].max]) {
+        for (const [x, y] of [[1.5, 0], [-1.5, 0], [0, 1.5], [0, -1.5], [1.5, -1.5]] as const) {
+          for (const corte of [{ ancho: 5 * IN, alto: 8 * IN }, { ancho: 8.5 * IN, alto: 11 * IN }]) {
+            const c = cubiertaDePrueba({ contra: { [que]: { x, y, escala } } }, { ...conLogo, corte })
+            const k = c.medidas.contra
+            const zona = encoger(k, SEGURIDAD)
+            const donde = `${que} ${escala} ${x},${y} ${corte.ancho / IN}`
+            for (const p of c.piezas.filter((q) => q.que === 'codigo' || q.que === 'selloContra' || q.que === 'sinopsis')) expect(dentro(p.caja, zona), `${donde}: ${p.que}`).toBe(true)
+            for (const o of c.ops) if (cajaDe(o).x + cajaDe(o).ancho < c.medidas.espina.x) expect(dentro(cajaDe(o), zona), donde).toBe(true)
+            const a = c.ajustesContra[que]
+            // El tamaño, nunca mas del pedido (puede ser menos si no cabe); el sitio lo corrige lo seguro.
+            if (a) expect(a.escala <= escala + 1e-9, donde).toBe(true)
+          }
+        }
+      }
+    }
+  })
+
+  it('si se pisan, se dice; sin tocar nada, nunca', () => {
+    expect(cubiertaDePrueba({}, conLogo).avisos.some((a) => a.codigo === 'piezasSeTocan')).toBe(false)
+    const q = cubiertaDePrueba({}, conLogo)
+    const dy = (pieza(q, 'sinopsis').y - q.codigo.y) / A
+    const encima = cubiertaDePrueba({ contra: { codigo: { x: 0, y: dy, escala: 1 } } }, conLogo)
+    expect(encima.avisos).toContainEqual({ codigo: 'piezasSeTocan', a: 'codigo', b: 'sinopsis' })
+  })
+
+  it('el dibujo de contraportada tiene su encuadre; y se dice en que sentido sobra cada dibujo', () => {
+    const conContra = { imagenes: { ...datosDePrueba().imagenes, contraportada: { ancho: 3000, alto: 3000 } } }
+    const recorte = (c: CubiertaCompuesta) => {
+      const k = c.capas.find((x) => x.que === 'arte' && x.rol === 'contraportada')
+      if (k?.que !== 'arte') throw new Error('sin dibujo')
+      return k.recorte
+    }
+    const centro = cubiertaDePrueba({}, conContra)
+    const izquierda = cubiertaDePrueba({ encuadreContra: { x: 0, y: 0.5 } }, conContra)
+    expect(recorte(izquierda).x).toBe(0)
+    expect(recorte(centro).x).toBeGreaterThan(0)
+    expect(recorte(izquierda).y).toBe(recorte(centro).y)
+    // Un dibujo cuadrado en una contraportada alta: sobra a lo ancho, no a lo alto.
+    expect(centro.encuadres.contraportada).toEqual({ x: true, y: false })
+    expect(centro.encuadres.portada).toBeDefined()
+  })
+
+  it('lo guardado se limpia: piezas que no existen fuera, numeros y tamaños en rango, lo no tocado no se guarda', () => {
+    const c = normalizarCubierta({ contra: { codigo: { x: 0, y: 0, escala: 9 }, sinopsis: { x: 0, y: 0, escala: 1 }, titulo: { x: 0.1, y: 0, escala: 1 } }, encuadreContra: { x: -3 } })
+    expect(c.contra).toEqual({ codigo: { x: 0, y: 0, escala: ESCALAS.codigo.max } })
+    expect(c.encuadreContra).toEqual({ x: 0, y: 0.5 })
+    expect(hayAjustesContra(c)).toBe(true)
+    expect(hayAjustesContra(CONFIG_CUBIERTA_POR_DEFECTO)).toBe(false)
+    expect(hayAjustesContra({ ...CONFIG_CUBIERTA_POR_DEFECTO, encuadreContra: { x: 0.5, y: 0.6 } })).toBe(true)
   })
 })
 

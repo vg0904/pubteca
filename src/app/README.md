@@ -129,9 +129,11 @@ toco se guarda igual que antes, y uno que si, como formato 3 (ver
   usan la vista previa (con guias), el PNG y la imagen del fondo del PDF (solo
   capas, a 300 ppi; el texto lo pone el PDF). `pintarSueltas` pinta unas
   operaciones solas: el codigo suelto en PNG.
-- `mover.ts` (puro): mover a mano las piezas de la portada: que pieza hay
-  bajo el puntero, cuanto se mueve al arrastrar (desde lo que de verdad estaba
-  movido) y un paso con las flechas. La vista de `ui/Cubierta.tsx` arrastra con
+- `mover.ts` (puro): mover a mano las piezas de la portada y de la
+  contraportada: que pieza hay bajo el puntero, cuanto se mueve al arrastrar
+  (desde lo que de verdad estaba movido), un paso con las flechas y el tamaño
+  de las de la contraportada. Al lado de la vista, el encuadre de los dos
+  dibujos con su numero escrito y estas piezas. La vista de `ui/Cubierta.tsx` arrastra con
   raton o lapiz, con el dedo despues de tocar la pieza, y con el teclado.
 - `epub.ts`: la portada del ebook (la de la cubierta con su texto, por su
   corte, a 2560 px de alto, en JPEG). Se descarga para KDP y, si el autor lo
