@@ -22,6 +22,7 @@
 import type { KindlePropio } from './imagen-ajuste'
 import type { ConfigImpreso } from '../core/impreso/config'
 import { hayMovidas, type ConfigCubierta } from '../core/impreso/cubierta-config'
+import type { ConfigWeb } from '../core/web/config'
 import { textosLibro } from '../core/textos-libro'
 
 /** Las unicas dos marcas en linea que el EPUB entiende. */
@@ -281,6 +282,12 @@ export interface Proyecto {
   /** Como sale la cubierta impresa: estilo, codigo, lomo, encuadre... Solo si el autor toco algo. */
   readonly cubierta?: ConfigCubierta
   /**
+   * Como sale el libro para la web: que capitulos y paginas extra NO se
+   * publican (por sus ids) y donde se consigue el libro entero. Solo si el
+   * autor toco algo en «Libro para la web».
+   */
+  readonly web?: ConfigWeb
+  /**
    * Cuando se guardo la ultima copia (.zip), en ms. Sin ella, nunca. La
    * interfaz la ensena siempre: el navegador puede borrar lo que guarda.
    */
@@ -323,11 +330,14 @@ export interface Proyecto {
  *       normalizarla, perderia las dos cosas sin decir nada.
  *   6 · en `cubierta`, el color del PDF elegido a mano (`color`, RGB o CMYK).
  *       Una version 5 lo tiraria al normalizar y volveria al del destino.
+ *   7 · `web`, las opciones del libro para la web. Campo opcional, como
+ *       `impreso`: una version 6 lo tiraria al abrir una copia.
  */
-export const VERSION_PROYECTO = 6
+export const VERSION_PROYECTO = 7
 
 /** La version minima con la que hay que guardar este libro. */
-export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada'>>): number {
+export function versionNecesaria(p: Pick<Proyecto, 'capitulos' | 'extras'> & Partial<Pick<Proyecto, 'impreso' | 'cubierta' | 'portada' | 'web'>>): number {
+  if (p.web) return 7
   if (p.cubierta && p.cubierta.color !== null && p.cubierta.color !== undefined) return 6
   if (p.cubierta && (p.cubierta.enEpub || hayMovidas(p.cubierta.mover))) return 5
   if (p.cubierta || ROLES_DEL_SELLO.some((r) => p.portada?.[r] !== undefined)) return 4

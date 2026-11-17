@@ -786,6 +786,27 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 @keyframes progreso { from { background-position: -40% 0; } to { background-position: 140% 0; } }
 @media (prefers-reduced-motion: reduce) { .progreso { animation: none; background: var(--acento); opacity: 0.5; } }
 
+/* Libro para la web */
+.pantalla-web .por-tienda { margin: 1rem 0; }
+.web-partes { list-style: none; padding: 0; margin: 0.6rem 0 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.web-enlace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto; gap: 0.6rem; align-items: start; margin: 0 0 0.7rem; }
+.web-enlace .web-quitar { margin-top: 1.45rem; min-width: 2.4rem; }
+@media (max-width: 560px) { .web-enlace { grid-template-columns: minmax(0, 1fr) auto; } .web-enlace .campo:first-child { grid-column: 1 / -1; } }
+.web-grupo { border: 0; padding: 0; margin: 0.9rem 0 0; min-width: 0; }
+.web-grupo legend { padding: 0; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; }
+.web-modos { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.web-letras { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: 0.5rem; }
+.web-modo, .web-letra { position: relative; display: flex; flex-direction: column; gap: 0.2rem; padding: 0.7rem 0.85rem; border: 1px solid var(--borde); border-radius: 10px; cursor: pointer; }
+.web-modo input, .web-letra input { position: absolute; opacity: 0; pointer-events: none; }
+.web-modo.elegido, .web-letra.elegido { border-color: var(--acento); box-shadow: inset 0 0 0 1px var(--acento); }
+.web-modo:has(input:focus-visible), .web-letra:has(input:focus-visible) { outline: 2px solid var(--acento); outline-offset: 2px; }
+.web-modo .ayuda { font-size: 0.85rem; }
+.web-letra-nombre { font-size: 1.15rem; line-height: 1.2; }
+.web-letra-muestra { color: var(--suave); font-size: 0.95rem; }
+@media (max-width: 560px) { .web-modos { grid-template-columns: 1fr; } }
+.web-como { padding-left: 1.2rem; }
+.web-como li { margin-bottom: 0.5rem; }
+
 /* El credito, al pie de todas las pantallas */
 .credito { padding: 1.5rem 16px 2rem; text-align: center; font-family: var(--interfaz); font-size: 0.78rem; color: var(--suave); }
 

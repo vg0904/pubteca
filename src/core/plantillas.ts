@@ -30,6 +30,20 @@ ${cuerpo}
 `
 }
 
+/**
+ * Lo contrario de `xhtml`: el cuerpo de una pagina que salio de ahi.
+ *
+ * El libro web lo usa para volver a juntar las paginas de un capitulo. Vive al
+ * lado de la plantilla para que cambien juntas; un test comprueba la ida y la
+ * vuelta.
+ */
+export function cuerpoDe(pagina: string): string {
+  const abre = pagina.indexOf('<body')
+  const desde = pagina.indexOf('>\n', abre)
+  const hasta = pagina.lastIndexOf('\n</body>')
+  return abre < 0 || desde < 0 || hasta < desde ? '' : pagina.slice(desde + 2, hasta)
+}
+
 /** El div de una imagen a pagina completa, en UNA sola linea. */
 export function paginaImagen(href: string, alt: string, clase = 'ilustracion'): string {
   return `<div class="${clase}"><img src="../${href}" alt="${esc(alt)}"/></div>`

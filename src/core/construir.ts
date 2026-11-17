@@ -74,21 +74,46 @@ export interface OpcionesConstruir {
   readonly ahora: Date
 }
 
+/** Las partes de un libro, en el orden en que se arman. */
+export type ParteArmada = 'portada' | 'laminas' | 'portadilla' | 'derechos' | 'extrasInicio' | 'capitulos' | 'extrasFinal' | 'contraportada'
+
+export interface Armado {
+  readonly portadaImg: Registro | null
+  readonly laminas: number
+  /** Que paginas puso cada parte. El libro web las recoloca (`web/construir.ts`). */
+  readonly paginas: Readonly<Record<ParteArmada, readonly Pagina[]>>
+}
+
+/**
+ * Arma el libro, parte a parte. El orden es inamovible: es el orden del libro,
+ * y esta en un solo sitio para los EPUB y para el libro web.
+ */
+export function armar(libro: Libro): Armado {
+  const paginas = {} as Record<ParteArmada, readonly Pagina[]>
+  const poner = <T>(parte: ParteArmada, hacer: () => T): T => {
+    const desde = libro.paginas.length
+    const r = hacer()
+    paginas[parte] = libro.paginas.slice(desde)
+    return r
+  }
+  const portadaImg = poner('portada', () => libro.portada())
+  const laminas = poner('laminas', () => libro.laminasColor())
+  poner('portadilla', () => libro.portadilla())
+  poner('derechos', () => libro.derechos())
+  poner('extrasInicio', () => libro.extras('inicio'))
+  poner('capitulos', () => libro.capitulos())
+  poner('extrasFinal', () => libro.extras('final'))
+  poner('contraportada', () => libro.contraportada())
+  return { portadaImg, laminas, paginas }
+}
+
 export function construir(proyecto: Proyecto, opciones: OpcionesConstruir): Construccion {
   const dg = new Diagnosticos()
   const cfg = leerConfig(proyecto.libroTxt, dg)
   const fuentes = buscarFuentes(proyecto.fuentes, dg)
   const libro = new Libro(proyecto, cfg, dg, opciones.ahora.getFullYear())
 
-  // Orden inamovible: es el orden del libro.
-  const portadaImg = libro.portada()
-  const laminas = libro.laminasColor()
-  libro.portadilla()
-  libro.derechos()
-  libro.extras('inicio')
-  libro.capitulos()
-  libro.extras('final')
-  libro.contraportada()
+  const { portadaImg, laminas } = armar(libro)
 
   // Imagenes huerfanas: estan en ilustraciones/ pero nadie las marco.
   //

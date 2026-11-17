@@ -5,8 +5,10 @@
 Convierte tus capitulos en dos EPUB listos para publicar: uno para **Kindle (KDP)**
 y otro para **Apple Books**, y en el **libro impreso**: el PDF interior y la
 cubierta entera (contraportada, lomo y portada) para KDP, IngramSpark o una
-imprenta. Corre entero en el navegador: tu manuscrito nunca
-sale de tu equipo.
+imprenta. Y en un **libro para la web**: un .zip que se sube a cualquier hosting
+o se integra en un sitio con dos lineas, con un lector que funciona en
+cualquier pantalla (el libro entero o una muestra). Corre entero en el
+navegador: tu manuscrito nunca sale de tu equipo.
 
 > En construccion. Ahora mismo se esta portando el motor de generacion.
 
@@ -48,6 +50,9 @@ npm test
 npm run build
 ```
 
+`npm run web -- tests/fixtures/libro-prueba` escribe en `tmp/web` el libro para
+la web de un libro de prueba, ya abierto, para servirlo y mirarlo.
+
 `npm run epubs` y `npm run pdfs` generan en `tmp/` los EPUB y los PDF de los
 libros de prueba, que CI pasa por EPUBCheck, qpdf y pdffonts.
 
@@ -55,7 +60,8 @@ Requiere Node >= 22.12. El navegador minimo es Safari 16.4.
 
 ## Licencias
 
-El codigo, MIT (ver `LICENSE`). La fuente Libre Baskerville que se incluye
+El codigo, MIT (ver `LICENSE`), incluido el lector que viaja dentro del libro
+para la web (`src/lector/lector.js`). La fuente Libre Baskerville que se incluye
 dentro de los EPUB de Apple Books va bajo la SIL Open Font License; su
 `OFL.txt` viaja con ella. Mediabunny va bajo la Mozilla Public License 2.0, que
 obliga a mantener su codigo fuente disponible tal cual: se usa sin modificar,
@@ -64,7 +70,8 @@ desde npm, y su licencia viaja con el paquete.
 Para el libro impreso: seis letras de libro con la SIL Open Font License,
 Source Serif 4, EB Garamond, Literata, Crimson Pro, Alegreya y Libre
 Baskerville, cada una con su `OFL-<Familia>.txt` en `public/fuentes/impreso/`
-(solo las descarga quien abre «Libro impreso» y elige esa letra); para la
+(solo las descarga quien abre «Libro impreso» y elige esa letra; las mismas
+seis viajan, en WOFF y con su licencia, dentro del libro para la web); para la
 cubierta, Jost, Playfair Display, Cormorant Garamond, Bebas Neue y Oswald, una
 cara de cada una, tambien OFL y con su licencia en `public/fuentes/cubierta/`;
 para la cubierta en CMYK, el perfil ISO Coated v2 300 % de basICColor (datos

@@ -42,6 +42,12 @@ export interface Exportado {
    * El impreso los ordena por id, y el core los conoce por ese nombre.
    */
   readonly archivosExtras: ReadonlyMap<string, string>
+  /**
+   * id de capitulo -> el nombre de su archivo en `capitulos/` (`cap03.md`).
+   * El libro web guarda por id lo que no se publica, y el core lo conoce por
+   * ese nombre.
+   */
+  readonly archivosCapitulos: ReadonlyMap<string, string>
 }
 
 const EXT: Record<Imagen['tipo'], string> = { png: '.png', jpeg: '.jpg' }
@@ -165,6 +171,7 @@ export function exportar(
   }
 
   const capitulos: Archivo[] = []
+  const archivosCapitulos = new Map<string, string>()
   for (const [i, cap] of p.capitulos.entries()) {
     const nn = String(i + 1).padStart(2, '0')
     let k = 0
@@ -198,6 +205,7 @@ export function exportar(
     )
     avisos.push(...s.avisos)
     capitulos.push(archivo(`capitulos/cap${nn}.md`, utf8(s.texto)))
+    archivosCapitulos.set(cap.id, `cap${nn}.md`)
   }
 
   const extras: Archivo[] = []
@@ -257,5 +265,6 @@ export function exportar(
     rutas,
     rutasMedios,
     archivosExtras,
+    archivosCapitulos,
   }
 }

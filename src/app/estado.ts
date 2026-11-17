@@ -19,6 +19,7 @@
  */
 import { CONFIG_IMPRESO_POR_DEFECTO, conFuente, normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
 import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza } from '../core/impreso/cubierta-config'
+import { CONFIG_WEB_POR_DEFECTO, normalizarWeb, type ConfigWeb } from '../core/web/config'
 import { nombreSeguro } from '../core/texto'
 import { textosLibro } from '../core/textos-libro'
 import { reducirImportacion, type AccionImportacion, type Importacion } from './importacion'
@@ -45,7 +46,7 @@ import { canonicos, igualesTramos, limpiarTexto, longitud, partir, plano, prefij
 import type { PosVerso } from './versos'
 
 export type Pantalla = 'inicio' | 'importar' | 'libro'
-export type Seccion = 'capitulos' | 'portada' | 'extras' | 'descargar' | 'impreso' | 'cubierta'
+export type Seccion = 'capitulos' | 'portada' | 'extras' | 'descargar' | 'web' | 'impreso' | 'cubierta'
 
 /** El contenedor de una lista de bloques: un capitulo o un extra. */
 export type Donde =
@@ -230,6 +231,8 @@ export type Accion =
   | { readonly tipo: 'cubierta'; readonly cambios: Partial<ConfigCubierta>; readonly ahora: number }
   /** Mover a mano una pieza de la portada en un estilo (null: a su sitio). Cada arrastre, un paso de deshacer. */
   | { readonly tipo: 'moverPieza'; readonly estilo: EstiloId; readonly pieza: QuePieza; readonly a: Punto | null; readonly ahora: number }
+  /** Las opciones del libro para la web: lo que no se publica y los enlaces. */
+  | { readonly tipo: 'web'; readonly cambios: Partial<ConfigWeb>; readonly ahora: number }
   /** Las opciones del libro impreso. Cambiar de letra arrastra su cuerpo recomendado (ver `conFuente`). */
   | { readonly tipo: 'impreso'; readonly cambios: Partial<ConfigImpreso>; readonly ahora: number }
   // El ajuste propio de UNA imagen para Kindle. `cambios` a null lo quita y
@@ -1151,6 +1154,14 @@ export function reducir(e: Estado, a: Accion): Estado {
       // Como el deslizador de Kindle: arrastrar el cuerpo es un solo paso.
       const grupo = `impreso:${Object.keys(a.cambios).sort().join(',')}`
       return cambiar(e, { ...p, impreso }, { grupo, ahora: a.ahora })
+    }
+    case 'web': {
+      const antes = p.web ?? CONFIG_WEB_POR_DEFECTO
+      const web = normalizarWeb({ ...antes, ...a.cambios })
+      // Como el impreso: lo que no cambia nada no crea un `web` ni un paso de deshacer.
+      if (JSON.stringify(web) === JSON.stringify(antes)) return e
+      // Escribir un enlace se deshace de una vez, como escribir en el texto.
+      return cambiar(e, { ...p, web }, { grupo: `web:${Object.keys(a.cambios).sort().join(',')}`, ahora: a.ahora })
     }
     case 'cubierta': {
       const antes = p.cubierta ?? CONFIG_CUBIERTA_POR_DEFECTO
