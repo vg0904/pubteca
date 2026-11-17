@@ -42,6 +42,25 @@ export interface ResumenCapitulo {
   readonly audios: number
 }
 
+/**
+ * Una unidad del libro tal como la escribio el autor (un capitulo, una pagina
+ * extra) y las paginas en que el EPUB la partio: un capitulo con ilustraciones
+ * son varias, porque cada dibujo va en la suya.
+ *
+ * El EPUB no lo necesita. El libro web si (`web/construir.ts`): en una pagina
+ * web el capitulo se lee de corrido, asi que vuelve a juntarlas.
+ */
+export interface SeccionLibro {
+  /** El nombre base de sus archivos: `cap01`, `extra-agradecimientos`. */
+  readonly base: string
+  readonly clase: 'capitulo' | 'extra' | 'dedicatoria' | 'epigrafe'
+  /** Como sale en el indice: «Capitulo 1: La luz que no tocaba». */
+  readonly titulo: string
+  /** El archivo del que salio: `capitulos/cap01.md`, `extras/dedicatoria.md`. */
+  readonly origen: string
+  readonly paginas: readonly Pagina[]
+}
+
 export const EXT_TEXTO = ['.md', '.txt', '.markdown']
 export const EXT_EXTRA = ['.md', '.txt']
 export const EXT_IMG = ['.png', '.jpg', '.jpeg']
@@ -57,6 +76,8 @@ export class Libro {
   readonly paginas: Pagina[] = []
   readonly indice: EntradaIndice[] = []
   readonly resumenCaps: ResumenCapitulo[] = []
+  /** Los extras y los capitulos, en el orden del libro, con sus paginas. */
+  readonly secciones: SeccionLibro[] = []
   inicioLectura: string | null = null
 
   private readonly proyecto: Proyecto
@@ -309,12 +330,20 @@ export class Libro {
           .map((b) => `<p>${b.html}</p>`)
           .join('\n')
         const tipo = esDedicatoria ? 'dedication' : 'epigraph'
+        const titulo = esDedicatoria ? this.t.dedicatoria : this.t.epigrafe
         this.agregar(
           base,
-          esDedicatoria ? this.t.dedicatoria : this.t.epigrafe,
+          titulo,
           `<section epub:type="${tipo}">\n<div class="dedicatoria">\n${parr}\n</div>\n</section>`,
           cuando,
         )
+        this.secciones.push({
+          base,
+          clase: esDedicatoria ? 'dedicatoria' : 'epigrafe',
+          titulo,
+          origen: `extras/${p.nombre}`,
+          paginas: this.paginas.slice(-1),
+        })
         continue
       }
 
@@ -348,6 +377,7 @@ export class Libro {
     epubType: string,
   ): { primera: string; ilustraciones: number; videos: number; audios: number } {
     const tituloTxt = textoPlano(tituloCrudo)
+    const desde = this.paginas.length
     let primera: string | null = null
     let k = 0
 
@@ -465,10 +495,18 @@ export class Libro {
       }
     }
 
+    const enIndice = num ? `${num}: ${tituloTxt}` : tituloTxt
     this.indice.push({
-      texto: num ? `${num}: ${tituloTxt}` : tituloTxt,
+      texto: enIndice,
       href: primera,
       ...(hijos.length > 0 ? { hijos } : {}),
+    })
+    this.secciones.push({
+      base,
+      clase: epubType === 'chapter' ? 'capitulo' : 'extra',
+      titulo: enIndice,
+      origen: donde,
+      paginas: this.paginas.slice(desde),
     })
     // El Python declara aqui un n_ilus que solo cuenta las del cuerpo, pero
     // devuelve k (que cuenta todas). La variable muerta se ha borrado y se

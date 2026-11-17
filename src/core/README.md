@@ -78,3 +78,41 @@ no carga nada.
   curvas, rejilla en tetraedros o multilineal); `color.ts` separa el sRGB en
   CMYK con la tabla perceptual del perfil (en una rejilla de 33³ sobre el RGB),
   con el limite de tinta, y hace la prueba en pantalla. Sin WASM: TypeScript.
+
+## `web/`: el libro para la web
+
+Un .zip que se sube tal cual a cualquier hosting, o que se integra en un sitio
+con `<pubteca-lector src="libro/libro.json">`. Sale del MISMO `Libro` que los
+EPUB: `construir.ts` (el de los EPUB) exporta `armar()`, que arma las partes en
+su orden de siempre y dice que paginas puso cada una, y el `Libro` apunta en
+`secciones` las paginas de cada capitulo y de cada extra. Los EPUB no cambian
+ni un byte: lo vigilan los golden.
+
+- `construir.ts` junta las paginas de cada capitulo en una sola parte (el EPUB
+  las parte por las ilustraciones), las pasa a HTML (sin `epub:type`, las
+  imagenes con su tamaño y `loading="lazy"`), y escribe `libro.json`, una
+  pagina por parte que tambien se lee suelta, e `index.html` con el manifiesto
+  dentro (para abrirse con doble clic). Lo omitido se quita ANTES de armar: sus
+  ilustraciones no viajan y lo demas conserva sus nombres. Recibe el lector y el
+  LEEME ya leidos: el core no carga nada.
+- `config.ts`: lo omitido, los enlaces, si se aligeran las imagenes y como se
+  abre el libro (modo y letra); `normalizarWeb` es la unica puerta, y
+  `urlSegura` solo deja pasar `http` y `https`.
+- `letras.ts` + `woff.ts`: las seis letras del impreso viajan en el .zip (en
+  WOFF, con su OFL al lado) para que el nombre que ve quien lee sea la letra
+  que se pinta. `aWoff` comprime cada tabla con zlib sin tocar ni un byte de
+  ella, y rellena tambien la ultima: sin ese relleno Chrome rechaza la fuente.
+  Una familia que no llega entera, o sin su licencia, no se ofrece.
+- `textos.ts`: los botones del lector y la pagina del final, en los nueve
+  idiomas del libro. Viajan en `libro.json`, no en el lector.
+- `css.ts`: la hoja de Kindle mas lo que cambia al leer de corrido.
+
+El lector (`src/lector/lector.js`) no es TypeScript ni pasa por el empaquetador:
+es el archivo que se entrega, tal cual, sin dependencias. Lee de corrido o pasa
+paginas: el texto se reparte en columnas del tamaño de la ventana y pasar
+pagina es mover la tira (con el dedo, tocando los lados, el teclado, el
+trackpad o los botones). Las letras las registra en el DOCUMENTO con
+`FontFace`: Chrome no lee las `@font-face` de dentro de una sombra. La app lo lee como
+texto (`?raw`). Junto a el, los LEEME en español e ingles que van en el .zip.
+`npm run web -- <carpeta-del-libro>` escribe en `tmp/web` la carpeta abierta,
+para servirla y mirarla.

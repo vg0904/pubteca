@@ -116,6 +116,24 @@ export function escribirEpub(archivos: readonly EntradaZip[], fecha: Date): Uint
   return zipSync(entradas, { mtime })
 }
 
+/**
+ * Un zip corriente, sin `mimetype`: el libro web.
+ *
+ * Las mismas reglas que el EPUB para decidir que se comprime (las imagenes
+ * solo si merece la pena) y la misma fecha inyectada, asi que tambien sale
+ * identico byte a byte con el mismo reloj.
+ */
+export function escribirZip(archivos: readonly EntradaZip[], fecha: Date): Uint8Array {
+  const mtime = fecha.getTime()
+  const entradas: Zippable = {}
+  for (const a of archivos) {
+    // Un WOFF ya va comprimido tabla a tabla: deflate no le quita nada.
+    const nivel = /\.woff2?$/iu.test(a.ruta) ? 0 : !IMAGEN.test(a.ruta) || mereceComprimir(a.datos) ? 6 : 0
+    entradas[a.ruta] = [a.datos, { level: nivel, mtime }]
+  }
+  return zipSync(entradas, { mtime })
+}
+
 // ---------------------------------------------------------------------------
 // El zip en segmentos: con huecos donde van el audio y el video
 // ---------------------------------------------------------------------------

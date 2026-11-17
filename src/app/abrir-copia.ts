@@ -31,6 +31,7 @@ import { claseDe } from '../core/medios'
 import { CONFIG_DEFAULT, leerConfig, si } from '../core/config'
 import { normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
 import { normalizarCubierta } from '../core/impreso/cubierta-config'
+import { normalizarWeb } from '../core/web/config'
 import { inspeccionarImagen, type InfoImagen } from '../core/imagen-inspeccion'
 import { Imagenes } from '../core/imagenes'
 import { EXT_EXTRA, EXT_IMG, EXT_TEXTO } from '../core/libro'
@@ -696,13 +697,17 @@ function proyectoDeJson(
     })
 
   const capitulos: Capitulo[] = []
+  // Los ids se regeneran, y el libro web apunta por id lo que no se publica.
+  const idsDePartes = new Map<string, string>()
   for (const c of x['capitulos']) {
     if (!esObjeto(c)) {
       descartados += 1
       continue
     }
+    const id = nuevoId('cap')
+    if (typeof c['id'] === 'string') idsDePartes.set(c['id'], id)
     capitulos.push({
-      id: nuevoId('cap'),
+      id,
       etiqueta: texto(c['etiqueta']),
       titulo: tramosDe(c['titulo']) ?? [],
       aperturas: (Array.isArray(c['aperturas']) ? c['aperturas'] : []).flatMap((a) =>
@@ -722,7 +727,10 @@ function proyectoDeJson(
       continue
     }
     const id = nuevoId('extra')
-    if (typeof e['id'] === 'string') idsDeExtras.set(e['id'], id)
+    if (typeof e['id'] === 'string') {
+      idsDeExtras.set(e['id'], id)
+      idsDePartes.set(e['id'], id)
+    }
     extras.push({
       id,
       donde: e['donde'] === 'inicio' ? 'inicio' : 'final',
@@ -767,9 +775,11 @@ function proyectoDeJson(
   // extra que ya no esta se queda fuera del orden (ver `ordenDeExtras`).
   const impreso = x['impreso'] !== undefined ? normalizarConfig(x['impreso'], (v) => idsDeExtras.get(v) ?? `perdido-${v}`) : undefined
   const cubierta = x['cubierta'] !== undefined ? normalizarCubierta(x['cubierta']) : undefined
+  // Lo omitido que ya no existe se suelta: no hay nada que dejar de publicar.
+  const web = x['web'] !== undefined ? normalizarWeb(x['web'], (v) => idsDePartes.get(v) ?? null) : undefined
   return {
     id: nuevoId('libro'),
-    version: versionNecesaria({ capitulos, extras, impreso, cubierta, portada }),
+    version: versionNecesaria({ capitulos, extras, impreso, cubierta, portada, web }),
     datos: { ...datos, idioma: idioma ?? 'es', portadilla },
     capitulos,
     extras: nombresDeExtras(ordenarExtras(extras)),
@@ -780,6 +790,7 @@ function proyectoDeJson(
     ...(descargado ? { descargado } : {}),
     ...(impreso ? { impreso } : {}),
     ...(cubierta ? { cubierta } : {}),
+    ...(web ? { web } : {}),
   }
 }
 
@@ -983,7 +994,10 @@ export function leerCopia(
           // va por ids que los archivos no tienen: ese vuelve al del EPUB.
           ...(proyecto.impreso ? { impreso: sinOrdenDeExtras(proyecto.impreso) } : {}),
           ...(proyecto.cubierta ? { cubierta: proyecto.cubierta } : {}),
-          version: versionNecesaria({ ...dePapel, impreso: proyecto.impreso, cubierta: proyecto.cubierta }),
+          // Del libro web, igual: lo omitido va por ids que los archivos no
+          // tienen, asi que se vuelve a publicar todo; los enlaces se quedan.
+          ...(proyecto.web ? { web: { ...proyecto.web, omitidos: [] } } : {}),
+          version: versionNecesaria({ ...dePapel, impreso: proyecto.impreso, cubierta: proyecto.cubierta, web: proyecto.web }),
         },
         avisos: [{ clave: 'editadaFuera', detalle: '' }, ...r.copia.avisos],
         creada,

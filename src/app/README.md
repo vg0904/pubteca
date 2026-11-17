@@ -89,6 +89,29 @@ libro. El core no se entera: sigue construyendo los dos EPUB de un solo
 proyecto, con sus golden tests intactos.
 
 
+## El libro para la web
+
+`ui/Web.tsx`, con `import()` al entrar, y `web/`:
+
+- `preparar.ts` (puro): que se puede publicar, en el orden de lectura, y lo que
+  le llega al core. Lo omitido se guarda por ids de la app y llega por el nombre
+  de su archivo (`archivosCapitulos` y `archivosExtras` de la exportacion).
+- `imagenes.ts` (puro salvo codificar): lo grande, a 1600 px de lado largo; lo
+  opaco, a JPEG; lo transparente sigue en PNG con su alfa (el lector tiene tema
+  oscuro). Lo que sale mas gordo se queda como estaba. Solo se codifica lo que
+  viaja.
+- `motor.ts` + `web.worker.ts` + `generar.ts`: lo mismo que los EPUB, en su
+  hilo. El lector y su LEEME se traen con `import('…?raw')` solo al preparar, y
+  las letras de `public/fuentes/impreso/` con `fetch` (sin conexion, el libro
+  sale igual con la letra del aparato, y se dice).
+- `ui/Web.tsx` deja elegir como se abre el libro: desplazar o pasar paginas, y
+  la letra, con cada nombre escrito en su letra (`FontFace` sobre los TTF del
+  impreso).
+
+Las opciones viven en `Proyecto.web`, opcional: un libro que nunca las toco se
+guarda igual que antes, y uno que si, como formato 8. En la copia, lo omitido
+apunta a los capitulos y extras con sus ids nuevos.
+
 ## El libro impreso
 
 `ui/Impreso.tsx` se carga con `import()` al entrar en «Libro impreso», y

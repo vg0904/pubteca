@@ -29,6 +29,8 @@ export type EstadoGuardado = 'guardado' | 'guardando' | 'error' | 'sinAlmacen' |
 const PantallaImpreso = lazy(() => import('./Impreso'))
 /** La cubierta, igual: sus letras y su compositor solo los descarga quien entra. */
 const PantallaCubierta = lazy(() => import('./Cubierta'))
+/** El libro para la web: el lector y su LEEME solo los descarga quien entra. */
+const PantallaWeb = lazy(() => import('./Web'))
 
 /** Dias a partir de los cuales la copia se marca en ambar. */
 const DIAS_COPIA_VIEJA = 7
@@ -195,7 +197,7 @@ export function PantallaLibro({
   const capitulo = capituloActual(estado)
   const extra = extraActual(estado)
   const separador = p.datos.separadorDeEscena || '* * *'
-  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar', 'impreso', 'cubierta']
+  const secciones: Seccion[] = ['capitulos', 'portada', 'extras', 'descargar', 'web', 'impreso', 'cubierta']
 
   // Al cambiar de capitulo o de seccion se empieza por arriba, como al pasar
   // de pagina; si no, se hereda el desplazamiento del anterior.
@@ -303,6 +305,11 @@ export function PantallaLibro({
             <PantallaExtras proyecto={p} extra={extra} foco={estado.foco} separador={separador} bloqueActivo={estado.bloqueActivo} />
           )}
           {estado.seccion === 'descargar' && <PantallaDescargar estado={estado} />}
+          {estado.seccion === 'web' && (
+            <Suspense fallback={<p className="ayuda">{ui.web.cargando}</p>}>
+              <PantallaWeb estado={estado} />
+            </Suspense>
+          )}
           {estado.seccion === 'impreso' && (
             <Suspense fallback={<p className="ayuda">{ui.impreso.medida.componiendo}</p>}>
               <PantallaImpreso estado={estado} />

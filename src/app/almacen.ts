@@ -18,6 +18,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import { normalizarConfig } from '../core/impreso/config'
 import { normalizarCubierta } from '../core/impreso/cubierta-config'
+import { normalizarWeb } from '../core/web/config'
 import { DATOS_POR_DEFECTO, disenoPortadilla, VERSION_PROYECTO, versionNecesaria, type DatosLibro, type Proyecto } from './modelo'
 
 const NOMBRE_BD = 'pubteca'
@@ -263,6 +264,7 @@ export async function leerProyecto(
     // Lo del impreso se normaliza entero: lo lee el compositor.
     ...(p.impreso !== undefined ? { impreso: normalizarConfig(p.impreso) } : {}),
     ...(p.cubierta !== undefined ? { cubierta: normalizarCubierta(p.cubierta) } : {}),
+    ...(p.web !== undefined ? { web: normalizarWeb(p.web) } : {}),
   }
 }
 
