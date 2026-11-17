@@ -1022,3 +1022,14 @@ details summary { cursor: pointer; color: var(--suave); font-size: 0.88rem; }
 .campo-en-linea select { width: auto; }
 .seccion-impreso { margin-top: 2rem; }
 .pantalla-cubierta .medida-en-vivo { position: static; margin-top: 0.6rem; }
+
+/* La vista movible: encima, la capa que ayuda a colocar (contornos, marco, asas, guias); no recibe el raton. */
+.lienzo-con-capa { position: relative; max-width: 100%; }
+.capa-de-ayuda { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.alinear { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; margin-top: 0.7rem; }
+.alinear > .ayuda { grid-column: 1 / -1; margin: 0; }
+.alinear button { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; min-height: 2.9rem; padding: 0.3rem 0.2rem; font-size: 0.8rem; }
+.icono-alinear line { stroke: var(--acento); stroke-width: 1.6; }
+.icono-alinear rect { fill: none; stroke: currentColor; stroke-width: 1.5; }
+/* Con el panel al lado: la vista se queda a la vista mientras se baja por el panel. */
+@media (min-width: 1151px) { .vista-con-panel > :first-child { position: sticky; top: 3.6rem; } }

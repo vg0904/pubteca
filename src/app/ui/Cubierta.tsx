@@ -9,7 +9,7 @@
  */
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { componerCubierta, ESTILOS_ORDEN, type CubiertaCompuesta, type FuentesCubierta, type RolCubierta } from '../../core/impreso/cubierta'
-import { colorDe, ESCALAS, LIMITE_TINTA, type ColorCubierta, type ConfigCubierta, type EstiloId, type PiezaContra, type Punto, type QuePieza, type Tono } from '../../core/impreso/cubierta-config'
+import { colorDe, ESCALAS, LIMITE_TINTA, type Ajuste, type ColorCubierta, type ConfigCubierta, type EstiloId, type PiezaContra, type Punto, type QuePieza, type Tono } from '../../core/impreso/cubierta-config'
 import { probarFilas, pruebaEnPantalla, type RejillaRgb } from '../../core/impreso/color'
 import { escribirCubierta } from '../../core/impreso/pdf-cubierta'
 import { nombreSeguro } from '../../core/texto'
@@ -19,7 +19,9 @@ import { jpegDelEbook, medidasDelEbook } from '../cubierta/epub'
 import { separarEnHilo } from '../cubierta/cmyk'
 import { separacionDe } from '../cubierta/cmyk-motor'
 import { CONDICION_PERFIL, perfilCmyk } from '../cubierta/perfil'
-import { arrastrada, direccionDeTecla, escalaDe, escalaLimitada, esDeContra, movibles, movidaDe, paso, piezaEn, type Direccion, type PiezaMovible } from '../cubierta/mover'
+import { arrastrada, direccionDeTecla, escalaDe, esDeContra, movibles, movidaDe, paso, piezaEn, type Direccion, type PiezaMovible } from '../cubierta/mover'
+import { alineada, colocar, conTamano, esquinaEn, tirarDeEsquina, type Alineacion, type Esquina, type Guia } from '../cubierta/iman'
+import { ASA, cursorDeEsquina, pintarCapa } from '../cubierta/capa'
 import { avisosDeCubierta } from '../cubierta/avisos'
 import { fuentesDeCubierta } from '../cubierta/fuentes'
 import { medirDibujo } from '../cubierta/medir'
@@ -106,44 +108,63 @@ function NumeroConDeslizador({ etiqueta, valor, min, max, paso, unidad, desactiv
 }
 
 /**
- * La cubierta entera, con las piezas de la portada que se arrastran. Con
- * raton o lapiz se arrastra en el acto; con el dedo, primero se toca la pieza
- * (asi el dedo sigue desplazando la pagina hasta que el autor elige algo).
- * Con el teclado: las flechas mueven la elegida 1 mm (5 con Mayusculas), y
- * + y - cambian el tamaño de las de la contraportada.
+ * La cubierta entera, con las piezas que se arrastran. Con raton o lapiz se
+ * arrastra en el acto; con el dedo, primero se toca la pieza (asi el dedo
+ * sigue desplazando la pagina hasta que el autor elige algo).
+ *
+ * Al arrastrar, la pieza se pega a los centros, a los margenes y a las otras
+ * piezas (iman.ts), con Alt suelta; nunca sale de lo seguro ni pisa a otra.
+ * Las de la contraportada cambian de tamaño tirando de una esquina del marco.
+ * Con el teclado: las flechas afinan 1 mm (5 con Mayusculas), y + y - cambian
+ * el tamaño de las de la contraportada.
+ *
+ * Encima va otro lienzo (capa.ts) con lo que ayuda y no se imprime: los
+ * contornos, el marco, las asas y las guias. Asi pasar el raton no repinta la
+ * cubierta.
  */
 function VistaMovible({
   c,
   pintar,
   que,
   etiqueta,
+  nombres,
   elegida,
   alElegir,
   alMover,
-  alEscalar,
+  alAjustar,
   prueba,
 }: {
   c: CubiertaCompuesta
   pintar: ParaPintarCubierta | null
   que: QuePintar
   etiqueta: string
+  nombres: Readonly<Record<PiezaMovible, string>>
   elegida: PiezaMovible | null
   alElegir: (q: PiezaMovible | null) => void
   alMover: (q: PiezaMovible, a: Punto) => void
-  alEscalar: (q: PiezaContra, escala: number) => void
+  alAjustar: (q: PiezaContra, a: Ajuste) => void
   /** La prueba de CMYK: los colores como saldran impresos. */
   prueba: RejillaRgb | null
 }) {
   const ref = useRef<HTMLCanvasElement>(null)
+  const refCapa = useRef<HTMLCanvasElement>(null)
   const px = 760
   const altoPx = Math.round((px * c.medidas.alto) / c.medidas.ancho)
-  // La ultima cubierta compuesta, para soltar en lo que de verdad se movio.
+  // La ultima cubierta compuesta: cada cuadro del arrastre parte de lo que de verdad se movio.
   const ultima = useRef(c)
   useEffect(() => {
     ultima.current = c
   }, [c])
-  const arrastre = useRef<{ que: PiezaMovible; id: number; desde: { x: number; y: number }; base: Punto; cuadro: number } | null>(null)
-  const marco = elegida ? movibles(c).find((p) => p.que === elegida)?.caja : undefined
+  const arrastre = useRef<
+    | { modo: 'mover'; que: PiezaMovible; id: number; desde: { x: number; y: number }; base: Punto; cuadro: number }
+    | { modo: 'tamano'; que: PiezaContra; esquina: Esquina; id: number; cuadro: number }
+    | null
+  >(null)
+  const [dentro, setDentro] = useState(false)
+  const [sobre, setSobre] = useState<PiezaMovible | null>(null)
+  const [guias, setGuias] = useState<readonly Guia[]>([])
+  const [arrastrando, setArrastrando] = useState(false)
+
   useEffect(() => {
     const el = ref.current
     if (!el || !pintar) return
@@ -153,93 +174,146 @@ function VistaMovible({
     const ctx = el.getContext('2d')
     if (!ctx) return
     const escala = el.width / c.medidas.ancho
-    const encima = { capas: false, texto: false, guias: que.guias ?? false, sinFondo: true, ...(marco ? { marcar: marco } : {}) }
     if (!prueba) {
-      pintarCubierta(ctx, c, escala, pintar, { ...que, ...encima, capas: que.capas, texto: que.texto, sinFondo: false })
+      pintarCubierta(ctx, c, escala, pintar, que)
       return
     }
-    // Con la prueba: la cubierta, sus pixeles pasados por el papel, y las guias y el marco encima, sin pasar.
+    // Con la prueba: la cubierta, sus pixeles pasados por el papel, y las guias encima, sin pasar.
     pintarCubierta(ctx, c, escala, pintar, { ...que, guias: false })
     const img = ctx.getImageData(0, 0, el.width, el.height)
     probarFilas(prueba, img.data, el.width, 0, el.height)
     ctx.putImageData(img, 0, 0)
-    pintarCubierta(ctx, c, escala, pintar, encima)
-  }, [c, altoPx, pintar, que, marco, prueba])
+    pintarCubierta(ctx, c, escala, pintar, { capas: false, texto: false, guias: que.guias ?? false, sinFondo: true })
+  }, [c, altoPx, pintar, que, prueba])
+
+  // La capa de encima: barata, se repinta con cada cambio del raton.
+  useEffect(() => {
+    const el = refCapa.current
+    if (!el) return
+    const dpr = Math.min(3, window.devicePixelRatio || 1)
+    const w = Math.round(px * dpr)
+    const h = Math.round(altoPx * dpr)
+    if (el.width !== w) el.width = w
+    if (el.height !== h) el.height = h
+    const ctx = el.getContext('2d')
+    if (!ctx) return
+    // Los pixeles CSS de verdad (la vista encoge con la ventana): asi las rayas y las asas no adelgazan.
+    const real = el.getBoundingClientRect().width || px
+    pintarCapa(ctx, c, w / c.medidas.ancho, (dpr * px) / real, { dentro, sobre, elegida, nombre: elegida ? nombres[elegida] : '', guias, arrastrando }, w, h)
+  }, [c, altoPx, dentro, sobre, elegida, nombres, guias, arrastrando])
 
   const enHoja = (e: { clientX: number; clientY: number }): { x: number; y: number } => {
     const r = (ref.current as HTMLCanvasElement).getBoundingClientRect()
     return { x: ((e.clientX - r.left) * c.medidas.ancho) / r.width, y: ((e.clientY - r.top) * c.medidas.alto) / r.height }
   }
+  /** Puntos de la hoja por pixel de pantalla: el iman y las asas se miden en pixeles. */
+  const puntosPorPixel = (): number => c.medidas.ancho / ((ref.current as HTMLCanvasElement).getBoundingClientRect().width || px)
+  const esquinaBajo = (pt: { x: number; y: number }): Esquina | null => (elegida && esDeContra(elegida) ? esquinaEn(c, elegida, pt.x, pt.y, (ASA / 2 + 4) * puntosPorPixel()) : null)
   const soltar = (): void => {
     const a = arrastre.current
     if (!a) return
     cancelAnimationFrame(a.cuadro)
     arrastre.current = null
-    // Se guarda lo que de verdad se movio: si se pidio de mas, el borde de lo seguro manda.
-    alMover(a.que, movidaDe(ultima.current, a.que))
+    setArrastrando(false)
+    setGuias([])
   }
-  const mover = (q: PiezaMovible, d: Direccion, mm: number): void => alMover(q, paso(c, q, d, mm))
+  /** Las flechas: un paso, sin iman, sin salir de lo seguro ni pisar a otra. */
+  const mover = (q: PiezaMovible, d: Direccion, mm: number): void => alMover(q, colocar(c, q, paso(c, q, d, mm), { umbral: 0, iman: false }).movida)
 
   return (
-    <canvas
-      ref={ref}
-      className={`lienzo-cubierta lienzo-movible${elegida ? ' con-pieza' : ''}`}
-      style={{ width: px, height: altoPx }}
-      role="img"
-      aria-label={etiqueta}
-      tabIndex={0}
-      onPointerDown={(e) => {
-        const pt = enHoja(e)
-        const q = piezaEn(c, pt.x, pt.y)
-        if (!q) {
-          alElegir(null)
-          return
-        }
-        const yaElegida = q === elegida
-        alElegir(q)
-        // El dedo: el primer toque elige; arrastrar, despues (ver touch-action en el CSS).
-        if (e.pointerType === 'touch' && !yaElegida) return
-        e.preventDefault()
-        try {
-          e.currentTarget.setPointerCapture(e.pointerId)
-        } catch {
-          // Sin captura, el arrastre sigue mientras el puntero no salga del lienzo.
-        }
-        arrastre.current = { que: q, id: e.pointerId, desde: pt, base: movidaDe(c, q), cuadro: 0 }
-      }}
-      onPointerMove={(e) => {
-        const a = arrastre.current
-        if (!a || a.id !== e.pointerId) {
-          if (e.pointerType !== 'touch') {
-            const pt = enHoja(e)
-            e.currentTarget.style.cursor = piezaEn(c, pt.x, pt.y) ? 'grab' : ''
+    <div className="lienzo-con-capa" style={{ width: px }}>
+      <canvas
+        ref={ref}
+        className={`lienzo-cubierta lienzo-movible${elegida ? ' con-pieza' : ''}`}
+        style={{ width: px, height: altoPx }}
+        role="img"
+        aria-label={etiqueta}
+        tabIndex={0}
+        onPointerEnter={() => setDentro(true)}
+        onPointerLeave={() => {
+          setDentro(false)
+          setSobre(null)
+        }}
+        onPointerDown={(e) => {
+          const pt = enHoja(e)
+          const esquina = esquinaBajo(pt)
+          const q = esquina ? elegida : piezaEn(c, pt.x, pt.y)
+          if (!q) {
+            alElegir(null)
+            return
           }
-          return
-        }
-        e.currentTarget.style.cursor = 'grabbing'
-        const hasta = enHoja(e)
-        // Un movimiento por cuadro: componer y pintar cada evento seria llegar tarde.
-        cancelAnimationFrame(a.cuadro)
-        a.cuadro = requestAnimationFrame(() => alMover(a.que, arrastrada(c, a.base, a.desde, hasta)))
-      }}
-      onPointerUp={soltar}
-      onPointerCancel={soltar}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          alElegir(null)
-          return
-        }
-        if (elegida && esDeContra(elegida) && (e.key === '+' || e.key === '-')) {
+          const yaElegida = q === elegida
+          alElegir(q)
+          // El dedo: el primer toque elige; arrastrar, despues (ver touch-action en el CSS).
+          if (e.pointerType === 'touch' && !yaElegida) return
           e.preventDefault()
-          alEscalar(elegida, escalaDe(c, elegida) + (e.key === '+' ? 0.05 : -0.05))
-          return
-        }
-        const d = direccionDeTecla(e.key)
-        if (!d || !elegida) return
-        e.preventDefault()
-        mover(elegida, d, e.shiftKey ? 5 : 1)
-      }}
-    />
+          try {
+            e.currentTarget.setPointerCapture(e.pointerId)
+          } catch {
+            // Sin captura, el arrastre sigue mientras el puntero no salga del lienzo.
+          }
+          arrastre.current = esquina && esDeContra(q) ? { modo: 'tamano', que: q, esquina, id: e.pointerId, cuadro: 0 } : { modo: 'mover', que: q, id: e.pointerId, desde: pt, base: movidaDe(c, q), cuadro: 0 }
+        }}
+        onPointerMove={(e) => {
+          const a = arrastre.current
+          const pt = enHoja(e)
+          if (!a || a.id !== e.pointerId) {
+            if (e.pointerType === 'touch') return
+            const esquina = esquinaBajo(pt)
+            const q = esquina ? elegida : piezaEn(c, pt.x, pt.y)
+            setSobre(q)
+            e.currentTarget.style.cursor = esquina ? cursorDeEsquina(esquina) : q ? 'move' : ''
+            return
+          }
+          setArrastrando(true)
+          const libre = e.altKey
+          const umbral = 8 * puntosPorPixel()
+          // Un movimiento por cuadro: componer y pintar cada evento seria llegar tarde.
+          cancelAnimationFrame(a.cuadro)
+          a.cuadro = requestAnimationFrame(() => {
+            const k = ultima.current
+            if (a.modo === 'tamano') {
+              alAjustar(a.que, tirarDeEsquina(k, a.que, a.esquina, pt))
+              return
+            }
+            const r = colocar(k, a.que, arrastrada(k, a.base, a.desde, pt), { umbral, iman: !libre })
+            setGuias(r.guias)
+            alMover(a.que, r.movida)
+          })
+        }}
+        onPointerUp={soltar}
+        onPointerCancel={soltar}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            alElegir(null)
+            return
+          }
+          if (elegida && esDeContra(elegida) && (e.key === '+' || e.key === '-')) {
+            e.preventDefault()
+            alAjustar(elegida, conTamano(c, elegida, escalaDe(c, elegida) + (e.key === '+' ? 0.05 : -0.05)))
+            return
+          }
+          const d = direccionDeTecla(e.key)
+          if (!d || !elegida) return
+          e.preventDefault()
+          mover(elegida, d, e.shiftKey ? 5 : 1)
+        }}
+      />
+      <canvas ref={refCapa} className="capa-de-ayuda" aria-hidden="true" />
+    </div>
+  )
+}
+
+/** Un dibujo para cada boton de alinear: la raya a la que se alinea y la pieza junto a ella. */
+function IconoAlinear({ como }: { como: Alineacion }) {
+  const vertical = como === 'izquierda' || como === 'centro' || como === 'derecha'
+  const en = como === 'izquierda' || como === 'arriba' ? 3 : como === 'derecha' || como === 'abajo' ? 17 : 10
+  const pieza = vertical ? { x: en === 3 ? 3 : en === 17 ? 9 : 6, y: 6, w: 8, h: 8 } : { x: 6, y: en === 3 ? 3 : en === 17 ? 9 : 6, w: 8, h: 8 }
+  return (
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" className="icono-alinear">
+      {vertical ? <line x1={en} y1="1" x2={en} y2="19" /> : <line x1="1" y1={en} x2="19" y2={en} />}
+      <rect x={pieza.x} y={pieza.y} width={pieza.w} height={pieza.h} rx="1.5" />
+    </svg>
   )
 }
 
@@ -405,11 +479,7 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
     },
     [despachar, c.estilo, compuesta],
   )
-  const escalarPieza = useCallback(
-    (pieza: PiezaContra, escala: number) =>
-      despachar({ tipo: 'ajustarContra', pieza, a: { ...(compuesta ? movidaDe(compuesta, pieza) : { x: 0, y: 0 }), escala: escalaLimitada(pieza, escala) }, ahora: Date.now() }),
-    [despachar, compuesta],
-  )
+  const ajustarPieza = useCallback((pieza: PiezaContra, a: Ajuste) => despachar({ tipo: 'ajustarContra', pieza, a, ahora: Date.now() }), [despachar])
   const movidasDelEstilo = c.mover[c.estilo] ?? {}
   const estaMovida = (q: PiezaMovible): boolean => (esDeContra(q) ? Boolean(c.contra[q]) : Boolean(movidasDelEstilo[q]))
   const hayMovidas = Object.keys(movidasDelEstilo).length > 0 || Object.keys(c.contra).length > 0
@@ -572,12 +642,66 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
           <div className="vista-con-panel">
             <div>
               <div className="cubierta-entera">
-                <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} elegida={elegida} alElegir={setElegida} alMover={moverPieza} alEscalar={escalarPieza} prueba={pruebaVista} />
+                <VistaMovible c={compuesta} pintar={pintar} que={queVista} etiqueta={t.vista.titulo} nombres={t.mover.piezas} elegida={elegida} alElegir={setElegida} alMover={moverPieza} alAjustar={ajustarPieza} prueba={pruebaVista} />
               </div>
               {guias && <p className="ayuda">{t.vista.ayuda}</p>}
               {muestra.length > 0 && <p className="ayuda">{t.vista.muestra}</p>}
             </div>
             <aside className="panel-vista">
+              {piezasMovibles.length > 0 && (
+                <fieldset className="opciones-impreso mover-piezas">
+                  <legend>{t.mover.titulo}</legend>
+                  <p className="ayuda">{t.mover.ayuda}</p>
+                  {(['portada', 'contraportada'] as const).map((lado) => {
+                    const del = piezasMovibles.filter(({ que }) => esDeContra(que) === (lado === 'contraportada'))
+                    if (del.length === 0) return null
+                    return (
+                      <div key={lado} className="fila-opciones" role="radiogroup" aria-label={t.mover.lados[lado]}>
+                        <strong className="lado">{t.mover.lados[lado]}</strong>
+                        {del.map(({ que }) => (
+                          <label key={que} className="casilla">
+                            <input type="radio" name={`${nombreFondo}-pieza`} checked={elegida === que} onChange={() => setElegida(que)} />
+                            {t.mover.piezas[que]}
+                            {estaMovida(que) && <span className="ayuda"> · {t.mover.movida}</span>}
+                          </label>
+                        ))}
+                      </div>
+                    )
+                  })}
+                  <div className="alinear" role="group" aria-label={t.mover.alinear.titulo}>
+                    <span className="ayuda">{t.mover.alinear.titulo}</span>
+                    {(['izquierda', 'centro', 'derecha', 'arriba', 'medio', 'abajo'] as const satisfies readonly Alineacion[]).map((como) => (
+                      <button key={como} type="button" className="boton-secundario" disabled={!elegida} title={t.mover.alinear.ayudas[como]} onClick={() => elegida && moverPieza(elegida, alineada(compuesta, elegida, como))}>
+                        <IconoAlinear como={como} />
+                        <span>{t.mover.alinear.nombres[como]}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {elegida && esDeContra(elegida) && (
+                    <>
+                      <NumeroConDeslizador
+                        etiqueta={t.mover.tamano}
+                        valor={Math.round(escalaDe(compuesta, elegida) * 100)}
+                        min={ESCALAS[elegida].min * 100}
+                        max={ESCALAS[elegida].max * 100}
+                        paso={1}
+                        unidad="%"
+                        alCambiar={(v) => ajustarPieza(elegida, conTamano(compuesta, elegida, v / 100))}
+                      />
+                      {elegida === 'codigo' && <p className="ayuda">{t.mover.tamanoCodigo}</p>}
+                    </>
+                  )}
+                  {!compuesta.codigoMovible && <p className="ayuda">{t.mover.codigoFijo}</p>}
+                  <div className="flechas">
+                    <button type="button" className="boton-secundario" disabled={!elegida || !estaMovida(elegida)} onClick={() => elegida && moverPieza(elegida, null)}>
+                      {t.mover.aSuSitio}
+                    </button>
+                    <button type="button" className="boton-secundario" disabled={!hayMovidas} onClick={() => cambiar({ mover: { ...c.mover, [c.estilo]: {} }, contra: {} })}>
+                      {t.mover.todas}
+                    </button>
+                  </div>
+                </fieldset>
+              )}
               <fieldset className="opciones-impreso">
                 <legend>{t.encuadre.titulo}</legend>
                 <p className="ayuda">{t.encuadre.ayuda}</p>
@@ -609,58 +733,6 @@ export default function PantallaCubierta({ estado }: { estado: Estado }) {
                   })}
                 {!compuesta.encuadres.portada && <p className="ayuda">{t.encuadre.sinDibujo}</p>}
               </fieldset>
-              {piezasMovibles.length > 0 && (
-                <fieldset className="opciones-impreso mover-piezas">
-                  <legend>{t.mover.titulo}</legend>
-                  <p className="ayuda">{t.mover.ayuda}</p>
-                  {(['portada', 'contraportada'] as const).map((lado) => {
-                    const del = piezasMovibles.filter(({ que }) => esDeContra(que) === (lado === 'contraportada'))
-                    if (del.length === 0) return null
-                    return (
-                      <div key={lado} className="fila-opciones" role="radiogroup" aria-label={t.mover.lados[lado]}>
-                        <strong className="lado">{t.mover.lados[lado]}</strong>
-                        {del.map(({ que }) => (
-                          <label key={que} className="casilla">
-                            <input type="radio" name={`${nombreFondo}-pieza`} checked={elegida === que} onChange={() => setElegida(que)} />
-                            {t.mover.piezas[que]}
-                            {estaMovida(que) && <span className="ayuda"> · {t.mover.movida}</span>}
-                          </label>
-                        ))}
-                      </div>
-                    )
-                  })}
-                  <div className="flechas" aria-label={t.mover.flechas}>
-                    {(['izquierda', 'arriba', 'abajo', 'derecha'] as const).map((d) => (
-                      <button key={d} type="button" className="boton-secundario" disabled={!elegida} aria-label={t.mover.direcciones[d]} onClick={() => elegida && moverPieza(elegida, paso(compuesta, elegida, d, 1))}>
-                        <span aria-hidden="true">{({ izquierda: '←', arriba: '↑', abajo: '↓', derecha: '→' } as const)[d]}</span>
-                      </button>
-                    ))}
-                  </div>
-                  {elegida && esDeContra(elegida) && (
-                    <>
-                      <NumeroConDeslizador
-                        etiqueta={t.mover.tamano}
-                        valor={Math.round(escalaDe(compuesta, elegida) * 100)}
-                        min={ESCALAS[elegida].min * 100}
-                        max={ESCALAS[elegida].max * 100}
-                        paso={1}
-                        unidad="%"
-                        alCambiar={(v) => escalarPieza(elegida, v / 100)}
-                      />
-                      {elegida === 'codigo' && <p className="ayuda">{t.mover.tamanoCodigo}</p>}
-                    </>
-                  )}
-                  {!compuesta.codigoMovible && <p className="ayuda">{t.mover.codigoFijo}</p>}
-                  <div className="flechas">
-                    <button type="button" className="boton-secundario" disabled={!elegida || !estaMovida(elegida)} onClick={() => elegida && moverPieza(elegida, null)}>
-                      {t.mover.aSuSitio}
-                    </button>
-                    <button type="button" className="boton-secundario" disabled={!hayMovidas} onClick={() => cambiar({ mover: { ...c.mover, [c.estilo]: {} }, contra: {} })}>
-                      {t.mover.todas}
-                    </button>
-                  </div>
-                </fieldset>
-              )}
             </aside>
           </div>
         </section>
