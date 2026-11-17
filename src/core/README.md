@@ -58,8 +58,10 @@ no carga nada.
   tinta de cada pieza por contraste (WCAG) y el velo cuando hace falta. No
   pinta: da las capas del fondo (que pinta la app) y las operaciones en
   vectores. Las piezas de la portada que el autor mueve a mano (`mover`, por
-  estilo y en fracciones de A) se aplican sin salir nunca de lo seguro de KDP,
-  y la cubierta dice lo que de verdad se movio (`movidas`). Sus opciones viven
+  estilo y en fracciones de A) y las de la contraportada que mueve o cambia de
+  tamaño (`contra`: el codigo, el sello y la sinopsis) se aplican sin salir
+  nunca de lo seguro de KDP, y la cubierta dice lo que de verdad se aplico
+  (`movidas`, `ajustesContra`). El codigo escalado lo escala entero `codigo.ts`. Sus opciones viven
   en `cubierta-config.ts`, ligero, para que el almacen y la copia no carguen
   el compositor.
 - `ean13.ts`: el codigo de barras de un ISBN, modulo a modulo (las tablas de

@@ -18,6 +18,7 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { leerCopia } from '../src/app/abrir-copia'
 import { generarLibros, type Generado } from '../src/app/generar'
+import { CONFIG_CUBIERTA_POR_DEFECTO } from '../src/core/impreso/cubierta-config'
 import type { Codificador } from '../src/app/entrega'
 import type { Imagen, Proyecto } from '../src/app/modelo'
 import { Repositorio } from '../src/app/repositorio'
@@ -223,7 +224,7 @@ describe('la portada con su texto en el EPUB (decision 12)', () => {
   const compuesta = falsoJpeg(1707, 2560)
   const conTexto = (): Promise<{ imagen: Imagen; bytes: Uint8Array }> =>
     Promise.resolve({ imagen: { id: 'portada-del-ebook', nombreOriginal: 'portada-del-ebook.jpg', tipo: 'jpeg', bytes: compuesta.length, ancho: 1707, alto: 2560, alfa: false }, bytes: compuesta })
-  const cubierta = (enEpub: boolean) => ({ estilo: 'minimo', titulo: null, autor: true, sinopsis: true, codigo: 'generar', lomo: 'descendente', lomoManual: 0, encuadre: { x: 0.5, y: 0.5 }, fondo: '', tintas: {}, mover: {}, enEpub, color: null }) as const
+  const cubierta = (enEpub: boolean) => ({ ...CONFIG_CUBIERTA_POR_DEFECTO, estilo: 'minimo', enEpub }) as const
 
   it('Apple Books lleva la portada compuesta en vez del dibujo limpio, y se dice; Kindle, como siempre, ninguna', async () => {
     const { proyecto, imagenes, repo } = await libroDePrueba()

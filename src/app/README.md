@@ -109,7 +109,7 @@ proyecto, con sus golden tests intactos.
   impreso).
 
 Las opciones viven en `Proyecto.web`, opcional: un libro que nunca las toco se
-guarda igual que antes, y uno que si, como formato 7. En la copia, lo omitido
+guarda igual que antes, y uno que si, como formato 8. En la copia, lo omitido
 apunta a los capitulos y extras con sus ids nuevos.
 
 ## El libro impreso
@@ -152,10 +152,26 @@ toco se guarda igual que antes, y uno que si, como formato 3 (ver
   usan la vista previa (con guias), el PNG y la imagen del fondo del PDF (solo
   capas, a 300 ppi; el texto lo pone el PDF). `pintarSueltas` pinta unas
   operaciones solas: el codigo suelto en PNG.
-- `mover.ts` (puro): mover a mano las piezas de la portada: que pieza hay
-  bajo el puntero, cuanto se mueve al arrastrar (desde lo que de verdad estaba
-  movido) y un paso con las flechas. La vista de `ui/Cubierta.tsx` arrastra con
-  raton o lapiz, con el dedo despues de tocar la pieza, y con el teclado.
+- `mover.ts` (puro): mover a mano las piezas de la portada y de la
+  contraportada: que pieza hay bajo el puntero, cuanto se mueve al arrastrar
+  (desde lo que de verdad estaba movido), un paso con las flechas y el tamaño
+  de las de la contraportada. Al lado de la vista, estas piezas (con los
+  botones de alinear) y el encuadre de los dos dibujos con su numero escrito.
+  La vista de `ui/Cubierta.tsx` arrastra con raton o lapiz, con el dedo
+  despues de tocar la pieza, y con el teclado; con el panel al lado, la vista
+  se queda fija mientras se baja por el.
+- `iman.ts` (puro): colocar sin que quede a ojo. Al arrastrar, la pieza se
+  pega (a menos de 8 px de pantalla) al centro de su cara, al margen de los
+  estilos (1/10 A, y la linea base por abajo), a los bordes y centros de las
+  otras piezas de su cara y a su sitio; cada cosa es una guia. Con Alt, sin
+  iman. Siempre, dentro de lo seguro y sin pisar a ninguna: va en linea recta
+  y se para a 3 mm de la primera que encuentra (aunque el puntero la salte en
+  un cuadro), y resbala a lo largo de ella. Tambien los botones de alinear
+  (al margen o al centro de su cara) y el tamaño con asas: tirar de una
+  esquina deja quieta la contraria, y no crece encima de otra.
+- `capa.ts`: lo que se pinta encima de la vista y no se imprime, en su propio
+  lienzo (pasar el raton no repinta la cubierta): los contornos de lo que se
+  mueve, el marco con su nombre y sus asas, y las guias.
 - `epub.ts`: la portada del ebook (la de la cubierta con su texto, por su
   corte, a 2560 px de alto, en JPEG). Se descarga para KDP y, si el autor lo
   pide, `generar.ts` la compone al generar y la pone en el EPUB de Apple Books

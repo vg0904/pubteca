@@ -48,12 +48,12 @@ describe('las opciones del libro web en el modelo', () => {
   const { p } = libroDeLaApp()
   const e0 = conLibro(p)
 
-  it('un libro sin tocar no lleva `web` y se guarda como antes; con el, como formato 7', () => {
+  it('un libro sin tocar no lleva `web` y se guarda como antes; con el, como formato 8', () => {
     expect(e0.proyecto?.web).toBeUndefined()
     expect(versionNecesaria(p)).toBeLessThan(7)
     const e1 = web(e0, { omitidos: [p.capitulos[3]?.id as string] })
     expect(e1.proyecto?.web?.omitidos).toEqual([p.capitulos[3]?.id])
-    expect(versionNecesaria(e1.proyecto as Proyecto)).toBe(7)
+    expect(versionNecesaria(e1.proyecto as Proyecto)).toBe(8)
   })
 
   it('un cambio que no cambia nada no crea `web` ni un paso de deshacer', () => {
@@ -85,15 +85,15 @@ describe('las opciones del libro web en el modelo', () => {
 })
 
 describe('las opciones se guardan y viajan en la copia', () => {
-  it('IndexedDB: se guardan como formato 7 y al leerlas se normalizan', async () => {
+  it('IndexedDB: se guardan como formato 8 y al leerlas se normalizan', async () => {
     const db = await abrirAlmacen()
     const { p } = libroDeLaApp()
     const config: ConfigWeb = { ...CONFIG_WEB_POR_DEFECTO, omitidos: [p.capitulos[2]?.id as string], enlaces: [{ etiqueta: 'Amazon', url: 'amazon.com' }], aligerar: false }
     await guardarProyecto(db, { ...p, web: config }, 1000)
     const leido = await leerProyecto(db, p.id)
-    expect(leido?.version).toBe(7)
+    expect(leido?.version).toBe(8)
     expect(leido?.web).toEqual(config)
-    await db.put('proyectos', { ...p, version: 7, modificado: 2000, web: { omitidos: 'no', aligerar: 'quizá' } } as never)
+    await db.put('proyectos', { ...p, version: 8, modificado: 2000, web: { omitidos: 'no', aligerar: 'quizá' } } as never)
     expect((await leerProyecto(db, p.id))?.web).toEqual(CONFIG_WEB_POR_DEFECTO)
     db.close()
   })
@@ -108,7 +108,7 @@ describe('las opciones se guardan y viajan en la copia', () => {
     const r = leerCopia(archivosDeZip(zip) as Map<string, Uint8Array>, nuevoId)
     if (!r.ok) throw new Error(r.error)
     const vuelta = r.copia.proyecto
-    expect(vuelta.version).toBe(7)
+    expect(vuelta.version).toBe(8)
     expect(vuelta.web?.enlaces).toEqual(q.web?.enlaces)
     expect(vuelta.web?.aligerar).toBe(false)
     // Otros ids, los mismos capitulos: el tercero y el extra del final. El que no existia se suelta.

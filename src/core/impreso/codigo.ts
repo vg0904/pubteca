@@ -38,40 +38,51 @@ export interface QueCodigo {
 /** Donde empiezan las barras: centradas en la caja. */
 export const izquierdaDeBarras = (caja: Caja): number => caja.x + (caja.ancho - 95 * MODULO) / 2
 
-/** Las operaciones del codigo en su caja, en el orden en que se pintan. */
+/** El ancho de la caja de KDP (2 in): el del codigo a su tamaño de siempre. Una caja mas grande o mas pequeña lo escala entero. */
+const ANCHO_NOMINAL = 2 * 72
+
+/**
+ * Las operaciones del codigo en su caja, en el orden en que se pintan. Si el
+ * autor cambio su tamaño, todo (modulo, barras, letra, aire) se escala con la
+ * caja: la zona de silencio sigue siendo de 11 y 7 modulos.
+ */
 export function componerCodigo(caja: Caja, q: QueCodigo, f: FuentesCubierta): OpCubierta[] {
   const ops: OpCubierta[] = [{ op: 'rect', x: caja.x, y: caja.y, ancho: caja.ancho, alto: caja.alto, gris: 1 }]
   const fu = f.jost
-  const izq = izquierdaDeBarras(caja)
+  const e = Math.abs(caja.ancho - ANCHO_NOMINAL) < 1e-9 ? 1 : caja.ancho / ANCHO_NOMINAL
+  const MODULO_ = MODULO * e
+  const ALTO_BARRAS_ = ALTO_BARRAS * e
+  const izq = caja.x + (caja.ancho - 95 * MODULO_) / 2
 
   // La linea de encima, centrada en la caja. Lo que sube se mide con la caja de cada glifo.
-  const cuerpo = 7.5
+  const cuerpo = 7.5 * e
   const paso = cuerpo * 1.15
   const comp = new Componedor({ regular: fu, cursiva: fu, negrita: fu, negritaCursiva: fu }, 'und')
   const par = comp.parrafo([{ texto: q.arriba, cara: 'regular' }], { cuerpo, ancho: caja.ancho, modo: 'centrado', partir: false, espaciado: 0 })
   let sube = 0
   for (const l of par.lineas) for (const pz of l.piezas) for (const g of pz.glifos) sube = Math.max(sube, ((fu.limites(g.id)?.[3] ?? 0) * cuerpo) / fu.upm)
-  const primera = caja.y + 2.5 * MM + sube
+  const primera = caja.y + 2.5 * MM * e + sube
   par.lineas.forEach((l, i) => {
     for (const pz of l.piezas) ops.push({ op: 'texto', letra: 'jost', cara: pz.cara, cuerpo, x: caja.x + l.desde + pz.x, y: primera + i * paso, glifos: pz.glifos, gris: q.gris, giro: 0 })
   })
-  const yBarras = primera + Math.max(0, par.lineas.length - 1) * paso + 1.2 * MM
+  const yBarras = primera + Math.max(0, par.lineas.length - 1) * paso + 1.2 * MM * e
 
   for (const b of barrasEan13(q.cifras)) {
-    ops.push({ op: 'rect', x: izq + b.desde * MODULO, y: yBarras, ancho: b.ancho * MODULO, alto: ALTO_BARRAS + (b.guarda ? 5 * MODULO : 0), gris: q.gris })
+    ops.push({ op: 'rect', x: izq + b.desde * MODULO_, y: yBarras, ancho: b.ancho * MODULO_, alto: ALTO_BARRAS_ + (b.guarda ? 5 * MODULO_ : 0), gris: q.gris })
   }
   if (!q.conCifras) return ops
 
   // Las cifras: la primera fuera, en la zona de silencio; luego seis y seis entre las guardas.
-  const yCifras = yBarras + ALTO_BARRAS + 3 * MM
+  const yCifras = yBarras + ALTO_BARRAS_ + 3 * MM * e
+  const cuerpoCifras = 8.5 * e
   const cifra = (t: string, centro: number): void => {
     const forma = fu.formar(t)
-    const w = (forma.ancho * 8.5) / fu.upm
-    ops.push({ op: 'texto', letra: 'jost', cara: 'regular', cuerpo: 8.5, x: centro - w / 2, y: yCifras, glifos: forma.glifos, gris: q.gris, giro: 0 })
+    const w = (forma.ancho * cuerpoCifras) / fu.upm
+    ops.push({ op: 'texto', letra: 'jost', cara: 'regular', cuerpo: cuerpoCifras, x: centro - w / 2, y: yCifras, glifos: forma.glifos, gris: q.gris, giro: 0 })
   }
-  cifra(q.cifras[0] as string, izq - 4 * MODULO)
-  for (let i = 0; i < 6; i++) cifra(q.cifras[1 + i] as string, izq + (3 + 7 * i + 3.5) * MODULO)
-  for (let i = 0; i < 6; i++) cifra(q.cifras[7 + i] as string, izq + (50 + 7 * i + 3.5) * MODULO)
+  cifra(q.cifras[0] as string, izq - 4 * MODULO_)
+  for (let i = 0; i < 6; i++) cifra(q.cifras[1 + i] as string, izq + (3 + 7 * i + 3.5) * MODULO_)
+  for (let i = 0; i < 6; i++) cifra(q.cifras[7 + i] as string, izq + (50 + 7 * i + 3.5) * MODULO_)
   return ops
 }
 

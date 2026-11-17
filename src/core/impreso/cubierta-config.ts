@@ -20,6 +20,28 @@ export interface Punto {
 /** Lo que el autor movio a mano cada pieza de la portada, por estilo. */
 export type Movidas = Readonly<Partial<Record<EstiloId, Readonly<Partial<Record<QuePieza, Punto>>>>>>
 
+/** Las piezas de la contraportada que se mueven y cambian de tamaño (igual en todos los estilos). */
+export type PiezaContra = 'codigo' | 'selloContra' | 'sinopsis'
+export const PIEZAS_CONTRA: readonly PiezaContra[] = ['codigo', 'selloContra', 'sinopsis']
+
+/** Donde y de que tamaño: el desplazamiento en fracciones de A y la escala sobre la del estilo. */
+export interface Ajuste {
+  readonly x: number
+  readonly y: number
+  readonly escala: number
+}
+
+/**
+ * Lo que puede crecer o encoger cada pieza. El codigo, entre el 81 % y el
+ * 135 % de su tamaño nominal (va al 90 %, y la norma admite del 80 al 200 %:
+ * mas pequeño no se lee bien); el sello y la sinopsis, con holgura.
+ */
+export const ESCALAS: Readonly<Record<PiezaContra, { readonly min: number; readonly max: number }>> = {
+  codigo: { min: 0.9, max: 1.5 },
+  selloContra: { min: 0.4, max: 2 },
+  sinopsis: { min: 0.6, max: 1.4 },
+}
+
 export type Tono = 'auto' | 'clara' | 'oscura'
 
 export interface ConfigCubierta {
@@ -36,6 +58,10 @@ export interface ConfigCubierta {
   readonly lomoManual: number
   /** El punto del dibujo de portada que se queda a la vista al recortarlo (0 a 1). */
   readonly encuadre: { readonly x: number; readonly y: number }
+  /** Lo mismo con el dibujo de contraportada. */
+  readonly encuadreContra: { readonly x: number; readonly y: number }
+  /** Las piezas de la contraportada movidas o de otro tamaño. Nunca salen de lo seguro. */
+  readonly contra: Readonly<Partial<Record<PiezaContra, Ajuste>>>
   /** El color del lomo y de la contraportada sin dibujo, «#rrggbb»; vacio: el del borde del dibujo. */
   readonly fondo: string
   /** La tinta de cada pieza: la que mejor se lee, o la que diga el autor. */
@@ -66,6 +92,8 @@ export const CONFIG_CUBIERTA_POR_DEFECTO: ConfigCubierta = {
   lomo: 'descendente',
   lomoManual: 0,
   encuadre: { x: 0.5, y: 0.5 },
+  encuadreContra: { x: 0.5, y: 0.5 },
+  contra: {},
   fondo: '',
   tintas: {},
   mover: {},
@@ -81,6 +109,7 @@ export function normalizarCubierta(x: unknown): ConfigCubierta {
   const d = CONFIG_CUBIERTA_POR_DEFECTO
   if (!esObjeto(x)) return d
   const e = esObjeto(x['encuadre']) ? x['encuadre'] : {}
+  const ec = esObjeto(x['encuadreContra']) ? x['encuadreContra'] : {}
   const t = esObjeto(x['tintas']) ? x['tintas'] : {}
   const tintas: Partial<Record<QuePieza | 'sinopsis' | 'lomo', Tono>> = {}
   for (const k of ['titulo', 'autor', 'sello', 'sinopsis', 'lomo'] as const) if (t[k] === 'clara' || t[k] === 'oscura') tintas[k] = t[k]
@@ -93,6 +122,8 @@ export function normalizarCubierta(x: unknown): ConfigCubierta {
     lomo: x['lomo'] === 'ascendente' ? 'ascendente' : 'descendente',
     lomoManual: entre(x['lomoManual'], 0, 120, 0),
     encuadre: { x: entre(e['x'], 0, 1, 0.5), y: entre(e['y'], 0, 1, 0.5) },
+    encuadreContra: { x: entre(ec['x'], 0, 1, 0.5), y: entre(ec['y'], 0, 1, 0.5) },
+    contra: normalizarContra(x['contra']),
     fondo: typeof x['fondo'] === 'string' && /^#[0-9a-f]{6}$/iu.test(x['fondo']) ? x['fondo'].toLowerCase() : '',
     tintas,
     mover: normalizarMovidas(x['mover']),
@@ -118,6 +149,25 @@ function normalizarMovidas(x: unknown): Movidas {
   }
   return r
 }
+
+/** Solo piezas que existen, en rango; lo que se quedo como estaba no se guarda. */
+function normalizarContra(x: unknown): Partial<Record<PiezaContra, Ajuste>> {
+  if (!esObjeto(x)) return {}
+  const r: Partial<Record<PiezaContra, Ajuste>> = {}
+  for (const pieza of PIEZAS_CONTRA) {
+    const a = x[pieza]
+    if (!esObjeto(a)) continue
+    const { min, max } = ESCALAS[pieza]
+    const ajuste = { x: entre(a['x'], -1.5, 1.5, 0), y: entre(a['y'], -1.5, 1.5, 0), escala: entre(a['escala'], min, max, 1) }
+    if (Math.abs(ajuste.x) < 1e-6 && Math.abs(ajuste.y) < 1e-6 && Math.abs(ajuste.escala - 1) < 1e-6) continue
+    r[pieza] = ajuste
+  }
+  return r
+}
+
+/** Si el autor toco algo de la contraportada (piezas o encuadre): pide formato 7. */
+export const hayAjustesContra = (c: Partial<Pick<ConfigCubierta, 'contra' | 'encuadreContra'>>): boolean =>
+  Object.keys(c.contra ?? {}).length > 0 || Math.abs((c.encuadreContra?.x ?? 0.5) - 0.5) > 1e-9 || Math.abs((c.encuadreContra?.y ?? 0.5) - 0.5) > 1e-9
 
 /** Si el autor movio alguna pieza en algun estilo. */
 export const hayMovidas = (m: Movidas): boolean => Object.values(m).some((del) => del && Object.keys(del).length > 0)

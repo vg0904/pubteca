@@ -12,7 +12,7 @@ import { colorMedio, luminanciasDe } from '../src/app/cubierta/medir'
 import { CIFRAS_MUESTRA, GRIS_MUESTRA, codigoSuelto, muestraDelCodigo } from '../src/app/cubierta/codigo'
 import { pintarCubierta, pintarSueltas, trazosDeCubierta, type PincelCubierta } from '../src/app/cubierta/pintar'
 import { motivoIsbn } from '../src/app/isbn'
-import { arrastrada, direccionDeTecla, movibles, movidaDe, paso, piezaEn } from '../src/app/cubierta/mover'
+import { arrastrada, direccionDeTecla, escalaDe, escalaLimitada, esDeContra, movibles, movidaDe, paso, piezaEn } from '../src/app/cubierta/mover'
 import { ALTO_EBOOK, medidasDelEbook, pintarEbook } from '../src/app/cubierta/epub'
 import { controlEan } from '../src/core/impreso/ean13'
 import { conPpi, pixelesPorMetro } from '../src/core/png'
@@ -371,6 +371,30 @@ describe('las piezas movidas a mano y la portada del ebook, en el modelo', () =>
     expect(versionNecesaria(reducir(e, { tipo: 'cubierta', cambios: { color: null }, ahora: 9000 }).proyecto as Proyecto)).toBe(4)
   })
 
+  it('mover o cambiar de tamaño una pieza de la contraportada pide formato 7; cada pieza, su paso de deshacer', () => {
+    const ajustar = (e: Estado, pieza: 'codigo' | 'sinopsis', a: { x: number; y: number; escala: number } | null, ahora: number): Estado => reducir(e, { tipo: 'ajustarContra', pieza, a, ahora })
+    let e = ajustar(e0, 'codigo', { x: -0.1, y: 0, escala: 1.2 }, 1000)
+    e = ajustar(e, 'codigo', { x: -0.2, y: 0, escala: 1.2 }, 1016)
+    expect(e.proyecto?.cubierta?.contra).toEqual({ codigo: { x: -0.2, y: 0, escala: 1.2 } })
+    expect(versionNecesaria(e.proyecto as Proyecto)).toBe(7)
+    e = ajustar(e, 'sinopsis', { x: 0, y: 0.1, escala: 1 }, 1032)
+    expect(e.pasado.length - e0.pasado.length).toBe(2)
+    const sin = ajustar(ajustar(e, 'codigo', null, 5000), 'sinopsis', null, 5100)
+    expect(sin.proyecto?.cubierta?.contra).toEqual({})
+    expect(versionNecesaria(sin.proyecto as Proyecto)).toBe(4)
+    // El encuadre de la contraportada, tambien.
+    expect(versionNecesaria(reducir(e0, { tipo: 'cubierta', cambios: { encuadreContra: { x: 0.2, y: 0.5 } }, ahora: 0 }).proyecto as Proyecto)).toBe(7)
+  })
+
+  it('la copia (.zip) devuelve la contraportada a mano, con su formato 7', () => {
+    const p: Proyecto = { ...libroDeLaApp(), cubierta: { ...CONFIG_CUBIERTA_POR_DEFECTO, encuadreContra: { x: 0.1, y: 0.9 }, contra: { selloContra: { x: 0.1, y: 0, escala: 1.6 } } } }
+    const zip = zipDeCopia(exportar(p, new Map(), new Map()), p, new Map(), new Date('2026-11-16T12:00:00Z'))
+    const r = leerCopia(archivosDeZip(zip) as Map<string, Uint8Array>, nuevoId)
+    if (!r.ok) throw new Error(r.error)
+    expect(r.copia.proyecto.version).toBe(7)
+    expect(r.copia.proyecto.cubierta).toMatchObject({ encuadreContra: { x: 0.1, y: 0.9 }, contra: { selloContra: { x: 0.1, y: 0, escala: 1.6 } } })
+  })
+
   it('la portada en los EPUB tambien pide formato 5', () => {
     const e = reducir(e0, { tipo: 'cubierta', cambios: { enEpub: true }, ahora: 0 })
     expect(versionNecesaria(e.proyecto as Proyecto)).toBe(5)
@@ -406,8 +430,23 @@ describe('mover con el raton, el dedo o las flechas', () => {
     return { x: k.x + k.ancho / 2, y: k.y + k.alto / 2 }
   }
 
-  it('las piezas que se mueven son las de la portada: ni el lomo ni la contraportada', () => {
-    expect(movibles(c).map((p) => p.que).sort()).toEqual(['autor', 'sello', 'titulo'])
+  it('se mueven las de la portada y las de la contraportada; el lomo no, y el codigo solo si lo genera Pubteca', () => {
+    expect(movibles(c).map((p) => p.que).sort()).toEqual(['autor', 'codigo', 'sello', 'selloContra', 'sinopsis', 'titulo'])
+    expect(movibles(cubiertaDePrueba({ estilo: 'clasico', codigo: 'kdp' })).map((p) => p.que)).not.toContain('codigo')
+    expect(['titulo', 'codigo', 'selloContra', 'sinopsis'].map((q) => esDeContra(q as never))).toEqual([false, true, true, true])
+  })
+
+  it('las de la contraportada: lo movido y el tamaño, de lo que de verdad se aplico', () => {
+    const k = cubiertaDePrueba({ estilo: 'clasico', contra: { sinopsis: { x: 0.02, y: 0.05, escala: 0.9 } } })
+    expect(movidaDe(k, 'sinopsis')).toEqual({ x: expect.closeTo(0.02, 9), y: expect.closeTo(0.05, 9) })
+    expect(escalaDe(k, 'sinopsis')).toBe(0.9)
+    expect(escalaDe(k, 'codigo')).toBe(1)
+    expect(escalaDe(k, 'titulo')).toBe(1)
+    expect(paso(k, 'sinopsis', 'derecha', 1).x).toBeCloseTo(0.02 + 72 / 25.4 / A, 9)
+    expect([escalaLimitada('codigo', 0.5), escalaLimitada('codigo', 3), escalaLimitada('sinopsis', 1.1)]).toEqual([0.9, 1.5, 1.1])
+    // Bajo el puntero: la sinopsis, en medio de su caja.
+    const s0 = k.piezas.find((p) => p.que === 'sinopsis')?.caja as { x: number; y: number; ancho: number; alto: number }
+    expect(piezaEn(k, s0.x + s0.ancho / 2, s0.y + s0.alto / 2)).toBe('sinopsis')
   })
 
   it('bajo el dedo: la pieza que hay, con 2 mm de holgura; fuera de las piezas, ninguna', () => {

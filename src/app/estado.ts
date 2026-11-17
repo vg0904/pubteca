@@ -18,7 +18,7 @@
  *     una vez.
  */
 import { CONFIG_IMPRESO_POR_DEFECTO, conFuente, normalizarConfig, type ConfigImpreso } from '../core/impreso/config'
-import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type ConfigCubierta, type EstiloId, type Punto, type QuePieza } from '../core/impreso/cubierta-config'
+import { CONFIG_CUBIERTA_POR_DEFECTO, normalizarCubierta, type Ajuste, type ConfigCubierta, type EstiloId, type PiezaContra, type Punto, type QuePieza } from '../core/impreso/cubierta-config'
 import { CONFIG_WEB_POR_DEFECTO, normalizarWeb, type ConfigWeb } from '../core/web/config'
 import { nombreSeguro } from '../core/texto'
 import { textosLibro } from '../core/textos-libro'
@@ -231,6 +231,8 @@ export type Accion =
   | { readonly tipo: 'cubierta'; readonly cambios: Partial<ConfigCubierta>; readonly ahora: number }
   /** Mover a mano una pieza de la portada en un estilo (null: a su sitio). Cada arrastre, un paso de deshacer. */
   | { readonly tipo: 'moverPieza'; readonly estilo: EstiloId; readonly pieza: QuePieza; readonly a: Punto | null; readonly ahora: number }
+  /** Mover o cambiar de tamaño una pieza de la contraportada (null: como la pone el estilo). Un paso de deshacer por pieza. */
+  | { readonly tipo: 'ajustarContra'; readonly pieza: PiezaContra; readonly a: Ajuste | null; readonly ahora: number }
   /** Las opciones del libro para la web: lo que no se publica y los enlaces. */
   | { readonly tipo: 'web'; readonly cambios: Partial<ConfigWeb>; readonly ahora: number }
   /** Las opciones del libro impreso. Cambiar de letra arrastra su cuerpo recomendado (ver `conFuente`). */
@@ -1177,6 +1179,15 @@ export function reducir(e: Estado, a: Accion): Estado {
       const cubierta = normalizarCubierta({ ...antes, mover: { ...antes.mover, [a.estilo]: delEstilo } })
       if (JSON.stringify(cubierta) === JSON.stringify(antes)) return e
       return cambiar(e, { ...p, cubierta }, { grupo: `moverPieza:${a.estilo}:${a.pieza}`, ahora: a.ahora })
+    }
+    case 'ajustarContra': {
+      const antes = p.cubierta ?? CONFIG_CUBIERTA_POR_DEFECTO
+      const contra: Partial<Record<PiezaContra, Ajuste>> = { ...antes.contra }
+      if (a.a) contra[a.pieza] = a.a
+      else delete contra[a.pieza]
+      const cubierta = normalizarCubierta({ ...antes, contra })
+      if (JSON.stringify(cubierta) === JSON.stringify(antes)) return e
+      return cambiar(e, { ...p, cubierta }, { grupo: `ajustarContra:${a.pieza}`, ahora: a.ahora })
     }
     case 'kindleDeImagen': {
       const propios = { ...(p.kindlePorImagen ?? {}) }
